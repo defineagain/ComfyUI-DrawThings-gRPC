@@ -65,8 +65,8 @@ def convert_response_image(response_image: np.ndarray):
     offset = 68
     length = width * height * channels * 2
 
-    # print(f"{width}x{height} image with {channels} channels")
-    # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+    print(f"{width}x{height} image with {channels} channels")
+    print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
     u8c = np.clip((f16rgb + 1) * 127, 0, 255).astype(np.uint8)
