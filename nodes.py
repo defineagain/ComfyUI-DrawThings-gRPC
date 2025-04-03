@@ -65,8 +65,8 @@ def convert_response_image(response_image: np.ndarray):
     offset = 68
     length = width * height * channels * 2
 
-    print(f"{width}x{height} image with {channels} channels")
-    print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+    # print(f"{width}x{height} image with {channels} channels")
+    # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
     u8c = np.clip((f16rgb + 1) * 127, 0, 255).astype(np.uint8)
@@ -82,6 +82,11 @@ def remove_alpha(img):
     png = img.convert('RGBA')
     background = Image.new('RGBA', png.size, (255,255,255))
     img = Image.alpha_composite(background, png)
+    return img
+
+def convert_image_for_request(img):
+    img = remove_alpha(img)
+
     return img
 
 def get_files(server, port):
@@ -357,7 +362,7 @@ class DrawThingsSampler:
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xfffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
