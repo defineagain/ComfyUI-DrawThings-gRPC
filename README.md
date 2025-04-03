@@ -1,6 +1,6 @@
 # ComfyUI-DrawThings-gRPC
 
-Connect to a Draw Things gRPC server
+Connect to any Draw Things gRPC server
 
 > [!WARNING]
 > This is not yet usable!
