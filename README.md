@@ -65,3 +65,6 @@ You need to make an account on https://registry.comfy.org and create an API key 
 
 A Github action will run on every git push. You can also run the Github action manually. Full instructions [here](https://docs.comfy.org/registry/publishing). Join our [discord](https://discord.com/invite/comfyorg) if you have any questions!
 
+# Thanks to
+
+- https://github.com/JosephThomasParker/ComfyUI-DrawThingsWrapper for starting me off looking into what's possible connecting ComfyUI to Draw Things.
