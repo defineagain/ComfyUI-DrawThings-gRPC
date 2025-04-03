@@ -6,6 +6,13 @@ Connect to any Draw Things gRPC server
 > This is not yet usable!
 > I'm working on a bug with receiving images from Draw Things, but once that's fixed it should be able to connect to any [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries) and more importantly, let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
 
+## Draw Things gRPC server
+
+Run your server with the following options:
+    --no-tls
+    --no-response-compression
+    --model-browser
+
 ## Quickstart
 
 1. Install [ComfyUI](https://docs.comfy.org/get_started).
