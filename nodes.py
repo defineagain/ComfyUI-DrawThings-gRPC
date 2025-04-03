@@ -140,14 +140,14 @@ async def dt_sampler(
     if control_net is not None:
         fin_controls = []
         for control_cfg in control_net["control_nets"]:
-            control_name = builder.CreateString(control_cfg["control_net_name"])
+            control_name = builder.CreateString(control_cfg["control_name"])
             Control.Start(builder)
             Control.AddFile(builder, control_name)
             Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(control_cfg["control_input_type"]))
             Control.AddControlMode(builder, DrawThingsLists.control_mode.index(control_cfg["control_mode"]))
-            Control.AddWeight(builder, control_cfg["control_net_weight"])
-            Control.AddGuidanceStart(builder, 0.0)
-            Control.AddGuidanceEnd(builder, 1.0)
+            Control.AddWeight(builder, control_cfg["control_weight"])
+            Control.AddGuidanceStart(builder, control_cfg["control_start"])
+            Control.AddGuidanceEnd(builder, control_cfg["control_end"])
             fin_control = Control.End(builder)
             fin_controls.append(fin_control)
 
@@ -216,7 +216,7 @@ async def dt_sampler(
                 tensor_and_weight.append(
                     imageService_pb2.TensorAndWeight(
                         tensor = bytes(hashlib.sha256(image_to_base64(image)).digest()),
-                        weight = control_cfg["control_net_weight"]
+                        weight = control_cfg["control_weight"]
                     )
                 )
                 contents.append(base64.b64decode(image_to_base64(image)))
@@ -435,14 +435,6 @@ class DrawThingsSampler:
                 lora=lora
                 ))
 
-    # @classmethod
-    # def IS_CHANGED(s, control_net_name, **kwargs):
-    #     DrawThingsSampler.files_list = get_files(DrawThingsSampler.dtserver, DrawThingsSampler.dtport)
-    #     control_net_name = DrawThingsSampler.files_list
-    #     print("IS_CHANGED")
-    #     return float("NaN")
-    # setattr(self.__class__, 'IS_CHANGED', IS_CHANGED)
-
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
@@ -455,10 +447,12 @@ class DrawThingsControlNet:
         DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
         return {
             "required": { 
-                "control_net_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
+                "control_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
                 "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
-                "control_net_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
+                "control_end": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01}),
             },
             "optional": {
                 "control_net": ("dict", ),
@@ -471,20 +465,30 @@ class DrawThingsControlNet:
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, control_net_name, control_input_type, control_mode, control_net_weight, control_net={}, image=None ):
+    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
             control_net["control_nets"] = []
         # Append the new entry as a dictionary to the list
         control_net["control_nets"].append({
-            "control_net_name": control_net_name,
+            "control_name": control_name,
             "control_input_type": control_input_type,
             "control_mode": control_mode,
-            "control_net_weight": control_net_weight,
+            "control_weight": control_weight,
+            "control_start": control_start,
+            "control_end": control_end,
             "image": image
         })
         return (control_net,)
+
+    # @classmethod
+    # def IS_CHANGED(s, control_name, **kwargs):
+    #     DrawThingsSampler.files_list = get_files(DrawThingsSampler.dtserver, DrawThingsSampler.dtport)
+    #     control_name = DrawThingsSampler.files_list
+    #     print("IS_CHANGED")
+    #     return float("NaN")
+    # setattr(self.__class__, 'IS_CHANGED', IS_CHANGED)
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
