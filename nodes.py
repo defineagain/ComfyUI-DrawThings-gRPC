@@ -112,8 +112,8 @@ async def dt_sampler(
             control_name = builder.CreateString(control_cfg["control_net_name"])
             Control.Start(builder)
             Control.AddFile(builder, control_name)
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index("Depth"))
-            Control.AddControlMode(builder, DrawThingsLists.control_mode.index("Balanced"))
+            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(control_cfg["control_input_type"]))
+            Control.AddControlMode(builder, DrawThingsLists.control_mode.index(control_cfg["control_mode"]))
             Control.AddWeight(builder, control_cfg["control_net_weight"])
             Control.AddGuidanceStart(builder, 0.0)
             Control.AddGuidanceEnd(builder, 1.0)
@@ -408,6 +408,8 @@ class DrawThingsControlNet:
         return {
             "required": { 
                 "control_net_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
+                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified"}),
+                "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_net_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
@@ -421,14 +423,16 @@ class DrawThingsControlNet:
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, control_net_name, control_net_weight, control_net={}, image=None ):
+    def add_to_pipeline(self, control_net_name, control_input_type, control_mode, control_net_weight, control_net={}, image=None ):
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
             control_net["control_nets"] = []
         # Append the new entry as a dictionary to the list
         control_net["control_nets"].append({
-            "control_net_name": control_net_name, 
+            "control_net_name": control_net_name,
+            "control_input_type": control_input_type,
+            "control_mode": control_mode,
             "control_net_weight": control_net_weight,
             "image": image
         })
