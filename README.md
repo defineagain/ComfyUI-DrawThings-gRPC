@@ -2,8 +2,8 @@
 
 Connect to a Draw Things gRPC server
 
-> [!WARNING! This is not yet usable, I'm working on a bug with receiving images from Draw Things.]
-> But once that's fixed it should be able to connect to any gRPCServerCLI and more importantly, let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
+> [!WARNING!] 
+> This is not yet usable, I'm working on a bug with receiving images from Draw Things, but once that's fixed it should be able to connect to any gRPCServerCLI and more importantly, let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
 
 > [!NOTE]
 > This projected was created with a [cookiecutter](https://github.com/Comfy-Org/cookiecutter-comfy-extension) template. It helps you start writing custom nodes without worrying about the Python setup.
