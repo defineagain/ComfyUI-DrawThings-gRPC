@@ -58,6 +58,32 @@ def image_to_base64(image_tensor):
         return encoded_string
     return None
 
+def convert_response_image(response_image: np.ndarray):
+    int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
+    height, width, channels = int_buffer[6:9]
+
+    offset = 68
+    length = width * height * channels * 2
+
+    print(f"{width}x{height} image with {channels} channels")
+    print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+
+    f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
+    u8c = np.clip((f16rgb + 1) * 127, 0, 255).astype(np.uint8)
+
+    return {
+        'data': u8c,
+        'width': width,
+        'height': height,
+        'channels': channels,
+    }
+
+def remove_alpha(img):
+    png = img.convert('RGBA')
+    background = Image.new('RGBA', png.size, (255,255,255))
+    img = Image.alpha_composite(background, png)
+    return img
+
 def get_files(server, port):
     with grpc.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
@@ -226,14 +252,31 @@ async def dt_sampler(
                 img = None
                 if preview_image:
                     # Convert the image data to a Pillow Image object
-                    img = Image.frombytes('RGB', (64, 64), response.previewImage, 'raw')
+                    result = convert_response_image(response.previewImage)
+                    data = result['data']
+                    width = result['width']
+                    height = result['height']
+                    channels = result['channels']
+                    img = Image.frombytes('RGB', (width, height), data)
+                    # if channels == 4:
+                    #     png = img.convert('RGBA')
+                    #     background = Image.new('RGBA', png.size, (255,255,255))
+                    #     img = remove_alpha(img)
                 prepare_callback(current_step, steps, img)
 
             if generated_images:
                 images = []
                 for img_data in response.generatedImages:
                     # Convert the image data to a Pillow Image object
-                    img = Image.frombytes('RGB', (width, height), img_data, 'raw')
+                    result = convert_response_image(img_data)
+                    data = result['data']
+                    width = result['width']
+                    height = result['height']
+                    channels = result['channels']
+                    mode = "RGB"
+                    if channels == 4:
+                        mode = "RGBA"
+                    img = Image.frombytes(mode, (width, height), data)
                     image_np = np.array(img)
                     # Convert to float32 tensor and normalize
                     tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
