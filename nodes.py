@@ -38,7 +38,7 @@ def prepare_callback(step, total_steps, preview_image):
     def callback(step, total_steps):
         preview_bytes = None
         if preview_image is not None:
-            preview_bytes = ("JPEG", preview_image, MAX_PREVIEW_RESOLUTION)
+            preview_bytes = ("PNG", preview_image, MAX_PREVIEW_RESOLUTION)
         pbar.update_absolute(step, total_steps, preview_bytes)
     return callback(step, total_steps)
 
