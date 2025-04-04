@@ -165,16 +165,27 @@ async def dt_sampler(
     GenerationConfiguration.AddStartHeight(builder, start_height)
     GenerationConfiguration.AddTargetImageWidth(builder, width)
     GenerationConfiguration.AddTargetImageHeight(builder, height)
+    # upscaler
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
+    # speed-up
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
+    # res shift
     GenerationConfiguration.AddShift(builder, 2.33)
     GenerationConfiguration.AddBatchSize(builder, 1)
+    # refiner
+    # zero neg
+    # sep clip
     GenerationConfiguration.AddClipSkip(builder, 1)
     GenerationConfiguration.AddSharpness(builder, 0.6)
     GenerationConfiguration.AddMaskBlur(builder, 5)
     GenerationConfiguration.AddMaskBlurOutset(builder, 4)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, True)
+    # face restore
+    # high res fix
+    # tiled decode
+    # tiled diffuse
+    # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls is not None:
         GenerationConfiguration.AddControls(builder, controls)
@@ -182,7 +193,6 @@ async def dt_sampler(
         GenerationConfiguration.AddLoras(builder, loras)
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
-
     # generated = GenerationConfiguration.GenerationConfiguration.GetRootAs(configuration, 0)
 
     contents = []
