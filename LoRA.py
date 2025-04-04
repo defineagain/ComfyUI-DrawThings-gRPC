@@ -4,13 +4,15 @@
 
 import flatbuffers
 from flatbuffers.compat import import_numpy
+from typing import Any
+from typing import Optional
 np = import_numpy()
 
 class LoRA(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAs(cls, buf, offset=0):
+    def GetRootAs(cls, buf, offset: int = 0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = LoRA()
         x.Init(buf, n + offset)
@@ -21,11 +23,11 @@ class LoRA(object):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
     # LoRA
-    def Init(self, buf, pos):
+    def Init(self, buf: bytes, pos: int):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # LoRA
-    def File(self):
+    def File(self) -> Optional[str]:
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -38,26 +40,26 @@ class LoRA(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.6
 
-def LoRAStart(builder):
+def LoRAStart(builder: flatbuffers.Builder):
     builder.StartObject(2)
 
-def Start(builder):
+def Start(builder: flatbuffers.Builder):
     LoRAStart(builder)
 
-def LoRAAddFile(builder, file):
+def LoRAAddFile(builder: flatbuffers.Builder, file: int):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(file), 0)
 
-def AddFile(builder, file):
+def AddFile(builder: flatbuffers.Builder, file: int):
     LoRAAddFile(builder, file)
 
-def LoRAAddWeight(builder, weight):
+def LoRAAddWeight(builder: flatbuffers.Builder, weight: float):
     builder.PrependFloat32Slot(1, weight, 0.6)
 
-def AddWeight(builder, weight):
+def AddWeight(builder: flatbuffers.Builder, weight: float):
     LoRAAddWeight(builder, weight)
 
-def LoRAEnd(builder):
+def LoRAEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
 
-def End(builder):
+def End(builder: flatbuffers.Builder) -> int:
     return LoRAEnd(builder)

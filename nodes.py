@@ -141,6 +141,9 @@ async def dt_sampler(
             Control.AddWeight(builder, control_cfg["control_weight"])
             Control.AddGuidanceStart(builder, control_cfg["control_start"])
             Control.AddGuidanceEnd(builder, control_cfg["control_end"])
+            Control.AddNoPrompt(builder, False)
+            Control.AddGlobalAveragePooling(builder, False)
+            Control.AddDownSamplingRate(builder, 0)
             fin_control = Control.End(builder)
             fin_controls.append(fin_control)
 
@@ -164,8 +167,13 @@ async def dt_sampler(
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
+    GenerationConfiguration.AddShift(builder, 2.33)
     GenerationConfiguration.AddBatchSize(builder, 1)
+    GenerationConfiguration.AddClipSkip(builder, 1)
     GenerationConfiguration.AddSharpness(builder, 0.6)
+    GenerationConfiguration.AddMaskBlur(builder, 5)
+    GenerationConfiguration.AddMaskBlurOutset(builder, 4)
+    GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, True)
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls is not None:
         GenerationConfiguration.AddControls(builder, controls)
@@ -195,8 +203,8 @@ async def dt_sampler(
         "version": "v1"}]
     override = imageService_pb2.MetadataOverride(
         models = bytes(f"{models_override}", encoding='utf-8'),
-        loras = b"[]",
-        controlNets = b"[]",
+        loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]',
+        controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]',
         textualInversions = b"[]",
         upscalers = b"[]"
     )
@@ -231,7 +239,7 @@ async def dt_sampler(
             prompt = positive,                    # Optional prompt string
             negativePrompt = negative,            # Optional negative prompt string
             configuration = bytes(configuration), # Configuration data as bytes (FlatBuffer)
-            override = override,                  # Override the existing metadata on various Zoo objects.
+            # override = override,                  # Override the existing metadata on various Zoo objects.
             user = "ComfyUI",                     # The name of the client.
             device = "LAPTOP",                    # The type of the device uses.
             contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
@@ -275,6 +283,7 @@ async def dt_sampler(
                     if channels >= 4:
                         mode = "RGBA"
                     img = Image.frombytes(mode, (width, height), data)
+                    print(f"size: {img.size}, mode: {img.mode}")
                     image_np = np.array(img)
                     # Convert to float32 tensor and normalize
                     tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
@@ -429,6 +438,10 @@ class DrawThingsSampler:
                 ))
 
     @classmethod
+    def IS_CHANGED(s, **kwargs):
+        return float("NaN")
+
+    @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
@@ -459,6 +472,7 @@ class DrawThingsControlNet:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
+        control_net["control_nets"] = [] # temp fix for duplicating bug
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
@@ -475,13 +489,9 @@ class DrawThingsControlNet:
         })
         return (control_net,)
 
-    # @classmethod
-    # def IS_CHANGED(s, control_name, **kwargs):
-    #     DrawThingsSampler.files_list = get_files(DrawThingsSampler.dtserver, DrawThingsSampler.dtport)
-    #     control_name = DrawThingsSampler.files_list
-    #     print("IS_CHANGED")
-    #     return float("NaN")
-    # setattr(self.__class__, 'IS_CHANGED', IS_CHANGED)
+    @classmethod
+    def IS_CHANGED(s, **kwargs):
+        return float("NaN")
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -510,6 +520,7 @@ class DrawThingsLoRA:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
+        lora["loras"] = [] # temp fix for duplicating bug
         # Check if 'loras' exists in the pipeline
         if "loras" not in lora:
             # Create 'loras' as an empty list
@@ -518,6 +529,10 @@ class DrawThingsLoRA:
         lora["loras"].append({"lora_name": lora_name, "lora_weight": lora_weight})
         # print(f"lora: {lora}")
         return (lora,)
+
+    @classmethod
+    def IS_CHANGED(s, **kwargs):
+        return float("NaN")
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
