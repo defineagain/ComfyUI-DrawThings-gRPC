@@ -283,14 +283,14 @@ async def dt_sampler(
                         if channels >= 4:
                             img = Image.frombytes('RGBA', (width, height), data)
 
-                            data = np.array(img)
-                            v, a, s, h = data.T
-                            data = np.array([h, s, v])
-                            data = data.transpose()
-                            img = Image.fromarray(data, 'HSV').convert('RGB')
+                            # data = np.array(img)
+                            # v, a, s, h = data.T
+                            # data = np.array([h, s, v])
+                            # data = data.transpose()
+                            # img = Image.fromarray(data, 'HSV').convert('RGB')
 
                             data = np.array(img)
-                            g, r, b = data.T
+                            g, r, b, a = data.T
                             data = np.array([r, g, b])
                             data = data.transpose()
                             img = Image.fromarray(data, 'RGB')
