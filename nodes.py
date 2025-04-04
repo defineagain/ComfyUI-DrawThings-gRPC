@@ -44,8 +44,7 @@ def prepare_callback(step, total_steps, preview_image):
 
 def image_to_base64(image_tensor):
     if image_tensor is not None:
-        image_tensor = image_tensor.permute(3, 1, 2, 0)
-        image_tensor = image_tensor.squeeze(3)
+        image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
         transform = torchvision.transforms.ToPILImage()
         img = transform(image_tensor)
 
@@ -450,7 +449,6 @@ class DrawThingsControlNet:
         pass
     @classmethod
     def INPUT_TYPES(s):
-        DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
         return {
             "required": { 
                 "control_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
@@ -472,7 +470,6 @@ class DrawThingsControlNet:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
-        control_net["control_nets"] = [] # temp fix for duplicating bug
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
@@ -502,7 +499,6 @@ class DrawThingsLoRA:
         pass
     @classmethod
     def INPUT_TYPES(s):
-        DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
         return {
             "required": { 
                 "lora_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
@@ -520,7 +516,6 @@ class DrawThingsLoRA:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
-        lora["loras"] = [] # temp fix for duplicating bug
         # Check if 'loras' exists in the pipeline
         if "loras" not in lora:
             # Create 'loras' as an empty list
