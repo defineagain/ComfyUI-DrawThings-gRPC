@@ -271,7 +271,7 @@ async def dt_sampler(
                     # print(f"{response.previewImage[:1024]}... ...{response.previewImage[-32:]}")
                     # Convert the image data to a Pillow Image object
                     try:
-                        result = convert_response_image(response.previewImage)
+                        result = convert_response_image(preview_image)
                     except:
                         print("No preview generated")
                     else:
@@ -279,10 +279,22 @@ async def dt_sampler(
                         width = result['width']
                         height = result['height']
                         channels = result['channels']
-                        mode = "RGB"
+                        img = Image.frombytes('RGB', (width, height), data)
                         if channels >= 4:
-                            mode = "RGBA"
-                        img = Image.frombytes(mode, (width, height), data)
+                            img = Image.frombytes('RGBA', (width, height), data)
+
+                            data = np.array(img)
+                            v, a, s, h = data.T
+                            data = np.array([h, s, v])
+                            data = data.transpose()
+                            img = Image.fromarray(data, 'HSV').convert('RGB')
+
+                            data = np.array(img)
+                            g, r, b = data.T
+                            data = np.array([r, g, b])
+                            data = data.transpose()
+                            img = Image.fromarray(data, 'RGB')
+
                         print(f"size: {img.size}, mode: {img.mode}")
                 prepare_callback(current_step, steps, img)
 
