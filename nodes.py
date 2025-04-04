@@ -182,9 +182,9 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, 4)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, True)
     # face restore
-    # high res fix
-    # tiled decode
-    # tiled diffuse
+    GenerationConfiguration.AddHiresFix(builder, False)
+    GenerationConfiguration.AddTiledDecoding(builder, False)
+    GenerationConfiguration.AddTiledDiffusion(builder, False)
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls is not None:
@@ -268,17 +268,22 @@ async def dt_sampler(
             if current_step:
                 img = None
                 if preview_image:
+                    # print(f"{response.previewImage[:1024]}... ...{response.previewImage[-32:]}")
                     # Convert the image data to a Pillow Image object
-                    result = convert_response_image(response.previewImage)
-                    data = result['data']
-                    width = result['width']
-                    height = result['height']
-                    channels = result['channels']
-                    mode = "RGB"
-                    if channels >= 4:
-                        mode = "RGBA"
-                    img = Image.frombytes(mode, (width, height), data)
-                    print(f"size: {img.size}, mode: {img.mode}")
+                    try:
+                        result = convert_response_image(response.previewImage)
+                    except:
+                        print("No preview generated")
+                    else:
+                        data = result['data']
+                        width = result['width']
+                        height = result['height']
+                        channels = result['channels']
+                        mode = "RGB"
+                        if channels >= 4:
+                            mode = "RGBA"
+                        img = Image.frombytes(mode, (width, height), data)
+                        print(f"size: {img.size}, mode: {img.mode}")
                 prepare_callback(current_step, steps, img)
 
             if generated_images:
