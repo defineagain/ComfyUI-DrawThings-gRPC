@@ -550,8 +550,36 @@ class GenerationConfiguration(object):
             return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
         return True
 
+    # GenerationConfiguration
+    def TeaCacheStart(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(148))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 5
+
+    # GenerationConfiguration
+    def TeaCacheEnd(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(150))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return -1
+
+    # GenerationConfiguration
+    def TeaCacheThreshold(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(152))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
+        return 0.06
+
+    # GenerationConfiguration
+    def TeaCache(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(154))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
 def GenerationConfigurationStart(builder):
-    builder.StartObject(72)
+    builder.StartObject(76)
 
 def Start(builder):
     GenerationConfigurationStart(builder)
@@ -987,6 +1015,30 @@ def GenerationConfigurationAddResolutionDependentShift(builder, resolutionDepend
 
 def AddResolutionDependentShift(builder, resolutionDependentShift):
     GenerationConfigurationAddResolutionDependentShift(builder, resolutionDependentShift)
+
+def GenerationConfigurationAddTeaCacheStart(builder, teaCacheStart):
+    builder.PrependInt32Slot(72, teaCacheStart, 5)
+
+def AddTeaCacheStart(builder, teaCacheStart):
+    GenerationConfigurationAddTeaCacheStart(builder, teaCacheStart)
+
+def GenerationConfigurationAddTeaCacheEnd(builder, teaCacheEnd):
+    builder.PrependInt32Slot(73, teaCacheEnd, -1)
+
+def AddTeaCacheEnd(builder, teaCacheEnd):
+    GenerationConfigurationAddTeaCacheEnd(builder, teaCacheEnd)
+
+def GenerationConfigurationAddTeaCacheThreshold(builder, teaCacheThreshold):
+    builder.PrependFloat32Slot(74, teaCacheThreshold, 0.06)
+
+def AddTeaCacheThreshold(builder, teaCacheThreshold):
+    GenerationConfigurationAddTeaCacheThreshold(builder, teaCacheThreshold)
+
+def GenerationConfigurationAddTeaCache(builder, teaCache):
+    builder.PrependBoolSlot(75, teaCache, 0)
+
+def AddTeaCache(builder, teaCache):
+    GenerationConfigurationAddTeaCache(builder, teaCache)
 
 def GenerationConfigurationEnd(builder):
     return builder.EndObject()
