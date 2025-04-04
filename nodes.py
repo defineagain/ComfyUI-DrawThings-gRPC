@@ -66,7 +66,7 @@ def convert_response_image(response_image: np.ndarray):
     length = width * height * channels * 2
 
     print(f"{width}x{height} image with {channels} channels")
-    print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+    # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
     u8c = np.clip((f16rgb + 1) * 127, 0, 255).astype(np.uint8)
@@ -78,14 +78,7 @@ def convert_response_image(response_image: np.ndarray):
         'channels': channels,
     }
 
-def remove_alpha(img):
-    png = img.convert('RGBA')
-    background = Image.new('RGBA', png.size, (255,255,255))
-    img = Image.alpha_composite(background, png)
-    return img
-
 def convert_image_for_request(img):
-    img = remove_alpha(img)
 
     return img
 
@@ -262,11 +255,11 @@ async def dt_sampler(
                     width = result['width']
                     height = result['height']
                     channels = result['channels']
-                    img = Image.frombytes('RGB', (width, height), data)
-                    # if channels == 4:
-                    #     png = img.convert('RGBA')
-                    #     background = Image.new('RGBA', png.size, (255,255,255))
-                    #     img = remove_alpha(img)
+                    mode = "RGB"
+                    if channels >= 4:
+                        mode = "RGBA"
+                    img = Image.frombytes(mode, (width, height), data)
+                    print(f"size: {img.size}, mode: {img.mode}")
                 prepare_callback(current_step, steps, img)
 
             if generated_images:
@@ -279,7 +272,7 @@ async def dt_sampler(
                     height = result['height']
                     channels = result['channels']
                     mode = "RGB"
-                    if channels == 4:
+                    if channels >= 4:
                         mode = "RGBA"
                     img = Image.frombytes(mode, (width, height), data)
                     image_np = np.array(img)
