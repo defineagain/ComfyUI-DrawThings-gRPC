@@ -125,6 +125,7 @@ async def dt_sampler(
 
         GenerationConfiguration.StartLorasVector(builder, len(lora["loras"]))
         for i, lora_cfg in enumerate(lora["loras"]):
+            print(f"{i+1} loras loaded")
             builder.PrependUOffsetTRelative(fin_loras[i])
         loras = builder.EndVector()
 
@@ -148,6 +149,7 @@ async def dt_sampler(
 
         GenerationConfiguration.StartControlsVector(builder, len(control_net["control_nets"]))
         for i, control_cfg in enumerate(control_net["control_nets"]):
+            print(f"{i+1} controlnets loaded")
             builder.PrependUOffsetTRelative(fin_controls[i])
         controls = builder.EndVector()
 
@@ -436,9 +438,9 @@ class DrawThingsSampler:
                 lora=lora
                 ))
 
-    @classmethod
-    def IS_CHANGED(s, **kwargs):
-        return float("NaN")
+    # @classmethod
+    # def IS_CHANGED(s, **kwargs):
+    #     return float("NaN")
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -486,9 +488,9 @@ class DrawThingsControlNet:
         })
         return (control_net,)
 
-    @classmethod
-    def IS_CHANGED(s, **kwargs):
-        return float("NaN")
+    # @classmethod
+    # def IS_CHANGED(s, **kwargs):
+    #     return float("NaN")
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -525,9 +527,9 @@ class DrawThingsLoRA:
         # print(f"lora: {lora}")
         return (lora,)
 
-    @classmethod
-    def IS_CHANGED(s, **kwargs):
-        return float("NaN")
+    # @classmethod
+    # def IS_CHANGED(s, **kwargs):
+    #     return float("NaN")
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
