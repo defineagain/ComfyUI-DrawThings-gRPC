@@ -385,12 +385,20 @@ class DrawThingsSampler:
 
     @classmethod
     def INPUT_TYPES(s):
+        def get_filtered_files():
+            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            filtered_files = [
+                f for f in all_files
+                if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
+            ]
+            return filtered_files
+
         DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
         return {
             "required": {
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
-                "model": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
+                "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xfffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
@@ -478,9 +486,17 @@ class DrawThingsControlNet:
         pass
     @classmethod
     def INPUT_TYPES(s):
+        def get_filtered_files():
+            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            filtered_files = [
+                f for f in all_files
+                if not any(exclude in f for exclude in ["lora", "vae"])
+            ]
+            return filtered_files
+        
         return {
             "required": { 
-                "control_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
+                "control_name": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
                 "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
@@ -528,9 +544,14 @@ class DrawThingsLoRA:
         pass
     @classmethod
     def INPUT_TYPES(s):
+        def get_lora_files():
+            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            lora_files = [f for f in all_files if "lora" in f]
+            return lora_files
+        
         return {
-            "required": { 
-                "lora_name": (DrawThingsLists.files_list, {"default": "Press R to (re)load this list", "tooltip": "The model used. Please note that this lists all files, so be sure to pick the right one. Press R to (re)load this list."}),
+            "required": {
+                "lora_name": (get_lora_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
