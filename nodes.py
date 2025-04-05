@@ -27,6 +27,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "co
 
 import comfy.utils
 from comfy.cli_args import args
+import latent_preview
+import comfy.latent_formats as latent_formats
 
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
@@ -283,34 +285,18 @@ async def dt_sampler(
             if current_step:
                 img = None
                 if preview_image:
-                    # print(f"{response.previewImage[:1024]}... ...{response.previewImage[-32:]}")
-                    # Convert the image data to a Pillow Image object
-                    try:
-                        result = convert_response_image(preview_image)
-                    except:
-                        print("No preview generated")
-                    else:
-                        data = result['data']
-                        width = result['width']
-                        height = result['height']
-                        channels = result['channels']
-                        img = Image.frombytes('RGB', (width, height), data)
-                        if channels >= 4:
-                            img = Image.frombytes('RGBA', (width, height), data)
+                    result = convert_response_image(preview_image)
+                    data = result['data']
+                    width = result['width']
+                    height = result['height']
+                    channels = result['channels']
+                    img = Image.frombytes('RGBA', (width, height), data)
 
-                            # data = np.array(img)
-                            # v, a, s, h = data.T
-                            # data = np.array([h, s, v])
-                            # data = data.transpose()
-                            # img = Image.fromarray(data, 'HSV').convert('RGB')
+                    # img = torch.tensor(response.previewImage, dtype=torch.float16)
 
-                            data = np.array(img)
-                            g, r, b, a = data.T
-                            data = np.array([r, g, b])
-                            data = data.transpose()
-                            img = Image.fromarray(data, 'RGB')
+                    # latent_format = latent_formats.SD15
 
-                        print(f"size: {img.size}, mode: {img.mode}")
+                    # img = latent_preview.Latent2RGBPreviewer(latent_format.latent_rgb_factors, latent_format.latent_rgb_factors_bias).decode_latent_to_preview(x0=preview_image)
                 prepare_callback(current_step, steps, img)
 
             if generated_images:
