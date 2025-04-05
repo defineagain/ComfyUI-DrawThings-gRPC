@@ -91,11 +91,12 @@ def convert_image_for_request(img: torch.Tensor):
     length = width * height * channels * 2
 
     print(f"Request image is {width}x{height} with {channels} channels")
-    # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+
+    data = img.to(torch.float16)
 
     # Encode the image as base64
-    encoded_string = base64.b64encode(tf.io.serialize_tensor(img))
-    # encoded_string = image_to_base64(img)
+    encoded_string = base64.b64encode(tf.io.serialize_tensor(data))
+    # encoded_string = base64.b64encode(data)
     return encoded_string
 
 def get_files(server, port):
