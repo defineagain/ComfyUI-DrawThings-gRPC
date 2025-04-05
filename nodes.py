@@ -292,7 +292,7 @@ async def dt_sampler(
                     channels = result['channels']
                     img = Image.frombytes('RGBA', (width, height), data)
 
-                    # img = torch.tensor(response.previewImage, dtype=torch.float16)
+                    # x0 = torch.tensor(response.previewImage, dtype=torch.float16)
 
                     # latent_format = latent_formats.SD15
 
