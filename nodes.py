@@ -217,11 +217,9 @@ async def dt_sampler(
     img2img = None
     maskimg = None
     if image is not None:
-        img2img = bytes(hashlib.sha256(convert_image_for_request(image)).digest())
-        contents.append(base64.b64decode(convert_image_for_request(image)))
+        img2img = bytes(convert_image_for_request(image))
     if mask is not None:
-        maskimg = bytes(hashlib.sha256(convert_image_for_request(mask)).digest())
-        contents.append(base64.b64decode(convert_image_for_request(mask)))
+        maskimg = bytes(convert_image_for_request(mask))
 
     models_override = [{
         "default_scale": 8,
@@ -245,11 +243,10 @@ async def dt_sampler(
             if image is not None:
                 tensor_and_weight.append(
                     imageService_pb2.TensorAndWeight(
-                        tensor = bytes(hashlib.sha256(convert_image_for_request(image)).digest()),
+                        tensor = bytes(convert_image_for_request(image)),
                         weight = control_cfg["control_weight"]
                     )
                 )
-                contents.append(base64.b64decode(convert_image_for_request(image)))
 
     hints = [
         imageService_pb2.HintProto(
@@ -271,7 +268,7 @@ async def dt_sampler(
             # override = override,                  # Override the existing metadata on various Zoo objects.
             user = "ComfyUI",                     # The name of the client.
             device = "LAPTOP",                    # The type of the device uses.
-            contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
+            # contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
         ))
         while True:
             response = await generate_stream.read()
