@@ -4,7 +4,7 @@ import os
 import sys
 import base64
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import io
 from io import BytesIO
 import torch
@@ -42,7 +42,7 @@ def prepare_callback(step, total_steps, preview_image):
         pbar.update_absolute(step, total_steps, preview_bytes)
     return callback(step, total_steps)
 
-def image_to_base64(image_tensor):
+def image_to_base64(image_tensor: torch.Tensor):
     if image_tensor is not None:
         image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
         transform = torchvision.transforms.ToPILImage()
@@ -64,7 +64,7 @@ def convert_response_image(response_image: np.ndarray):
     offset = 68
     length = width * height * channels * 2
 
-    print(f"{width}x{height} image with {channels} channels")
+    print(f"Response image is {width}x{height} with {channels} channels")
     # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
@@ -77,9 +77,24 @@ def convert_response_image(response_image: np.ndarray):
         'channels': channels,
     }
 
-def convert_image_for_request(img):
+def convert_image_for_request(img: torch.Tensor):
+    # C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
-    return img
+    # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
+
+    width = img.size(dim=2)
+    height = img.size(dim=1)
+    channels = img.size(dim=3)
+
+    offset = 68
+    length = width * height * channels * 2
+
+    print(f"Request image is {width}x{height} with {channels} channels")
+    # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
+
+    # Encode the image as base64
+    encoded_string = image_to_base64(img)
+    return encoded_string
 
 def get_files(server, port):
     with grpc.insecure_channel(f"{server}:{port}") as channel:
@@ -199,11 +214,11 @@ async def dt_sampler(
     img2img = None
     maskimg = None
     if image is not None:
-        img2img = bytes(hashlib.sha256(image_to_base64(image)).digest())
-        contents.append(base64.b64decode(image_to_base64(image)))
+        img2img = bytes(hashlib.sha256(convert_image_for_request(image)).digest())
+        contents.append(base64.b64decode(convert_image_for_request(image)))
     if mask is not None:
-        maskimg = bytes(hashlib.sha256(image_to_base64(mask)).digest())
-        contents.append(base64.b64decode(image_to_base64(mask)))
+        maskimg = bytes(hashlib.sha256(convert_image_for_request(mask)).digest())
+        contents.append(base64.b64decode(convert_image_for_request(mask)))
 
     models_override = [{
         "default_scale": 8,
@@ -227,11 +242,11 @@ async def dt_sampler(
             if image is not None:
                 tensor_and_weight.append(
                     imageService_pb2.TensorAndWeight(
-                        tensor = bytes(hashlib.sha256(image_to_base64(image)).digest()),
+                        tensor = bytes(hashlib.sha256(convert_image_for_request(image)).digest()),
                         weight = control_cfg["control_weight"]
                     )
                 )
-                contents.append(base64.b64decode(image_to_base64(image)))
+                contents.append(base64.b64decode(convert_image_for_request(image)))
 
     hints = [
         imageService_pb2.HintProto(
@@ -392,8 +407,7 @@ class DrawThingsSampler:
                 if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
             ]
             return filtered_files
-
-        DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+        
         return {
             "required": {
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
