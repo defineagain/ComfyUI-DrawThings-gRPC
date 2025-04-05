@@ -9,6 +9,7 @@ import io
 from io import BytesIO
 import torch
 import torchvision
+import tensorflow as tf
 import asyncio
 import logging
 import grpc
@@ -93,7 +94,8 @@ def convert_image_for_request(img: torch.Tensor):
     # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     # Encode the image as base64
-    encoded_string = image_to_base64(img)
+    encoded_string = base64.b64encode(tf.io.serialize_tensor(img))
+    # encoded_string = image_to_base64(img)
     return encoded_string
 
 def get_files(server, port):
