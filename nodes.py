@@ -100,16 +100,11 @@ def convert_image_for_request(img: torch.Tensor):
     width = img.size(dim=2)
     height = img.size(dim=1)
     channels = img.size(dim=3)
-
-    offset = 68
-    length = width * height * channels * 2
-
-    print(f"Request image is {width}x{height} with {channels} channels")
+    channels = 3
 
     CCV_TENSOR_CPU_MEMORY = 0x1
     CCV_TENSOR_FORMAT_NHWC = 0x02
     CCV_16F = 0x20000
-    channels = 3
     dimensions = [1, height, width, channels]
     dimensions = (ctypes.c_int * len(dimensions))(*dimensions)
 
@@ -119,11 +114,11 @@ def convert_image_for_request(img: torch.Tensor):
     header.datatype = CCV_16F
     header.dim = dimensions
 
-    print(f"{header.datatype}")
     data = img.to(torch.float16)
 
     # Encode the image as base64
-    encoded_string = base64.b64encode(pickle.dumps(header) + tf.io.serialize_tensor(data))
+    encoded_string = base64.b64encode(tf.io.serialize_tensor(data))
+    # encoded_string = base64.b64encode(pickle.dumps(header) + pickle.dumps(data))
     return encoded_string
 
 def get_files(server, port):
