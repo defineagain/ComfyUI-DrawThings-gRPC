@@ -60,7 +60,6 @@ def image_to_base64(image_tensor: torch.Tensor):
         return encoded_string
     return None
 
-def convert_response_image(response_image: np.ndarray):
 def convert_response_image(response_image: bytes):
     int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
     height, width, channels = int_buffer[6:9]
