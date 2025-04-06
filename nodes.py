@@ -6,7 +6,6 @@ import base64
 import numpy as np
 from PIL import Image, ImageOps
 import io
-from io import BytesIO
 import torch
 import torchvision
 import tensorflow as tf
@@ -53,8 +52,8 @@ def image_to_base64(image_tensor: torch.Tensor):
         transform = torchvision.transforms.ToPILImage()
         img = transform(image_tensor)
 
-        # Save the image to a BytesIO object (in memory) rather than to a file
-        buffered = BytesIO()
+        # Save the image to a io.BytesIO object (in memory) rather than to a file
+        buffered = io.BytesIO()
         img.save(buffered, format="PNG")
 
         # Encode the image as base64
@@ -91,16 +90,29 @@ class TensorParam(ctypes.Structure):
         ("dim", ctypes.c_int*4),
     ]
 
-def convert_image_for_request(img: torch.Tensor):
+def convert_image_for_request(image_tensor: torch.Tensor):
     # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
     # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
 
-    width = img.size(dim=2)
-    height = img.size(dim=1)
-    channels = img.size(dim=3)
+    width = image_tensor.size(dim=2)
+    height = image_tensor.size(dim=1)
+    channels = image_tensor.size(dim=3)
     channels = 3
+
+    image_tensor = image_tensor.to(torch.float16)
+
+    image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+    transform = torchvision.transforms.ToPILImage()
+    pil_image = transform(image_tensor)
+    # pil_image.show()
+
+    # Convert the PIL image to bytes
+    image_bytes = pil_image.tobytes()
+
+    # Encode the bytes to base64
+    base64_string = base64.b64encode(image_bytes)
 
     CCV_TENSOR_CPU_MEMORY = 0x1
     CCV_TENSOR_FORMAT_NHWC = 0x02
@@ -114,12 +126,10 @@ def convert_image_for_request(img: torch.Tensor):
     header.datatype = CCV_16F
     header.dim = dimensions
 
-    data = img.to(torch.float16)
-
     # Encode the image as base64
-    encoded_string = base64.b64encode(tf.io.serialize_tensor(data))
-    # encoded_string = base64.b64encode(pickle.dumps(header) + pickle.dumps(data))
-    return encoded_string
+    encoded_string = base64.b64encode(b"Doesn't work yet")
+    # encoded_string = b'F3IPAAEAAAACAAAAAAACAAAAAAABAAAAAAIAAAACAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmcHkphw7xEe0A/wAB/gAAAf4AAAAA/wATg+6PNRhgkgfOeAa5FlIskc0tbBoQ3dBDT7DvJpudBf7zcNHbf2hX353EOA=='
+    return encoded_string #+ base64_string
 
 def get_files(server, port):
     with grpc.insecure_channel(f"{server}:{port}") as channel:
@@ -420,7 +430,7 @@ class DrawThingsSampler:
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
-                "seed": ("INT", {"default": 0, "min": 0, "max": 0xfffffff, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
