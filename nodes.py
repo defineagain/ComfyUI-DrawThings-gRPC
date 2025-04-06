@@ -22,6 +22,7 @@ from . import LoRA
 from . import GenerationConfiguration
 import hashlib
 import json
+import pickle
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -33,10 +34,10 @@ import comfy.latent_formats as latent_formats
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
 
-def pil2tensor(image):
+def pil2tensor(image: Image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
-def prepare_callback(step, total_steps, preview_image):
+def prepare_callback(step, total_steps, preview_image: Image):
     pbar = comfy.utils.ProgressBar(step)
     def callback(step, total_steps):
         preview_bytes = None
@@ -80,8 +81,25 @@ def convert_response_image(response_image: bytes):
         'channels': channels,
     }
 
+# class TensorParam(ctypes.Structure):
+#     _fields_ = [
+#         ("type", ctypes.c_int),
+#         ("format", ctypes.c_int),
+#         ("datatype", ctypes.c_int),
+#         ("reserved", ctypes.c_int),
+#         ("dim", ctypes.c_array),
+#     ]
+
+class TensorParam:
+    def __init__(self, type, format, datatype, reserved, dim):
+        self.type = type
+        self.format = format
+        self.datatype = datatype
+        self.reserved = reserved
+        self.dim = dim
+
 def convert_image_for_request(img: torch.Tensor):
-    # C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
+    # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
     # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
@@ -95,10 +113,25 @@ def convert_image_for_request(img: torch.Tensor):
 
     print(f"Request image is {width}x{height} with {channels} channels")
 
+    CCV_TENSOR_CPU_MEMORY = 0x1
+    CCV_TENSOR_FORMAT_NHWC = 0x02
+    CCV_16F = 0x20000
+    channels = 3
+    dimensions = [1, height, width, channels]
+    # dimensions = (ctypes.c_int * len(dimensions))(*dimensions)
+
+    header = TensorParam(
+    type = CCV_TENSOR_CPU_MEMORY, 
+    format = CCV_TENSOR_FORMAT_NHWC, 
+    datatype = CCV_16F, 
+    reserved = None,
+    dim = dimensions, 
+    ) # ccv_nnc_tensor_param_t()
+    print(f"{header.datatype}")
     data = img.to(torch.float16)
 
     # Encode the image as base64
-    encoded_string = base64.b64encode(tf.io.serialize_tensor(data))
+    encoded_string = base64.b64encode(pickle.dumps(header) + tf.io.serialize_tensor(data))
     # encoded_string = base64.b64encode(data)
     return encoded_string
 
