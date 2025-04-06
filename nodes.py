@@ -61,6 +61,7 @@ def image_to_base64(image_tensor: torch.Tensor):
     return None
 
 def convert_response_image(response_image: np.ndarray):
+def convert_response_image(response_image: bytes):
     int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
     height, width, channels = int_buffer[6:9]
 
@@ -84,6 +85,7 @@ def convert_image_for_request(img: torch.Tensor):
     # C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
+    # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
 
     width = img.size(dim=2)
     height = img.size(dim=1)
@@ -292,9 +294,9 @@ async def dt_sampler(
                     channels = result['channels']
                     img = Image.frombytes('RGBA', (width, height), data)
 
-                    # x0 = torch.tensor(response.previewImage, dtype=torch.float16)
+                    x0 = torch.tensor(data, dtype=torch.float16)
 
-                    # latent_format = latent_formats.SD15
+                    latent_format = latent_formats.SD15
 
                     # img = latent_preview.Latent2RGBPreviewer(latent_format.latent_rgb_factors, latent_format.latent_rgb_factors_bias).decode_latent_to_preview(x0=preview_image)
                 prepare_callback(current_step, steps, img)
