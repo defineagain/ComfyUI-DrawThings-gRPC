@@ -113,6 +113,18 @@ def convert_image_for_request(image_tensor: torch.Tensor):
                 v = pixel[c] / 255 * 2 - 1
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
 
+    # # Just to check the image
+    # result = convert_response_image(image_bytes)
+    # data = result['data']
+    # width = result['width']
+    # height = result['height']
+    # channels = result['channels']
+    # mode = "RGB"
+    # if channels >= 4:
+    #     mode = "RGBA"
+    # img = Image.frombytes(mode, (width, height), data)
+    # img.show()
+
     return image_bytes
 
 def get_files(server, port):
