@@ -36,29 +36,34 @@ MAX_PREVIEW_RESOLUTION = args.preview_size
 def pil2tensor(image: Image):
     return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
 
-def prepare_callback(step, total_steps, preview_image: Image):
+def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
+    preview_format = "JPEG"
+    if preview_format not in ["JPEG", "PNG"]:
+        preview_format = "JPEG"
+
     pbar = comfy.utils.ProgressBar(step)
-    def callback(step, total_steps):
+    def callback(step, x0: torch.Tensor, total_steps, latent_format):
         preview_bytes = None
-        if preview_image is not None:
-            preview_bytes = ("PNG", preview_image, MAX_PREVIEW_RESOLUTION)
+        if x0 is not None:
+            previewer = latent_preview.get_previewer(x0.device, latent_format)
+            preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
         pbar.update_absolute(step, total_steps, preview_bytes)
-    return callback(step, total_steps)
+    return callback(step, x0, total_steps, latent_format)
 
-def image_to_base64(image_tensor: torch.Tensor):
-    if image_tensor is not None:
-        image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
-        transform = torchvision.transforms.ToPILImage()
-        img = transform(image_tensor)
+# def image_to_base64(image_tensor: torch.Tensor):
+#     if image_tensor is not None:
+#         image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+#         transform = torchvision.transforms.ToPILImage()
+#         img = transform(image_tensor)
 
-        # Save the image to a io.BytesIO object (in memory) rather than to a file
-        buffered = io.BytesIO()
-        img.save(buffered, format="PNG")
+#         # Save the image to a io.BytesIO object (in memory) rather than to a file
+#         buffered = io.BytesIO()
+#         img.save(buffered, format="PNG")
 
-        # Encode the image as base64
-        encoded_string = base64.b64encode(buffered.getvalue())
-        return encoded_string
-    return None
+#         # Encode the image as base64
+#         encoded_string = base64.b64encode(buffered.getvalue())
+#         return encoded_string
+#     return None
 
 def convert_response_image(response_image: bytes):
     int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
@@ -67,7 +72,7 @@ def convert_response_image(response_image: bytes):
     offset = 68
     length = width * height * channels * 2
 
-    print(f"Response image is {width}x{height} with {channels} channels")
+    print(f"Received image is {width}x{height} with {channels} channels")
     # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
@@ -126,6 +131,7 @@ async def dt_sampler(
                 server, 
                 port, 
                 model, 
+                type,
                 seed, 
                 steps, 
                 cfg, 
@@ -264,6 +270,10 @@ async def dt_sampler(
                 hnt.hintType = control_cfg["control_input_type"].lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
+    # hints.append({
+    #     'hintType': 'depth',
+    #     'tensors': [{'tensor': convert_image_for_request(control_net["control_nets"][0]["image"]), 'weight': 1}]
+    # })
 
     async with grpc.aio.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
@@ -300,14 +310,22 @@ async def dt_sampler(
                     width = result['width']
                     height = result['height']
                     channels = result['channels']
-                    img = Image.frombytes('RGBA', (width, height), data)
 
-                    x0 = torch.tensor(data, dtype=torch.float16)
+                    np_array = data.reshape(-1, channels, height, width)
+                    x0 = torch.from_numpy(np_array).to(torch.float32)
+                    print(f"{x0.shape}")
 
-                    latent_format = latent_formats.SD15
-
-                    # img = latent_preview.Latent2RGBPreviewer(latent_format.latent_rgb_factors, latent_format.latent_rgb_factors_bias).decode_latent_to_preview(x0=preview_image)
-                prepare_callback(current_step, steps, img)
+                    latent_format = None
+                    match type:
+                        case "SD1.5":
+                            latent_format = latent_formats.SD15(latent_formats.LatentFormat)
+                        case "SD3":
+                            latent_format = latent_formats.SD3(latent_formats.LatentFormat)
+                        case "SDXL":
+                            latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
+                        case "Flux":
+                            latent_format = latent_formats.Flux()
+                prepare_callback(current_step, steps, x0, latent_format)
 
             if generated_images:
                 images = []
@@ -389,6 +407,13 @@ class DrawThingsLists:
                 "Lowquality",
                 "Gray",
             ]
+    
+    modeltype_list = [
+                "SD1.5",
+                "SD3",
+                "SDXL",
+                "Flux",
+            ]
 
 class DrawThingsSampler:
     def __init__(self):
@@ -409,6 +434,7 @@ class DrawThingsSampler:
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "type": (DrawThingsLists.modeltype_list, {"default": "SD1.5", "tooltip": "The type of model."}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
@@ -443,6 +469,7 @@ class DrawThingsSampler:
                 server, 
                 port, 
                 model, 
+                type,
                 seed, 
                 steps, 
                 cfg, 
@@ -463,6 +490,7 @@ class DrawThingsSampler:
                 server, 
                 port, 
                 model, 
+                type,
                 seed, 
                 steps, 
                 cfg, 
