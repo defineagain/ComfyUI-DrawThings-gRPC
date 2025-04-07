@@ -256,20 +256,15 @@ async def dt_sampler(
     if control_net is not None:
         for control_cfg in control_net["control_nets"]:
             control_image = control_cfg["image"]
-            tensor_and_weight = []
             if control_image is not None:
-                tensor_and_weight.append(
-                    imageService_pb2.TensorAndWeight(
-                        tensor = convert_image_for_request(control_image),
-                        weight = control_cfg["control_weight"]
-                    )
-                )
-                hints.append(
-                    imageService_pb2.HintProto(
-                        hintType = control_cfg["control_input_type"].lower(),
-                        tensors = tensor_and_weight
-                    )
-                )
+                taw = imageService_pb2.TensorAndWeight()
+                taw.tensor = convert_image_for_request(control_image)
+                taw.weight = control_cfg["control_weight"]
+
+                hnt = imageService_pb2.HintProto()
+                hnt.hintType = control_cfg["control_input_type"].lower()
+                hnt.tensors.append(taw)
+                hints.append(hnt)
 
     async with grpc.aio.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
