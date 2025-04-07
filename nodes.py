@@ -131,7 +131,7 @@ async def dt_sampler(
                 server, 
                 port, 
                 model, 
-                type,
+                preview_type,
                 seed, 
                 steps, 
                 cfg, 
@@ -316,7 +316,7 @@ async def dt_sampler(
                     print(f"{x0.shape}")
 
                     latent_format = None
-                    match type:
+                    match preview_type:
                         case "SD1.5":
                             latent_format = latent_formats.SD15(latent_formats.LatentFormat)
                         case "SD3":
@@ -428,13 +428,13 @@ class DrawThingsSampler:
                 if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
             ]
             return filtered_files
-        
+
         return {
             "required": {
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
-                "type": (DrawThingsLists.modeltype_list, {"default": "SD1.5", "tooltip": "The type of model."}),
+                "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
@@ -469,7 +469,7 @@ class DrawThingsSampler:
                 server, 
                 port, 
                 model, 
-                type,
+                preview_type,
                 seed, 
                 steps, 
                 cfg, 
@@ -490,7 +490,7 @@ class DrawThingsSampler:
                 server, 
                 port, 
                 model, 
-                type,
+                preview_type,
                 seed, 
                 steps, 
                 cfg, 
