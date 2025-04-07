@@ -81,10 +81,10 @@ def convert_response_image(response_image: bytes):
     }
 
 def convert_image_for_request(image_tensor: torch.Tensor):
-    # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
+# Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
-    # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
-    # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
+# ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
+# A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
 
     width = image_tensor.size(dim=2)
     height = image_tensor.size(dim=1)
@@ -135,7 +135,7 @@ async def dt_sampler(
                 negative, 
                 width, 
                 height, 
-                batch_count, 
+                batch_count=1, 
                 scale_factor=1,
                 image=None, 
                 mask=None,
@@ -237,6 +237,7 @@ async def dt_sampler(
     if mask is not None:
         maskimg = convert_image_for_request(mask)
 
+    override = imageService_pb2.MetadataOverride()
     # models_override = [{
     #     "default_scale": 8,
     #     "file": "sd_v1.5_f16.ckpt",
@@ -244,13 +245,11 @@ async def dt_sampler(
     #     "prefix": "",
     #     "upcast_attention": False,
     #     "version": "v1"}]
-    # override = imageService_pb2.MetadataOverride(
-    #     models = bytes(f"{models_override}", encoding='utf-8'),
-    #     loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]',
-    #     controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]',
-    #     textualInversions = b"[]",
-    #     upscalers = b"[]"
-    # )
+    # override.models = bytes(f"{models_override}", encoding='utf-8')
+    # override.loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]'
+    # override.controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]'
+    # override.textualInversions = b"[]"
+    # override.upscalers = b"[]"
 
     hints = []
     if control_net is not None:
@@ -276,10 +275,10 @@ async def dt_sampler(
             prompt = positive,                    # Optional prompt string
             negativePrompt = negative,            # Optional negative prompt string
             configuration = bytes(configuration), # Configuration data as bytes (FlatBuffer)
-            # override = override,                  # Override the existing metadata on various Zoo objects.
+            override = override,                  # Override the existing metadata on various Zoo objects.
             user = "ComfyUI",                     # The name of the client.
             device = "LAPTOP",                    # The type of the device uses.
-            # contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
+            contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
         ))
         while True:
             response = await generate_stream.read()
@@ -294,6 +293,8 @@ async def dt_sampler(
             if current_step:
                 img = None
                 if preview_image:
+# ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
+# A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
                     result = convert_response_image(preview_image)
                     data = result['data']
                     width = result['width']
@@ -368,7 +369,7 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
-                "Unspecified",
+                # "Unspecified",
                 "Custom",
                 "Depth",
                 "Canny",
@@ -415,10 +416,10 @@ class DrawThingsSampler:
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step":0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
-                "batch_count": ("INT", {"default": 1, "min": 1, "max": 4096}),
             },
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "batch_count": ("INT", {"default": 1, "min": 1, "max": 4096}),
             },
             "optional": {
                 "positive": ("STRING", {
@@ -451,16 +452,13 @@ class DrawThingsSampler:
                 negative, 
                 width, 
                 height, 
-                batch_count, 
+                batch_count=1, 
                 scale_factor=1,
                 image=None, 
                 mask=None,
                 control_net=None,
                 lora=None
                 ):
-        DrawThingsLists.dtserver = server
-        DrawThingsLists.dtport = port
-        DrawThingsLists.files_list = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
         return asyncio.run(dt_sampler(
                 server, 
                 port, 
