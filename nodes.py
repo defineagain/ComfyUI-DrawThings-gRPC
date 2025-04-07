@@ -21,8 +21,7 @@ from . import LoRA
 from . import GenerationConfiguration
 import hashlib
 import json
-import ctypes
-import pickle
+import struct
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -81,15 +80,6 @@ def convert_response_image(response_image: bytes):
         'channels': channels,
     }
 
-class TensorParam(ctypes.Structure):
-    _fields_ = [
-        ("type", ctypes.c_int),
-        ("format", ctypes.c_int),
-        ("datatype", ctypes.c_int),
-        ("reserved", ctypes.c_int),
-        ("dim", ctypes.c_int*4),
-    ]
-
 def convert_image_for_request(image_tensor: torch.Tensor):
     # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
@@ -106,30 +96,24 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(image_tensor)
-    # pil_image.show()
-
-    # Convert the PIL image to bytes
-    image_bytes = pil_image.tobytes()
-
-    # Encode the bytes to base64
-    base64_string = base64.b64encode(image_bytes)
 
     CCV_TENSOR_CPU_MEMORY = 0x1
     CCV_TENSOR_FORMAT_NHWC = 0x02
     CCV_16F = 0x20000
     dimensions = [1, height, width, channels]
-    dimensions = (ctypes.c_int * len(dimensions))(*dimensions)
 
-    header = TensorParam() # ccv_nnc_tensor_param_t()
-    header.type = CCV_TENSOR_CPU_MEMORY
-    header.format = CCV_TENSOR_FORMAT_NHWC
-    header.datatype = CCV_16F
-    header.dim = dimensions
+    image_bytes = bytearray(68 + width * height * 3 * 2)
+    struct.pack_into("<9I", image_bytes, 0, 0, 1, 2, 131072, 0, 1, height, width, 3)
 
-    # Encode the image as base64
-    encoded_string = base64.b64encode(b"Doesn't work yet")
-    # encoded_string = b'F3IPAAEAAAACAAAAAAACAAAAAAABAAAAAAIAAAACAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmcHkphw7xEe0A/wAB/gAAAf4AAAAA/wATg+6PNRhgkgfOeAa5FlIskc0tbBoQ3dBDT7DvJpudBf7zcNHbf2hX353EOA=='
-    return encoded_string #+ base64_string
+    for y in range(height):
+        for x in range(width):
+            pixel = pil_image.getpixel((x, y))
+            offset = 68 + (y * width + x) * 6
+            for c in range(3):
+                v = pixel[c] / 255 * 2 - 1
+                struct.pack_into("<e", image_bytes, offset + c * 2, v)
+
+    return image_bytes
 
 def get_files(server, port):
     with grpc.insecure_channel(f"{server}:{port}") as channel:
