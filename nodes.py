@@ -41,14 +41,17 @@ def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
     if preview_format not in ["JPEG", "PNG"]:
         preview_format = "JPEG"
 
+    if x0 is not None:
+        previewer = latent_preview.get_previewer(x0.device, latent_format)
+
     pbar = comfy.utils.ProgressBar(step)
-    def callback(step, x0: torch.Tensor, total_steps, latent_format):
+    def callback(step, x0: torch.Tensor, total_steps):
+
         preview_bytes = None
-        if x0 is not None:
-            previewer = latent_preview.get_previewer(x0.device, latent_format)
+        if previewer:
             preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
-        pbar.update_absolute(step, total_steps, preview_bytes)
-    return callback(step, x0, total_steps, latent_format)
+        pbar.update_absolute(step + 1, total_steps, preview_bytes)
+    return callback(step, x0, total_steps)
 
 # def image_to_base64(image_tensor: torch.Tensor):
 #     if image_tensor is not None:
