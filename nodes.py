@@ -88,7 +88,7 @@ def convert_image_for_request(image_tensor: torch.Tensor):
 
     width = image_tensor.size(dim=2)
     height = image_tensor.size(dim=1)
-    channels = image_tensor.size(dim=3)
+    # channels = image_tensor.size(dim=3)
     channels = 3
 
     image_tensor = image_tensor.to(torch.float16)
@@ -100,10 +100,9 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     CCV_TENSOR_CPU_MEMORY = 0x1
     CCV_TENSOR_FORMAT_NHWC = 0x02
     CCV_16F = 0x20000
-    dimensions = [1, height, width, channels]
 
     image_bytes = bytearray(68 + width * height * 3 * 2)
-    struct.pack_into("<9I", image_bytes, 0, 0, 1, 2, 131072, 0, 1, height, width, 3)
+    struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NHWC, CCV_16F, 0, 1, height, width, channels)
 
     for y in range(height):
         for x in range(width):
@@ -113,19 +112,7 @@ def convert_image_for_request(image_tensor: torch.Tensor):
                 v = pixel[c] / 255 * 2 - 1
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
 
-    # # Just to check the image
-    # result = convert_response_image(image_bytes)
-    # data = result['data']
-    # width = result['width']
-    # height = result['height']
-    # channels = result['channels']
-    # mode = "RGB"
-    # if channels >= 4:
-    #     mode = "RGBA"
-    # img = Image.frombytes(mode, (width, height), data)
-    # img.show()
-
-    return image_bytes
+    return bytes(image_bytes)
 
 def get_files(server, port):
     with grpc.insecure_channel(f"{server}:{port}") as channel:
@@ -245,9 +232,9 @@ async def dt_sampler(
     img2img = None
     maskimg = None
     if image is not None:
-        img2img = bytes(convert_image_for_request(image))
+        img2img = convert_image_for_request(image)
     if mask is not None:
-        maskimg = bytes(convert_image_for_request(mask))
+        maskimg = convert_image_for_request(mask)
 
     models_override = [{
         "default_scale": 8,
@@ -271,7 +258,7 @@ async def dt_sampler(
             if image is not None:
                 tensor_and_weight.append(
                     imageService_pb2.TensorAndWeight(
-                        tensor = bytes(convert_image_for_request(image)),
+                        tensor = convert_image_for_request(image),
                         weight = control_cfg["control_weight"]
                     )
                 )
