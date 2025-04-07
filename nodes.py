@@ -177,6 +177,7 @@ async def dt_sampler(
             Control.AddNoPrompt(builder, False)
             Control.AddGlobalAveragePooling(builder, False)
             Control.AddDownSamplingRate(builder, 0)
+            Control.AddTargetBlocks(builder, 0)
             fin_control = Control.End(builder)
             fin_controls.append(fin_control)
 
@@ -236,39 +237,39 @@ async def dt_sampler(
     if mask is not None:
         maskimg = convert_image_for_request(mask)
 
-    models_override = [{
-        "default_scale": 8,
-        "file": "sd_v1.5_f16.ckpt",
-        "name": "Generic (Stable Diffusion v1.5)",
-        "prefix": "",
-        "upcast_attention": False,
-        "version": "v1"}]
-    override = imageService_pb2.MetadataOverride(
-        models = bytes(f"{models_override}", encoding='utf-8'),
-        loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]',
-        controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]',
-        textualInversions = b"[]",
-        upscalers = b"[]"
-    )
+    # models_override = [{
+    #     "default_scale": 8,
+    #     "file": "sd_v1.5_f16.ckpt",
+    #     "name": "Generic (Stable Diffusion v1.5)",
+    #     "prefix": "",
+    #     "upcast_attention": False,
+    #     "version": "v1"}]
+    # override = imageService_pb2.MetadataOverride(
+    #     models = bytes(f"{models_override}", encoding='utf-8'),
+    #     loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]',
+    #     controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]',
+    #     textualInversions = b"[]",
+    #     upscalers = b"[]"
+    # )
 
-    tensor_and_weight = []
+    hints = []
     if control_net is not None:
         for control_cfg in control_net["control_nets"]:
-            image = control_cfg["image"]
-            if image is not None:
+            control_image = control_cfg["image"]
+            tensor_and_weight = []
+            if control_image is not None:
                 tensor_and_weight.append(
                     imageService_pb2.TensorAndWeight(
-                        tensor = convert_image_for_request(image),
+                        tensor = convert_image_for_request(control_image),
                         weight = control_cfg["control_weight"]
                     )
                 )
-
-    hints = [
-        imageService_pb2.HintProto(
-            hintType = "depth",
-            tensors = tensor_and_weight
-        )
-    ]
+                hints.append(
+                    imageService_pb2.HintProto(
+                        hintType = control_cfg["control_input_type"].lower(),
+                        tensors = tensor_and_weight
+                    )
+                )
 
     async with grpc.aio.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
