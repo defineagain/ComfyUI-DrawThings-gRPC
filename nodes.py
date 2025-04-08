@@ -44,7 +44,7 @@ ControlNetInfo = TypedDict('ControlNetInfo', {
     'file': str,
     'name': str,
     'version': str,
-    'modifer': str,
+    'modifier': str,
     'type': str
 })
 LoRAInfo = TypedDict('LoRAInfo', {
