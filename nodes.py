@@ -153,44 +153,48 @@ async def dt_sampler(
     builder = flatbuffers.Builder(0)
 
     loras = None
+    loras_prefix = []
     if lora is not None:
         fin_loras = []
         for lora_cfg in lora["loras"]:
-            lora_name = builder.CreateString(lora_cfg["lora_name"])
-            LoRA.Start(builder)
-            LoRA.AddFile(builder, lora_name)
-            LoRA.AddWeight(builder, lora_cfg["lora_weight"])
-            fin_lora = LoRA.End(builder)
-            fin_loras.append(fin_lora)
+            if lora_cfg["prefix"] not in loras_prefix:
+                loras_prefix.append(lora_cfg["prefix"])
+                lora_name = builder.CreateString(lora_cfg["lora_name"])
+                LoRA.Start(builder)
+                LoRA.AddFile(builder, lora_name)
+                LoRA.AddWeight(builder, lora_cfg["lora_weight"])
+                fin_lora = LoRA.End(builder)
+                fin_loras.append(fin_lora)
 
         GenerationConfiguration.StartLorasVector(builder, len(lora["loras"]))
         for i, lora_cfg in enumerate(lora["loras"]):
-            print(f"{i+1} loras loaded")
             builder.PrependUOffsetTRelative(fin_loras[i])
         loras = builder.EndVector()
 
     controls = None
+    controls_prefix = []
     if control_net is not None:
         fin_controls = []
         for control_cfg in control_net["control_nets"]:
-            control_name = builder.CreateString(control_cfg["control_name"])
-            Control.Start(builder)
-            Control.AddFile(builder, control_name)
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(control_cfg["control_input_type"]))
-            Control.AddControlMode(builder, DrawThingsLists.control_mode.index(control_cfg["control_mode"]))
-            Control.AddWeight(builder, control_cfg["control_weight"])
-            Control.AddGuidanceStart(builder, control_cfg["control_start"])
-            Control.AddGuidanceEnd(builder, control_cfg["control_end"])
-            Control.AddNoPrompt(builder, False)
-            Control.AddGlobalAveragePooling(builder, False)
-            Control.AddDownSamplingRate(builder, 0)
-            Control.AddTargetBlocks(builder, 0)
-            fin_control = Control.End(builder)
-            fin_controls.append(fin_control)
+            if control_cfg["prefix"] not in controls_prefix:
+                controls_prefix.append(control_cfg["prefix"])
+                control_name = builder.CreateString(control_cfg["control_name"])
+                Control.Start(builder)
+                Control.AddFile(builder, control_name)
+                Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(control_cfg["control_input_type"]))
+                Control.AddControlMode(builder, DrawThingsLists.control_mode.index(control_cfg["control_mode"]))
+                Control.AddWeight(builder, control_cfg["control_weight"])
+                Control.AddGuidanceStart(builder, control_cfg["control_start"])
+                Control.AddGuidanceEnd(builder, control_cfg["control_end"])
+                Control.AddNoPrompt(builder, False)
+                Control.AddGlobalAveragePooling(builder, False)
+                Control.AddDownSamplingRate(builder, 0)
+                Control.AddTargetBlocks(builder, 0)
+                fin_control = Control.End(builder)
+                fin_controls.append(fin_control)
 
         GenerationConfiguration.StartControlsVector(builder, len(control_net["control_nets"]))
         for i, control_cfg in enumerate(control_net["control_nets"]):
-            print(f"{i+1} controlnets loaded")
             builder.PrependUOffsetTRelative(fin_controls[i])
         controls = builder.EndVector()
 
@@ -409,7 +413,7 @@ class DrawThingsLists:
                 "Lowquality",
                 "Gray",
             ]
-    
+
     modeltype_list = [
                 "SD1.5",
                 "SD3",
@@ -551,7 +555,7 @@ class DrawThingsControlNet:
                 "control_end": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01}),
             },
             "optional": {
-                "control_net": ("dict", ),
+                "control_net": ("dict", {"forceInput": True}),
                 "image": ("IMAGE", ),
             }
         }
@@ -563,12 +567,14 @@ class DrawThingsControlNet:
 
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
         graph = GraphBuilder()
+        this_node = GraphBuilder.alloc_prefix()
         # Check if 'control_nets' exists in the pipeline
-        # if "control_nets" not in control_net:
+        if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
-        control_net["control_nets"] = []
+            control_net["control_nets"] = []
         # Append the new entry as a dictionary to the list
         control_net["control_nets"].append({
+            "prefix": this_node,
             "control_name": control_name,
             "control_input_type": control_input_type,
             "control_mode": control_mode,
@@ -611,7 +617,7 @@ class DrawThingsLoRA:
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
-                "lora": ("dict", ),
+                "lora": ("dict", {"forceInput": True}),
             }
         }
 
@@ -623,13 +629,12 @@ class DrawThingsLoRA:
 
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
         graph = GraphBuilder()
-        # Check if 'loras' exists in the pipeline
-        # if "loras" not in lora:
+        this_node = GraphBuilder.alloc_prefix()
+        if "loras" not in lora:
             # Create 'loras' as an empty list
-        lora["loras"] = []
+            lora["loras"] = []
         # Append the new entry as a dictionary to the list
-        lora["loras"].append({"lora_name": lora_name, "lora_weight": lora_weight})
-        # print(f"lora: {lora}")
+        lora["loras"].append({"prefix": this_node, "lora_name": lora_name, "lora_weight": lora_weight})
         return {
             "result": (lora,),
             "expand": graph.finalize(),
