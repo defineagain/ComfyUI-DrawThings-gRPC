@@ -56,21 +56,6 @@ def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
         pbar.update_absolute(step + 1, total_steps, preview_bytes)
     return callback(step, x0, total_steps)
 
-# def image_to_base64(image_tensor: torch.Tensor):
-#     if image_tensor is not None:
-#         image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
-#         transform = torchvision.transforms.ToPILImage()
-#         img = transform(image_tensor)
-
-#         # Save the image to a io.BytesIO object (in memory) rather than to a file
-#         buffered = io.BytesIO()
-#         img.save(buffered, format="PNG")
-
-#         # Encode the image as base64
-#         encoded_string = base64.b64encode(buffered.getvalue())
-#         return encoded_string
-#     return None
-
 def convert_response_image(response_image: bytes):
     int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
     height, width, channels = int_buffer[6:9]
@@ -91,7 +76,7 @@ def convert_response_image(response_image: bytes):
         'channels': channels,
     }
 
-def convert_image_for_request(image_tensor: torch.Tensor):
+def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
 # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
 # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
@@ -108,6 +93,13 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(image_tensor)
 
+    match control_type:
+        case "depth" | "canny":
+            transform = torchvision.transforms.Grayscale(num_output_channels=1)
+            pil_image = transform(pil_image)
+            print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
+            channels = 1
+
     CCV_TENSOR_CPU_MEMORY = 0x1
     CCV_TENSOR_FORMAT_NHWC = 0x02
     CCV_16F = 0x20000
@@ -118,9 +110,12 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     for y in range(height):
         for x in range(width):
             pixel = pil_image.getpixel((x, y))
-            offset = 68 + (y * width + x) * 6
-            for c in range(3):
-                v = pixel[c] / 255 * 2 - 1
+            offset = 68 + (y * width + x) * (channels * 2)
+            for c in range(channels):
+                if channels == 1:
+                    v = pixel / 255 * 2 - 1
+                else:
+                    v = pixel[c] / 255 * 2 - 1
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
 
     return bytes(image_bytes)
@@ -269,7 +264,7 @@ async def dt_sampler(
             control_image = control_cfg["image"]
             if control_image is not None:
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(control_image)
+                taw.tensor = convert_image_for_request(control_image, control_cfg["control_input_type"].lower())
                 taw.weight = control_cfg["control_weight"]
 
                 hnt = imageService_pb2.HintProto()
