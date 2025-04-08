@@ -189,7 +189,6 @@ async def dt_sampler(
     builder = flatbuffers.Builder(0)
 
     loras_out = None
-
     if lora is not None and len(lora):
         fin_loras = []
         for l in lora:
@@ -206,32 +205,29 @@ async def dt_sampler(
             builder.PrependUOffsetTRelative(fl)
         loras_out = builder.EndVector()
 
-    controls = None
-    controls_prefix = []
-    if control_net is not None:
+    controls_out = None
+    if control_net is not None and len(control_net):
         fin_controls = []
-        for control_cfg in control_net["control_nets"]:
-            if control_cfg["prefix"] not in controls_prefix:
-                controls_prefix.append(control_cfg["prefix"])
-                control_name = builder.CreateString(control_cfg["control_name"])
-                Control.Start(builder)
-                Control.AddFile(builder, control_name)
-                Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(control_cfg["control_input_type"]))
-                Control.AddControlMode(builder, DrawThingsLists.control_mode.index(control_cfg["control_mode"]))
-                Control.AddWeight(builder, control_cfg["control_weight"])
-                Control.AddGuidanceStart(builder, control_cfg["control_start"])
-                Control.AddGuidanceEnd(builder, control_cfg["control_end"])
-                Control.AddNoPrompt(builder, False)
-                Control.AddGlobalAveragePooling(builder, False)
-                Control.AddDownSamplingRate(builder, 0)
-                Control.AddTargetBlocks(builder, 0)
-                fin_control = Control.End(builder)
-                fin_controls.append(fin_control)
+        for c in control_net:
+            control_name = builder.CreateString(c["file"])
+            Control.Start(builder)
+            Control.AddFile(builder, control_name)
+            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
+            Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
+            Control.AddWeight(builder, c["weight"])
+            Control.AddGuidanceStart(builder, c["start"])
+            Control.AddGuidanceEnd(builder, c["end"])
+            Control.AddNoPrompt(builder, False)
+            Control.AddGlobalAveragePooling(builder, False)
+            Control.AddDownSamplingRate(builder, 0)
+            Control.AddTargetBlocks(builder, 0)
+            fin_control = Control.End(builder)
+            fin_controls.append(fin_control)
 
-        GenerationConfiguration.StartControlsVector(builder, len(control_net["control_nets"]))
-        for i, control_cfg in enumerate(control_net["control_nets"]):
-            builder.PrependUOffsetTRelative(fin_controls[i])
-        controls = builder.EndVector()
+        GenerationConfiguration.StartControlsVector(builder, len(fin_controls))
+        for fc in fin_controls:
+            builder.PrependUOffsetTRelative(fc)
+        controls_out = builder.EndVector()
 
     start_width = width // 64 // scale_factor
     start_height = height // 64 // scale_factor
@@ -267,8 +263,8 @@ async def dt_sampler(
     GenerationConfiguration.AddTiledDiffusion(builder, False)
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
-    if controls is not None:
-        GenerationConfiguration.AddControls(builder, controls)
+    if controls_out is not None:
+        GenerationConfiguration.AddControls(builder, controls_out)
     if loras_out is not None:
         GenerationConfiguration.AddLoras(builder, loras_out)
     builder.Finish(GenerationConfiguration.End(builder))
@@ -299,15 +295,15 @@ async def dt_sampler(
 
     hints = []
     if control_net is not None:
-        for control_cfg in control_net["control_nets"]:
+        for control_cfg in control_net:
             control_image = control_cfg["image"]
             if control_image is not None:
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(control_image, control_cfg["control_input_type"].lower())
-                taw.weight = control_cfg["control_weight"]
+                taw.tensor = convert_image_for_request(control_image, control_cfg["input_type"].lower())
+                taw.weight = control_cfg["weight"]
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = control_cfg["control_input_type"].lower()
+                hnt.hintType = control_cfg["input_type"].lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
@@ -509,7 +505,7 @@ class DrawThingsSampler:
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
                 "lora": ("DT_LORA", ),
-                "control_net": ("dict", ),
+                "control_net": ("DT_CNET", ),
             }
         }
 
@@ -553,15 +549,13 @@ class DrawThingsSampler:
         all_files = get_files(server, port)
         model_file = next((m['file'] for m in all_files["models"] if m['name'] == model), None)
 
-        # def get_lora_file(lora_item):
-        #     lora_file = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['lora_name']), None)
-        #     return { 'lora_name': lora_file, 'lora_weight': lora_item['lora_weight'], 'prefix': lora_item['prefix'] }
+        if lora is not None:
+            for lora_item in lora:
+                lora_item['file'] = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['name']), None)
 
-        # lora_with_names = lora['loras'] if lora else []
-        # lora_with_files = [get_lora_file(lora_item) for lora_item in lora_with_names]
-
-        for lora_item in lora:
-            lora_item['file'] = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['name']), None)
+        if control_net is not None:
+            for cnet in control_net:
+                cnet['file'] = next((m['file'] for m in all_files['controlNets'] if m['name'] == cnet['name']), None)
 
         return asyncio.run(dt_sampler(
                 server,
@@ -667,38 +661,33 @@ class DrawThingsControlNet:
                 "control_end": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01}),
             },
             "optional": {
-                "control_net": ("dict", {"forceInput": True}),
+                "control_net": ("DT_CNET",),
                 "image": ("IMAGE", ),
             }
         }
 
-    RETURN_TYPES = ("dict",)
-    RETURN_NAMES = ("CONTROL_NET",)
+    RETURN_TYPES = ("DT_CNET",)
+    RETURN_NAMES = ("control_net",)
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
-        graph = GraphBuilder()
-        this_node = graph.alloc_prefix()
-        # Check if 'control_nets' exists in the pipeline
-        if "control_nets" not in control_net:
-            # Create 'control_nets' as an empty list
-            control_net["control_nets"] = []
-        # Append the new entry as a dictionary to the list
-        control_net["control_nets"].append({
-            "prefix": this_node,
-            "control_name": control_name,
-            "control_input_type": control_input_type,
-            "control_mode": control_mode,
-            "control_weight": control_weight,
-            "control_start": control_start,
-            "control_end": control_end,
+    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net=None, image=None):
+        cnet_list = list()
+
+        if control_net is not None:
+            cnet_list.extend(control_net)
+
+        cnet_list.append({
+            "name": control_name,
+            "input_type": control_input_type,
+            "mode": control_mode,
+            "weight": control_weight,
+            "start": control_start,
+            "end": control_end,
             "image": image
         })
-        return {
-            "result": (control_net,),
-            "expand": graph.finalize(),
-        }
+
+        return (cnet_list,)
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
