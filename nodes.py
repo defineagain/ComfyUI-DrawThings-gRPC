@@ -560,6 +560,48 @@ class DrawThingsSampler:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
+class DrawThingsPositive:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "positive": ("STRING", {
+                    "multiline": True, "default": "a lovely cat", "tooltip": "The conditioning describing the attributes you want to include in the image."}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("positive",)
+    FUNCTION = "prompt"
+    CATEGORY = "DrawThings"
+
+    def prompt(self, positive):
+        return (positive,)
+
+class DrawThingsNegative:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "negative": ("STRING", {
+                    "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("negative",)
+    FUNCTION = "prompt"
+    CATEGORY = "DrawThings"
+
+    def prompt(self, negative):
+        return (negative,)
+
 class DrawThingsControlNet:
     def __init__(self):
         pass
@@ -687,6 +729,8 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsSampler": DrawThingsSampler,
     "DrawThingsControlNet": DrawThingsControlNet,
     "DrawThingsLoRA": DrawThingsLoRA,
+    "DrawThingsPositive": DrawThingsPositive,
+    "DrawThingsNegative": DrawThingsNegative,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -694,4 +738,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsSampler": "Draw Things Sampler",
     "DrawThingsControlNet": "Draw Things ControlNet",
     "DrawThingsLoRA": "Draw Things LoRA",
+    "DrawThingsPositive": "Draw Things Positive Prompt",
+    "DrawThingsNegative": "Draw Things Negative Prompt",
 }
