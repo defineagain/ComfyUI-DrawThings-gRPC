@@ -424,11 +424,16 @@ class DrawThingsSampler:
     @classmethod
     def INPUT_TYPES(s):
         def get_filtered_files():
-            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            filtered_files = [
-                f for f in all_files
-                if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
-            ]
+            filtered_files = ["Press R to (re)load this list"]
+            try:
+                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            except:
+                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            else:
+                filtered_files = [
+                    f for f in all_files
+                    if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
+                ]
             return filtered_files
 
         return {
@@ -524,10 +529,15 @@ class DrawThingsControlNet:
     @classmethod
     def INPUT_TYPES(s):
         def get_filtered_files():
-            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            filtered_files = [
-                f for f in all_files
-                if not any(exclude in f for exclude in ["lora", "vae"])
+            filtered_files = ["Press R to (re)load this list"]
+            try:
+                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            except:
+                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            else:
+                filtered_files = [
+                    f for f in all_files
+                    if not any(exclude in f for exclude in ["lora", "vae"])
             ]
             return filtered_files
         
@@ -586,9 +596,14 @@ class DrawThingsLoRA:
     @classmethod
     def INPUT_TYPES(s):
         def get_lora_files():
-            all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            lora_files = [f for f in all_files if "lora" in f]
-            return lora_files
+            filtered_files = ["Press R to (re)load this list"]
+            try:
+                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            except:
+                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            else:
+                filtered_files = [f for f in all_files if "lora" in f]
+            return filtered_files
         
         return {
             "required": {
