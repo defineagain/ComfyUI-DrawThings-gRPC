@@ -26,9 +26,12 @@ import struct
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
 import comfy.utils
-from comfy.cli_args import args
+from comfy.cli_args import args, LatentPreviewMethod
+from comfy.taesd.taesd import TAESD
 import latent_preview
 import comfy.latent_formats as latent_formats
+import comfy_execution.graph_utils as graph_utils
+from comfy_execution.graph_utils import GraphBuilder
 
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
@@ -96,8 +99,10 @@ def convert_image_for_request(image_tensor: torch.Tensor):
 
     width = image_tensor.size(dim=2)
     height = image_tensor.size(dim=1)
-    # channels = image_tensor.size(dim=3)
+    channels = image_tensor.size(dim=3)
+    print(f"Request image tensor is {width}x{height} with {channels} channels")
     channels = 3
+    mode = ""
 
     image_tensor = image_tensor.to(torch.float16)
 
@@ -109,7 +114,7 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     CCV_TENSOR_FORMAT_NHWC = 0x02
     CCV_16F = 0x20000
 
-    image_bytes = bytearray(68 + width * height * 3 * 2)
+    image_bytes = bytearray(68 + width * height * channels * 2)
     struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NHWC, CCV_16F, 0, 1, height, width, channels)
 
     for y in range(height):
@@ -278,7 +283,7 @@ async def dt_sampler(
     #     'tensors': [{'tensor': convert_image_for_request(control_net["control_nets"][0]["image"]), 'weight': 1}]
     # })
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
-    
+
     async with grpc.aio.insecure_channel(f"{server}:{port}", options) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
@@ -554,6 +559,7 @@ class DrawThingsControlNet:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
+        graph = GraphBuilder()
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
@@ -568,7 +574,10 @@ class DrawThingsControlNet:
             "control_end": control_end,
             "image": image
         })
-        return (control_net,)
+        return {
+            "result": (control_net,),
+            "expand": graph.finalize(),
+        }
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
@@ -605,6 +614,7 @@ class DrawThingsLoRA:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
+        graph = GraphBuilder()
         # Check if 'loras' exists in the pipeline
         if "loras" not in lora:
             # Create 'loras' as an empty list
@@ -612,7 +622,10 @@ class DrawThingsLoRA:
         # Append the new entry as a dictionary to the list
         lora["loras"].append({"lora_name": lora_name, "lora_weight": lora_weight})
         # print(f"lora: {lora}")
-        return (lora,)
+        return {
+            "result": (lora,),
+            "expand": graph.finalize(),
+        }
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
