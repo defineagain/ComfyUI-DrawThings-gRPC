@@ -63,7 +63,7 @@ def convert_response_image(response_image: bytes):
     offset = 68
     length = width * height * channels * 2
 
-    print(f"Received image is {width}x{height} with {channels} channels")
+    # print(f"Received image is {width}x{height} with {channels} channels")
     # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
     f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
@@ -85,7 +85,7 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
     width = image_tensor.size(dim=2)
     height = image_tensor.size(dim=1)
     channels = image_tensor.size(dim=3)
-    print(f"Request image tensor is {width}x{height} with {channels} channels")
+    # print(f"Request image tensor is {width}x{height} with {channels} channels")
 
     image_tensor = image_tensor.to(torch.float16)
 
@@ -97,7 +97,7 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
         case "depth" | "canny":
             transform = torchvision.transforms.Grayscale(num_output_channels=1)
             pil_image = transform(pil_image)
-            print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
+            # print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
             channels = 1
 
     CCV_TENSOR_CPU_MEMORY = 0x1
@@ -300,7 +300,7 @@ async def dt_sampler(
             current_step = response.currentSignpost.sampling.step
             preview_image = response.previewImage
             generated_images = response.generatedImages
-            print(f"current_step: {current_step}")
+            # print(f"current_step: {current_step}")
 
             if current_step:
                 img = None
@@ -315,7 +315,7 @@ async def dt_sampler(
 
                     np_array = data.reshape(-1, channels, height, width)
                     x0 = torch.from_numpy(np_array).to(torch.float32)
-                    print(f"{x0.shape}")
+                    # print(f"{x0.shape}")
 
                     latent_format = None
                     match preview_type:
@@ -342,7 +342,7 @@ async def dt_sampler(
                     if channels >= 4:
                         mode = "RGBA"
                     img = Image.frombytes(mode, (width, height), data)
-                    print(f"size: {img.size}, mode: {img.mode}")
+                    # print(f"size: {img.size}, mode: {img.mode}")
                     image_np = np.array(img)
                     # Convert to float32 tensor and normalize
                     tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
@@ -564,9 +564,9 @@ class DrawThingsControlNet:
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
         graph = GraphBuilder()
         # Check if 'control_nets' exists in the pipeline
-        if "control_nets" not in control_net:
+        # if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
-            control_net["control_nets"] = []
+        control_net["control_nets"] = []
         # Append the new entry as a dictionary to the list
         control_net["control_nets"].append({
             "control_name": control_name,
@@ -624,9 +624,9 @@ class DrawThingsLoRA:
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
         graph = GraphBuilder()
         # Check if 'loras' exists in the pipeline
-        if "loras" not in lora:
+        # if "loras" not in lora:
             # Create 'loras' as an empty list
-            lora["loras"] = []
+        lora["loras"] = []
         # Append the new entry as a dictionary to the list
         lora["loras"].append({"lora_name": lora_name, "lora_weight": lora_weight})
         # print(f"lora: {lora}")
