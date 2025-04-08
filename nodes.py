@@ -188,24 +188,23 @@ async def dt_sampler(
 
     builder = flatbuffers.Builder(0)
 
-    loras = None
-    loras_prefix = []
-    if lora is not None:
+    loras_out = None
+
+    if lora is not None and len(lora):
         fin_loras = []
-        for lora_cfg in lora["loras"]:
-            if lora_cfg["prefix"] not in loras_prefix:
-                loras_prefix.append(lora_cfg["prefix"])
-                lora_name = builder.CreateString(lora_cfg["lora_name"])
-                LoRA.Start(builder)
-                LoRA.AddFile(builder, lora_name)
-                LoRA.AddWeight(builder, lora_cfg["lora_weight"])
-                fin_lora = LoRA.End(builder)
-                fin_loras.append(fin_lora)
+        for l in lora:
+            print(l)
+            lora_file = builder.CreateString(l['file'])
+            LoRA.Start(builder)
+            LoRA.AddFile(builder, lora_file)
+            LoRA.AddWeight(builder, l['weight'])
+            fin_lora = LoRA.End(builder)
+            fin_loras.append(fin_lora)
 
         GenerationConfiguration.StartLorasVector(builder, len(fin_loras))
         for fl in fin_loras:
             builder.PrependUOffsetTRelative(fl)
-        loras = builder.EndVector()
+        loras_out = builder.EndVector()
 
     controls = None
     controls_prefix = []
@@ -270,8 +269,8 @@ async def dt_sampler(
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls is not None:
         GenerationConfiguration.AddControls(builder, controls)
-    if loras is not None:
-        GenerationConfiguration.AddLoras(builder, loras)
+    if loras_out is not None:
+        GenerationConfiguration.AddLoras(builder, loras_out)
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
     # generated = GenerationConfiguration.GenerationConfiguration.GetRootAs(configuration, 0)
@@ -509,7 +508,7 @@ class DrawThingsSampler:
                     "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
-                "lora": ("dict", ),
+                "lora": ("DT_LORA", ),
                 "control_net": ("dict", ),
             }
         }
@@ -554,12 +553,15 @@ class DrawThingsSampler:
         all_files = get_files(server, port)
         model_file = next((m['file'] for m in all_files["models"] if m['name'] == model), None)
 
-        def get_lora_file(lora_item):
-            lora_file = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['lora_name']), None)
-            return { 'lora_name': lora_file, 'lora_weight': lora_item['lora_weight'], 'prefix': lora_item['prefix'] }
+        # def get_lora_file(lora_item):
+        #     lora_file = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['lora_name']), None)
+        #     return { 'lora_name': lora_file, 'lora_weight': lora_item['lora_weight'], 'prefix': lora_item['prefix'] }
 
-        lora_with_names = lora['loras'] if lora else []
-        lora_with_files = [get_lora_file(lora_item) for lora_item in lora_with_names]
+        # lora_with_names = lora['loras'] if lora else []
+        # lora_with_files = [get_lora_file(lora_item) for lora_item in lora_with_names]
+
+        for lora_item in lora:
+            lora_item['file'] = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['name']), None)
 
         return asyncio.run(dt_sampler(
                 server,
@@ -587,7 +589,7 @@ class DrawThingsSampler:
                 image=image,
                 mask=mask,
                 control_net=control_net,
-                lora={'loras':lora_with_files}
+                lora=lora
                 ))
 
     # @classmethod
@@ -727,28 +729,25 @@ class DrawThingsLoRA:
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
-                "lora": ("dict", {"forceInput": True}),
+                "lora": ("DT_LORA",),
             }
         }
 
-    RETURN_TYPES = ("dict",)
-    RETURN_NAMES = ("LORA",)
+    RETURN_TYPES = ("DT_LORA",)
+    RETURN_NAMES = ("lora",)
     CATEGORY = "DrawThings"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, lora_name, lora_weight, lora={}):
-        graph = GraphBuilder()
-        this_node = graph.alloc_prefix()
-        if "loras" not in lora:
-            # Create 'loras' as an empty list
-            lora["loras"] = []
-        # Append the new entry as a dictionary to the list
-        lora["loras"].append({"prefix": this_node, "lora_name": lora_name, "lora_weight": lora_weight})
-        return {
-            "result": (lora,),
-            "expand": graph.finalize(),
-        }
+    def add_to_pipeline(self, lora_name, lora_weight, lora=None):
+        lora_list = list()
+
+        if lora is not None:
+            lora_list.extend(lora)
+
+        lora_list.append({"name": lora_name, "weight": lora_weight})
+
+        return (lora_list,)
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
