@@ -36,10 +36,8 @@ from comfy_execution.graph_utils import GraphBuilder
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
 
-def pil2tensor(image: Image):
-    return torch.from_numpy(np.array(image).astype(np.float32) / 255.0).unsqueeze(0)
-
 def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
+    previewer = None
     preview_format = "JPEG"
     if preview_format not in ["JPEG", "PNG"]:
         preview_format = "JPEG"
@@ -51,7 +49,7 @@ def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
     def callback(step, x0: torch.Tensor, total_steps):
 
         preview_bytes = None
-        if previewer:
+        if previewer is not None:
             preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
         pbar.update_absolute(step + 1, total_steps, preview_bytes)
     return callback(step, x0, total_steps)
@@ -66,11 +64,14 @@ def convert_response_image(response_image: bytes):
     # print(f"Received image is {width}x{height} with {channels} channels")
     # print(f"Input size: {len(response_image)} (Expected: {length + 68})")
 
-    f16rgb = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
-    u8c = np.clip((f16rgb + 1) * 127, 0, 255).astype(np.uint8)
+    data = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
+    if np.isnan(data[0]):
+        print("NaN detected in data")
+        return None 
+    data = np.clip((data + 1) * 127, 0, 255).astype(np.uint8)
 
     return {
-        'data': u8c,
+        'data': data,
         'width': width,
         'height': height,
         'channels': channels,
@@ -275,10 +276,7 @@ async def dt_sampler(
                 hnt.hintType = control_cfg["control_input_type"].lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
-    # hints.append({
-    #     'hintType': 'depth',
-    #     'tensors': [{'tensor': convert_image_for_request(control_net["control_nets"][0]["image"]), 'weight': 1}]
-    # })
+
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
 
     async with grpc.aio.insecure_channel(f"{server}:{port}", options) as channel:
@@ -311,26 +309,28 @@ async def dt_sampler(
                 if preview_image:
 # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
 # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
-                    result = convert_response_image(preview_image)
-                    data = result['data']
-                    width = result['width']
-                    height = result['height']
-                    channels = result['channels']
-
-                    np_array = data.reshape(-1, channels, height, width)
-                    x0 = torch.from_numpy(np_array).to(torch.float32)
-                    # print(f"{x0.shape}")
-
+                    x0 = None
                     latent_format = None
-                    match preview_type:
-                        case "SD1.5":
-                            latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                        case "SD3":
-                            latent_format = latent_formats.SD3(latent_formats.LatentFormat)
-                        case "SDXL":
-                            latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
-                        case "Flux":
-                            latent_format = latent_formats.Flux()
+                    result = convert_response_image(preview_image)
+                    if result is not None:
+                        data = result['data']
+                        width = result['width']
+                        height = result['height']
+                        channels = result['channels']
+
+                        np_array = data.reshape(-1, channels, height, width)
+                        x0 = torch.from_numpy(np_array).to(torch.float32)
+                        # print(f"{x0.shape}")
+
+                        match preview_type:
+                            case "SD1.5":
+                                latent_format = latent_formats.SD15(latent_formats.LatentFormat)
+                            case "SD3":
+                                latent_format = latent_formats.SD3(latent_formats.LatentFormat)
+                            case "SDXL":
+                                latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
+                            case "Flux":
+                                latent_format = latent_formats.Flux()
                 prepare_callback(current_step, steps, x0, latent_format)
 
             if generated_images:
@@ -338,19 +338,20 @@ async def dt_sampler(
                 for img_data in response.generatedImages:
                     # Convert the image data to a Pillow Image object
                     result = convert_response_image(img_data)
-                    data = result['data']
-                    width = result['width']
-                    height = result['height']
-                    channels = result['channels']
-                    mode = "RGB"
-                    if channels >= 4:
-                        mode = "RGBA"
-                    img = Image.frombytes(mode, (width, height), data)
-                    # print(f"size: {img.size}, mode: {img.mode}")
-                    image_np = np.array(img)
-                    # Convert to float32 tensor and normalize
-                    tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
-                    images.append(tensor_image)
+                    if result is not None:
+                        data = result['data']
+                        width = result['width']
+                        height = result['height']
+                        channels = result['channels']
+                        mode = "RGB"
+                        if channels >= 4:
+                            mode = "RGBA"
+                        img = Image.frombytes(mode, (width, height), data)
+                        # print(f"size: {img.size}, mode: {img.mode}")
+                        image_np = np.array(img)
+                        # Convert to float32 tensor and normalize
+                        tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
+                        images.append(tensor_image)
                 return (torch.stack(images),)
 
 class DrawThingsLists:
@@ -432,7 +433,7 @@ class DrawThingsSampler:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 filtered_files = [
                     f for f in all_files
@@ -537,7 +538,7 @@ class DrawThingsControlNet:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 filtered_files = [
                     f for f in all_files
@@ -606,7 +607,7 @@ class DrawThingsLoRA:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 filtered_files = [f for f in all_files if "lora" in f]
             return filtered_files
