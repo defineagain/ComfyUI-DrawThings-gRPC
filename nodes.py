@@ -567,7 +567,7 @@ class DrawThingsControlNet:
 
     def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net={}, image=None):
         graph = GraphBuilder()
-        this_node = GraphBuilder.alloc_prefix()
+        this_node = graph.alloc_prefix()
         # Check if 'control_nets' exists in the pipeline
         if "control_nets" not in control_net:
             # Create 'control_nets' as an empty list
@@ -629,7 +629,7 @@ class DrawThingsLoRA:
 
     def add_to_pipeline(self, lora_name, lora_weight, lora={}):
         graph = GraphBuilder()
-        this_node = GraphBuilder.alloc_prefix()
+        this_node = graph.alloc_prefix()
         if "loras" not in lora:
             # Create 'loras' as an empty list
             lora["loras"] = []
