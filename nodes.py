@@ -277,8 +277,9 @@ async def dt_sampler(
     #     'hintType': 'depth',
     #     'tensors': [{'tensor': convert_image_for_request(control_net["control_nets"][0]["image"]), 'weight': 1}]
     # })
-
-    async with grpc.aio.insecure_channel(f"{server}:{port}") as channel:
+    options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
+    
+    async with grpc.aio.insecure_channel(f"{server}:{port}", options) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
             image = img2img,                      # Image data as sha256 content.
