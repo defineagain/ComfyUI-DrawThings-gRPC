@@ -94,7 +94,7 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
     pil_image = transform(image_tensor)
 
     match control_type:
-        case "depth" | "canny":
+        case "depth": # what else?
             transform = torchvision.transforms.Grayscale(num_output_channels=1)
             pil_image = transform(pil_image)
             # print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
