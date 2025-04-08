@@ -101,8 +101,6 @@ def convert_image_for_request(image_tensor: torch.Tensor):
     height = image_tensor.size(dim=1)
     channels = image_tensor.size(dim=3)
     print(f"Request image tensor is {width}x{height} with {channels} channels")
-    channels = 3
-    mode = ""
 
     image_tensor = image_tensor.to(torch.float16)
 
