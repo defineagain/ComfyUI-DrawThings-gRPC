@@ -6,6 +6,7 @@ import base64
 import numpy as np
 from PIL import Image, ImageOps
 import io
+from typing import TypedDict
 import torch
 import torchvision
 import tensorflow as tf
@@ -32,6 +33,31 @@ import latent_preview
 import comfy.latent_formats as latent_formats
 import comfy_execution.graph_utils as graph_utils
 from comfy_execution.graph_utils import GraphBuilder
+
+ModelInfo = TypedDict('ModelInfo', {
+    'file': str,
+    'name': str,
+    'version': str,
+    'prefix': str
+})
+ControlNetInfo = TypedDict('ControlNetInfo', {
+    'file': str,
+    'name': str,
+    'version': str,
+    'modifier': str,
+    'type': str
+})
+LoRAInfo = TypedDict('LoRAInfo', {
+    'file': str,
+    'name': str,
+    'version': str,
+    'prefix': str
+})
+ModelsInfo = TypedDict('ModelsInfo', {
+    'models': list[ModelInfo],
+    'controlNets': list[ControlNetInfo],
+    'loras': list[LoRAInfo]
+})
 
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
@@ -67,7 +93,7 @@ def convert_response_image(response_image: bytes):
     data = np.frombuffer(response_image, dtype=np.float16, count=length // 2, offset=offset)
     if np.isnan(data[0]):
         print("NaN detected in data")
-        return None 
+        return None
     data = np.clip((data + 1) * 127, 0, 255).astype(np.uint8)
 
     return {
@@ -121,38 +147,40 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
 
     return bytes(image_bytes)
 
-def get_files(server, port):
+def get_files(server, port) -> ModelsInfo:
     with grpc.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         response = stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
-        DrawThingsSampler.files_list = json.loads(pb.json_format.MessageToJson(response))["files"]
-        print(response.message) # HELLO ComfyUI
-        return json.loads(pb.json_format.MessageToJson(response))["files"]
+        response_json = json.loads(pb.json_format.MessageToJson(response))
+        DrawThingsSampler.files_list = response_json["files"]
+        override = dict(response_json['override'])
+        model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
+        return model_info
 
 async def dt_sampler(
-                server, 
-                port, 
-                model, 
+                server,
+                port,
+                model,
                 preview_type,
-                seed, 
+                seed,
                 seed_mode,
-                steps, 
-                cfg, 
-                strength, 
-                sampler_name, 
+                steps,
+                cfg,
+                strength,
+                sampler_name,
                 shift,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                positive, 
-                negative, 
-                width, 
-                height, 
-                batch_count=1, 
+                positive,
+                negative,
+                width,
+                height,
+                batch_count=1,
                 scale_factor=1,
-                image=None, 
+                image=None,
                 mask=None,
                 control_net=None,
                 lora=None
@@ -174,9 +202,9 @@ async def dt_sampler(
                 fin_lora = LoRA.End(builder)
                 fin_loras.append(fin_lora)
 
-        GenerationConfiguration.StartLorasVector(builder, len(lora["loras"]))
-        for i, lora_cfg in enumerate(lora["loras"]):
-            builder.PrependUOffsetTRelative(fin_loras[i])
+        GenerationConfiguration.StartLorasVector(builder, len(fin_loras))
+        for fl in fin_loras:
+            builder.PrependUOffsetTRelative(fl)
         loras = builder.EndVector()
 
     controls = None
@@ -436,17 +464,14 @@ class DrawThingsSampler:
     @classmethod
     def INPUT_TYPES(s):
         def get_filtered_files():
-            filtered_files = ["Press R to (re)load this list"]
+            file_list = ["Press R to (re)load this list"]
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
                 raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
-                filtered_files = [
-                    f for f in all_files
-                    if not any(exclude in f for exclude in ["vae", "lora", "clip", "encoder"])
-                ]
-            return filtered_files
+                file_list.extend([f['name'] for f in all_files['models']])
+            return file_list
 
         return {
             "required": {
@@ -495,61 +520,74 @@ class DrawThingsSampler:
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
 
-    def sample(self, 
-                server, 
-                port, 
-                model, 
+    def sample(self,
+                server,
+                port,
+                model,
                 preview_type,
-                seed, 
+                seed,
                 seed_mode,
-                steps, 
-                cfg, 
-                strength, 
-                sampler_name, 
+                steps,
+                cfg,
+                strength,
+                sampler_name,
                 shift,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                positive, 
-                negative, 
-                width, 
-                height, 
-                batch_count=1, 
+                positive,
+                negative,
+                width,
+                height,
+                batch_count=1,
                 scale_factor=1,
-                image=None, 
+                image=None,
                 mask=None,
                 control_net=None,
                 lora=None
                 ):
+
+        # need to replace model NAMES with model FILES
+
+        all_files = get_files(server, port)
+        model_file = next((m['file'] for m in all_files["models"] if m['name'] == model), None)
+
+        def get_lora_file(lora_item):
+            lora_file = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['lora_name']), None)
+            return { 'lora_name': lora_file, 'lora_weight': lora_item['lora_weight'], 'prefix': lora_item['prefix'] }
+
+        lora_with_names = lora['loras'] if lora else []
+        lora_with_files = [get_lora_file(lora_item) for lora_item in lora_with_names]
+
         return asyncio.run(dt_sampler(
-                server, 
-                port, 
-                model, 
+                server,
+                port,
+                model_file,
                 preview_type,
-                seed, 
+                seed,
                 seed_mode,
-                steps, 
-                cfg, 
-                strength, 
-                sampler_name, 
+                steps,
+                cfg,
+                strength,
+                sampler_name,
                 shift,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                positive, 
-                negative, 
-                width, 
-                height, 
-                batch_count=batch_count, 
+                positive,
+                negative,
+                width,
+                height,
+                batch_count=batch_count,
                 scale_factor=scale_factor,
-                image=image, 
+                image=image,
                 mask=mask,
                 control_net=control_net,
-                lora=lora
+                lora={'loras':lora_with_files}
                 ))
 
     # @classmethod
@@ -608,20 +646,17 @@ class DrawThingsControlNet:
     @classmethod
     def INPUT_TYPES(s):
         def get_filtered_files():
-            filtered_files = ["Press R to (re)load this list"]
+            file_list = ["Press R to (re)load this list"]
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
                 raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
-                filtered_files = [
-                    f for f in all_files
-                    if not any(exclude in f for exclude in ["lora", "vae"])
-            ]
-            return filtered_files
-        
+                file_list.extend([f['name'] for f in all_files['controlNets']])
+            return file_list
+
         return {
-            "required": { 
+            "required": {
                 "control_name": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
                 "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
@@ -677,19 +712,19 @@ class DrawThingsLoRA:
     @classmethod
     def INPUT_TYPES(s):
         def get_lora_files():
-            filtered_files = ["Press R to (re)load this list"]
+            file_list = ["Press R to (re)load this list"]
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
                 raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
-                filtered_files = [f for f in all_files if "lora" in f]
-            return filtered_files
-        
+                file_list.extend([f['name'] for f in all_files['loras']])
+            return file_list
+
         return {
             "required": {
                 "lora_name": (get_lora_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
-                "lora_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
                 "lora": ("dict", {"forceInput": True}),
