@@ -250,6 +250,7 @@ async def dt_sampler(
     # GenerationConfiguration.AddUpscaler(builder, 0)
     # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
     GenerationConfiguration.AddSteps(builder, steps)
+    # num frames
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     # speed-up
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
@@ -275,6 +276,7 @@ async def dt_sampler(
 
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
+    # tea cache
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls_out is not None:
@@ -502,8 +504,9 @@ class DrawThingsSampler:
                 # upscaler
 
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
-                "cfg": ("FLOAT", {"default": 8.0, 
-                "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                # num frames
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                # speedup flux
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
                 # res shift
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
@@ -528,6 +531,7 @@ class DrawThingsSampler:
 
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                # tea cache
                 # ti embed
             },
             "hidden": {
