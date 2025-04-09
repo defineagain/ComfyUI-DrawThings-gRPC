@@ -1,0 +1,12 @@
+base64
+numpy
+pillow
+torch
+torchvision
+tensorflow
+asyncio
+grpc
+flatbuffers
+protobuf
+json
+struct
