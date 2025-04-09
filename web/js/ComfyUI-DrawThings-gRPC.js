@@ -62,7 +62,33 @@ app.registerExtension({
                 return original_onMouseDown?.apply(this, arguments);
             };
 
-            // updateNodeModels(node);
+            updateNodeModels(node);
+
+            const widgetsList = {};
+            node.widgets.forEach(listWidgets);
+            function listWidgets(widget) {
+                widgetsList[widget.name] = widget;
+            }
+
+            widgetParentsDT.forEach(listParents);
+            function listParents(parent) {
+                const widgetParent = widgetsList[parent];
+                // console.log(widgetParent);
+
+                widgetParent.callback = function () {
+                    for (let [name, child] of Object.entries(widgetsList)) {
+                        if (child.name.startsWith(parent + "_")) {
+                            if (this.value == true) {
+                                hideWidgetDT(child, false);
+                            } else {
+                                hideWidgetDT(child, true);
+                            }
+                            // console.log(child);
+                        }
+                    }
+                };
+            }
+
         }
     },
     async loadedGraphNode(node) {
