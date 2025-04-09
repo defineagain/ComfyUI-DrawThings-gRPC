@@ -168,11 +168,18 @@ async def dt_sampler(
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -240,7 +247,8 @@ async def dt_sampler(
     GenerationConfiguration.AddStartHeight(builder, start_height)
     GenerationConfiguration.AddTargetImageWidth(builder, width)
     GenerationConfiguration.AddTargetImageHeight(builder, height)
-    # upscaler
+    # GenerationConfiguration.AddUpscaler(builder, 0)
+    # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     # speed-up
@@ -248,7 +256,9 @@ async def dt_sampler(
     # res shift
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
-    # refiner
+    if refiner is True:
+        GenerationConfiguration.AddRefinerModel(builder, refiner_model)
+        GenerationConfiguration.AddRefinerStart(builder, refiner_start)
     # zero neg
     # sep clip
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
@@ -257,7 +267,12 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
     # face restore
-    GenerationConfiguration.AddHiresFix(builder, False)
+    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
+    if high_res_fix is True:
+        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
+        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
+        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
+
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
     # ti embed
@@ -472,25 +487,46 @@ class DrawThingsSampler:
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+
+                # TODO: Remove the need to manually set preview type
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
+
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "seed_mode": (DrawThingsLists.seed_mode, {"default": "ScaleAlike"}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
+
+                # upscaler
+
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "cfg": ("FLOAT", {"default": 8.0, 
+                "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                # res shift
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
+
+                "refiner": ("BOOLEAN", {"default": False}),
+                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01}),
+
+                # zero neg
+                # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
                 "sharpness": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 30.0, "step": 0.1, "round": 0.1}),
                 "mask_blur": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.1}),
                 "mask_blur_outset": ("INT", {"default": 4, "min": 0, "max": 100, "step": 1}),
                 "preserve_original": ("BOOLEAN", {"default": True}),
-                # TODO: Fix javascript loading so I can make expanding sections
-                # "high_res_fix": ("BOOLEAN", {"default": False}),
-                # "tiles_decoding": ("BOOLEAN", {"default": False}),
+                # face restore
+
+                "high_res_fix": ("BOOLEAN", {"default": False}),
+                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01}),
+
+                # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                # ti embed
             },
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
@@ -526,11 +562,18 @@ class DrawThingsSampler:
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -568,11 +611,18 @@ class DrawThingsSampler:
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
