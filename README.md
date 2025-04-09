@@ -5,6 +5,15 @@ Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-
 > [!NOTE]
 > Previews are still a work-in-progress and will look wrong, however, this does not have any influence over the final image.
 
+## TODO
+
+- Fix connecting to any server other than localhost:7859
+- Complete the Javascript extension
+- Add needed code for masks
+- Fix previews
+- Add all possible options (including those specific to video generation)
+- Submit to ComfyUI registry
+
 ## Draw Things gRPC server
 
 Run your server with the following options:
