@@ -166,13 +166,16 @@ async def handle_files_info_request(request):
     #     return web.json_response({"error": "Missing server or port parameter"}, status=400)
     # server = request.args['server']
     # port = request.args['port']
-    post = await request.post()
-    server = post.get('server')
-    port = post.get('port')
-    if server is None or port is None:
-        return web.json_response({"error": "Missing server or port parameter"}, status=400)
-    all_files = get_files(server, port)
-    return web.json_response(all_files)
+    try:
+        post = await request.post()
+        server = post.get('server')
+        port = post.get('port')
+        if server is None or port is None:
+            return web.json_response({"error": "Missing server or port parameter"}, status=400)
+        all_files = get_files(server, port)
+        return web.json_response(all_files)
+    except:
+        return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
 async def dt_sampler(
                 server,
@@ -736,7 +739,7 @@ class DrawThingsControlNet:
 
         return {
             "required": {
-                "control_name": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "control_name": (DrawThingsLists.empty_models, {"tooltip": "The model used."}),
                 "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
@@ -797,7 +800,7 @@ class DrawThingsLoRA:
 
         return {
             "required": {
-                "lora_name": (get_lora_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "lora_name": (DrawThingsLists.empty_models, {"tooltip": "The model used."}),
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
