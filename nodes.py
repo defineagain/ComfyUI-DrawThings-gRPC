@@ -164,6 +164,7 @@ async def dt_sampler(
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
@@ -250,11 +251,14 @@ async def dt_sampler(
     # GenerationConfiguration.AddUpscaler(builder, 0)
     # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
     GenerationConfiguration.AddSteps(builder, steps)
-    # num frames
+
+    # if video is True:
+    GenerationConfiguration.AddNumFrames(builder, num_frames) # video option
+
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    # speed-up
+    # GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, True) # flux dev option
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    # res shift
+    # res shift # flux dev option
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
     if refiner is True:
@@ -276,7 +280,13 @@ async def dt_sampler(
 
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
-    # tea cache
+
+    # GenerationConfiguration.AddTeaCache(builder, False) # flux or video option
+    # if tea_cache is True:
+        # GenerationConfiguration.AddTeaCacheStart(builder, 5)
+        # GenerationConfiguration.AddTeaCacheEnd(builder, -1)
+        # GenerationConfiguration.AddTeaCacheThreshold(builder, 0.06)
+
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls_out is not None:
@@ -501,7 +511,7 @@ class DrawThingsSampler:
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
 
-                # upscaler
+                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "tooltip": "Video option."}),
 
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 # num frames
@@ -564,6 +574,7 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
@@ -613,6 +624,7 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
