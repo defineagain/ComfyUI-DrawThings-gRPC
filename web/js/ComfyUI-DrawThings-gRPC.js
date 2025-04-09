@@ -40,6 +40,15 @@ app.registerExtension({
                 updateNodeModels(node);
             };
 
+            const modelWidget = node.widgets.find((w) => w.name === "model");
+            modelWidget.callback = function (value, graph, node) {
+                // update the models list if the selected value is one of the 'failed' options
+                const option = failedConnectionOptions.find(
+                    (o) => o.name === value
+                );
+                if (option) updateNodeModels(node);
+            };
+
             const original_onMouseDown = node.onMouseDown;
             node.onMouseDown = function (e, pos, canvas) {
                 console.log("Click!");
@@ -53,27 +62,49 @@ app.registerExtension({
     },
     async loadedGraphNode(node) {
         if (node?.comfyClass === "DrawThingsSampler") {
-            console.log("loaded", node);
+            updateNodeModels(node);
         }
     },
     /** @param nodeType {typeof LGraphNode} */
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeType.comfyClass == "DrawThingsSampler") {
-            // const onConnectionsChange = nodeType.prototype.onConnectionsChange;
-            // nodeType.prototype.onConnectionsChange = function (
-            //     side,
-            //     slot,
-            //     connect,
-            //     link_info,
-            //     output
-            // ) {
-            //     const r = onConnectionsChange?.apply(this, arguments)
-            //     console.log("Someone changed my connection!")
-            //     return r
-            // };
+        if (
+            nodeType.comfyClass == "DrawThingsLoRA" ||
+            nodeType.comfyClass == "DrawThingsControlNet"
+        ) {
+            const currentOnConnectOutput = nodeType.prototype.onConnectOutput;
+
+            nodeType.prototype.onConnectOutput = function (...args) {
+                const r = currentOnConnectOutput?.apply(this, args);
+                onConnectOutput.apply(this, args);
+                return r;
+            };
         }
     },
 });
+
+/** @type (outputIndex: number, inputType: INodeInputSlot["type"], inputSlot: INodeInputSlot, inputNode: LGraphNode, inputIndex: number): boolean */
+function onConnectOutput(
+    outputIndex,
+    inputType,
+    inputSlot,
+    inputNode,
+    inputIndex
+) {
+    // follow the connection all the way up to Sampler to update the model list
+    /** @param node {LGraphNode} */
+    function findRootSampler(node) {
+        if (node?.comfyClass === "DrawThingsSampler") return node;
+        if (
+            node?.comfyClass === "DrawThingsControlNet" ||
+            node?.comfyClass === "DrawThingsLoRA"
+        ) {
+            return findRootSampler(node.getInputNode(0));
+        }
+        return undefined;
+    }
+    const rootSampler = findRootSampler(inputNode);
+    if (rootSampler) updateNodeModels(rootSampler);
+}
 
 /** @type Map<string, { models: any[], controlNets: any[], loras: []} */
 const modelInfoStore = new Map();
@@ -82,7 +113,7 @@ const modelInfoStoreKey = (server, port) => `${server}:${port}`;
 // yes this is kind of hacky :)
 const failedConnectionOptions = [
     { name: "No connection. Check server and try again" },
-    { name: "Click to rety" },
+    { name: "Click to retry" },
 ];
 
 const failedConnectionInfo = {
@@ -98,7 +129,6 @@ async function updateNodeModels(node) {
     // get the server and port
     const server = node.widgets.find((w) => w.name === "server").value;
     const port = node.widgets.find((w) => w.name === "port").value;
-    const modelWidget = node.widgets.find((w) => w.name === "model");
 
     const key = modelInfoStoreKey(server, port);
     console.log("checking", key);
@@ -116,8 +146,10 @@ async function updateNodeModels(node) {
 
     // update the node's models list
     const modelInfo = modelInfoStore.get(key);
-    const modelsWidget = node.widgets.find((w) => w.name === "model");
+    const modelsWidget = getModelWidget(node);
     modelsWidget.options.values = modelInfo.models.map((m) => m.name);
+    setValidOption(modelsWidget);
+
     // debugger;
     updateCnets(
         node,
@@ -138,10 +170,9 @@ function updateCnets(node, options) {
     const cnetsNode = node.getInputNode(cnetSlot);
     if (!cnetsNode) return;
 
-    const modelsWidget = cnetsNode.widgets.find(
-        (w) => w.name === "control_name"
-    );
-    modelsWidget.options.values = options;
+    const modelWidget = getModelWidget(cnetsNode);
+    modelWidget.options.values = options;
+    setValidOption(modelWidget);
 
     updateCnets(cnetsNode, options);
 }
@@ -154,9 +185,31 @@ function updateLoras(node, options) {
     const loraSlot = node.findInputSlot("lora");
     const loraNode = node.getInputNode(loraSlot);
     if (!loraNode) return;
-
-    const modelsWidget = loraNode.widgets.find((w) => w.name === "lora_name");
-    modelsWidget.options.values = options;
+    const modelWidget = getModelWidget(loraNode);
+    modelWidget.options.values = options;
+    setValidOption(modelWidget);
 
     updateLoras(loraNode, options);
+}
+
+function getModelWidget(node) {
+    if (node?.comfyClass === "DrawThingsSampler")
+        return node.widgets.find((w) => w.name === "model");
+    else if (node?.comfyClass === "DrawThingsControlNet")
+        return node.widgets.find((w) => w.name === "control_name");
+    else if (node?.comfyClass === "DrawThingsLoRA")
+        return node.widgets.find((w) => w.name === "lora_name");
+}
+
+function setValidOption(widget) {
+    if (!widget || widget.type !== "combo") return;
+    const values = widget.options?.values;
+    const selected = widget?.value;
+
+    // to avoid clearing a selected model, only changing value if a 'failure' option
+    // is selected
+    const option = failedConnectionOptions.find((o) => o.name === selected);
+    if (option) {
+        widget.value = values[0];
+    }
 }
