@@ -12,6 +12,15 @@ Run your server with the following options:
     --no-response-compression
     --model-browser
 
+## TODO
+
+- Fix connecting to any server other than localhost:7859
+- Complete the Javascript extension
+- Add needed code for masks
+- Fix previews
+- Add all possible options (including those specific to video generation)
+- Submit to ComfyUI registry
+
 ## Quickstart
 
 1. Install [ComfyUI](https://docs.comfy.org/get_started).

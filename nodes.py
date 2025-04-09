@@ -182,15 +182,23 @@ async def dt_sampler(
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -258,15 +266,22 @@ async def dt_sampler(
     GenerationConfiguration.AddStartHeight(builder, start_height)
     GenerationConfiguration.AddTargetImageWidth(builder, width)
     GenerationConfiguration.AddTargetImageHeight(builder, height)
-    # upscaler
+    # GenerationConfiguration.AddUpscaler(builder, 0)
+    # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
     GenerationConfiguration.AddSteps(builder, steps)
+
+    # if video is True:
+    GenerationConfiguration.AddNumFrames(builder, num_frames) # video option
+
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    # speed-up
+    # GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, True) # flux dev option
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    # res shift
+    # res shift # flux dev option
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
-    # refiner
+    if refiner is True:
+        GenerationConfiguration.AddRefinerModel(builder, refiner_model)
+        GenerationConfiguration.AddRefinerStart(builder, refiner_start)
     # zero neg
     # sep clip
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
@@ -275,9 +290,21 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
     # face restore
-    GenerationConfiguration.AddHiresFix(builder, False)
+    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
+    if high_res_fix is True:
+        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
+        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
+        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
+
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
+
+    # GenerationConfiguration.AddTeaCache(builder, False) # flux or video option
+    # if tea_cache is True:
+        # GenerationConfiguration.AddTeaCacheStart(builder, 5)
+        # GenerationConfiguration.AddTeaCacheEnd(builder, -1)
+        # GenerationConfiguration.AddTeaCacheThreshold(builder, 0.06)
+
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls_out is not None:
@@ -441,25 +468,27 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
+        # NOTE: Draw Things currently only supports these input slots
+        # Any other controlnet needs to use "Custom"
                 # "Unspecified",
                 "Custom",
                 "Depth",
-                "Canny",
+                # "Canny",
                 "Scribble",
                 "Pose",
-                "Normalbae",
+                # "Normalbae",
                 "Color",
-                "Lineart",
-                "Softedge",
-                "Seg",
-                "Inpaint",
-                "Ip2p",
-                "Shuffle",
-                "Mlsd",
-                "Tile",
-                "Blur",
-                "Lowquality",
-                "Gray",
+                # "Lineart",
+                # "Softedge",
+                # "Seg",
+                # "Inpaint",
+                # "Ip2p",
+                # "Shuffle",
+                # "Mlsd",
+                # "Tile",
+                # "Blur",
+                # "Lowquality",
+                # "Gray",
             ]
 
     modeltype_list = [
@@ -491,28 +520,49 @@ class DrawThingsSampler:
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": (DrawThingsLists.empty_models, {"tooltip": "The model used for denoising the input latent."}),
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
+
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "seed_mode": (DrawThingsLists.seed_mode, {"default": "ScaleAlike"}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
+
+                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "tooltip": "Video option."}),
+
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
+                # num frames
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                # speedup flux
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                # res shift
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
+
+                "refiner": ("BOOLEAN", {"default": False}),
+                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+
+                # zero neg
+                # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
                 "sharpness": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 30.0, "step": 0.1, "round": 0.1}),
                 "mask_blur": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.1}),
                 "mask_blur_outset": ("INT", {"default": 4, "min": 0, "max": 100, "step": 1}),
                 "preserve_original": ("BOOLEAN", {"default": True}),
-                # TODO: Fix javascript loading so I can make expanding sections
-                # "high_res_fix": ("BOOLEAN", {"default": False}),
-                # "tiles_decoding": ("BOOLEAN", {"default": False}),
+                # face restore
+
+                "high_res_fix": ("BOOLEAN", {"default": False}),
+                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+
+                # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                # tea cache
+                # ti embed
             },
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "batch_count": ("INT", {"default": 1, "min": 1, "max": 1}),
+                "batch_count": ("INT", {"default": 1, "min": 1, "max": 1, "step": 1}),
             },
             "optional": {
                 "positive": ("STRING", {
@@ -540,15 +590,23 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -582,15 +640,23 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
+                num_frames,
                 cfg,
                 strength,
                 sampler_name,
                 shift,
+                refiner,
+                refiner_model,
+                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
+                high_res_fix,
+                high_res_fix_start_width,
+                high_res_fix_start_height,
+                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -671,7 +737,7 @@ class DrawThingsControlNet:
         return {
             "required": {
                 "control_name": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
-                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified"}),
+                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
