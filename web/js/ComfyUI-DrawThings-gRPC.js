@@ -2,7 +2,7 @@ import { app } from "../../../scripts/app.js";
 
 /** @import { LGraphNode } from "litegraph.js"; */
 
-const widgetParentsDT = ["refiner", "high_res_fix"];
+const widgetParentsDT = ["high_res_fix"];
 
 function hideWidgetDT(widgetObject, hide) {
     widgetObject.disabled = hide;

@@ -190,9 +190,6 @@ async def dt_sampler(
                 strength,
                 sampler_name,
                 shift,
-                refiner,
-                refiner_model,
-                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -211,7 +208,8 @@ async def dt_sampler(
                 image=None,
                 mask=None,
                 control_net=None,
-                lora=None
+                lora=None,
+                refiner=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -260,6 +258,8 @@ async def dt_sampler(
     start_width = width // 64 // scale_factor
     start_height = height // 64 // scale_factor
     model_name = builder.CreateString(model)
+    if refiner is not None:
+        refiner_model = builder.CreateString(refiner["refiner_model"])
     GenerationConfiguration.Start(builder)
     GenerationConfiguration.AddModel(builder, model_name)
     GenerationConfiguration.AddStrength(builder, strength)
@@ -282,9 +282,9 @@ async def dt_sampler(
     # res shift # flux dev option
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
-    if refiner is True:
+    if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
-        GenerationConfiguration.AddRefinerStart(builder, refiner_start)
+        GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
     # zero neg
     # sep clip
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
@@ -540,10 +540,6 @@ class DrawThingsSampler:
                 # res shift
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
 
-                "refiner": ("BOOLEAN", {"default": False}),
-                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
-                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
-
                 # zero neg
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
@@ -576,6 +572,7 @@ class DrawThingsSampler:
                 "mask": ("MASK", ),
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
+                "refiner": ("DT_REFINER", ),
             }
         }
 
@@ -598,9 +595,6 @@ class DrawThingsSampler:
                 strength,
                 sampler_name,
                 shift,
-                refiner,
-                refiner_model,
-                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -619,7 +613,8 @@ class DrawThingsSampler:
                 image=None,
                 mask=None,
                 control_net=None,
-                lora=None
+                lora=None,
+                refiner=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -648,9 +643,6 @@ class DrawThingsSampler:
                 strength,
                 sampler_name,
                 shift,
-                refiner,
-                refiner_model,
-                refiner_start,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -669,12 +661,48 @@ class DrawThingsSampler:
                 image=image,
                 mask=mask,
                 control_net=control_net,
-                lora=lora
+                lora=lora,
+                refiner=refiner,
                 ))
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
     #     return float("NaN")
+
+    @classmethod
+    def VALIDATE_INPUTS(s, **kwargs):
+        return True
+
+class DrawThingsRefiner:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        def get_filtered_files():
+            file_list = ["Press R to (re)load this list"]
+            try:
+                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
+            except:
+                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            else:
+                file_list.extend([f['name'] for f in all_files['models']])
+            return file_list
+
+        return {
+            "required": {
+                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_REFINER",)
+    RETURN_NAMES = ("refiner",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, refiner_model, refiner_start):
+        refiner = {"refiner_model": refiner_model, "refiner_start": refiner_start}
+        return (refiner,)
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -840,6 +868,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsLoRA": DrawThingsLoRA,
     "DrawThingsPositive": DrawThingsPositive,
     "DrawThingsNegative": DrawThingsNegative,
+    "DrawThingsRefiner": DrawThingsRefiner,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -849,4 +878,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsLoRA": "Draw Things LoRA",
     "DrawThingsPositive": "Draw Things Positive Prompt",
     "DrawThingsNegative": "Draw Things Negative Prompt",
+    "DrawThingsRefiner": "Draw Things Refiner",
 }
