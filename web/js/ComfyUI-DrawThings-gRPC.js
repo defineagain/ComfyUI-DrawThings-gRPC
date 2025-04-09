@@ -26,9 +26,6 @@ async function getFiles(server, port) {
 
 app.registerExtension({
     name: "ComfyUI-DrawThings-gRPC",
-    async setup() {
-        console.log("Setup complete!");
-    },
     async nodeCreated(node) {
         if (node?.comfyClass === "DrawThingsSampler") {
             console.log("created", node);

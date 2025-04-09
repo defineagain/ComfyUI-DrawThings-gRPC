@@ -13,7 +13,18 @@ readme = "README.md"
 license = {text = "GNU General Public License v3"}
 classifiers = []
 dependencies = [
-
+    "base64",
+    "numpy",
+    "pillow",
+    "torch",
+    "torchvision",
+    "tensorflow",
+    "asyncio",
+    "grpc",
+    "flatbuffers",
+    "protobuf",
+    "json",
+    "struct",
 ]
 
 [project.optional-dependencies]
