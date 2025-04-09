@@ -463,7 +463,7 @@ class DrawThingsSampler:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 file_list.extend([f['name'] for f in all_files['models']])
             return file_list
@@ -646,7 +646,7 @@ class DrawThingsControlNet:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 file_list.extend([f['name'] for f in all_files['controlNets']])
             return file_list
@@ -707,7 +707,7 @@ class DrawThingsLoRA:
             try:
                 all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
             except:
-                raise TypeError("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
             else:
                 file_list.extend([f['name'] for f in all_files['loras']])
             return file_list
