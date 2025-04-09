@@ -508,7 +508,7 @@ class DrawThingsSampler:
 
                 "refiner": ("BOOLEAN", {"default": False}),
                 "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
-                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01}),
+                "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
 
                 # zero neg
                 # sep clip
@@ -522,7 +522,7 @@ class DrawThingsSampler:
                 "high_res_fix": ("BOOLEAN", {"default": False}),
                 "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
                 "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
 
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
@@ -530,7 +530,7 @@ class DrawThingsSampler:
             },
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "batch_count": ("INT", {"default": 1, "min": 1, "max": 1}),
+                "batch_count": ("INT", {"default": 1, "min": 1, "max": 1, "step": 1}),
             },
             "optional": {
                 "positive": ("STRING", {
