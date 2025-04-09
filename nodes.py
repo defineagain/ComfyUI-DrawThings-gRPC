@@ -438,25 +438,27 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
+        # NOTE: Draw Things currently only supports these input slots
+        # Any other controlnet needs to use "Custom"
                 # "Unspecified",
                 "Custom",
                 "Depth",
-                "Canny",
+                # "Canny",
                 "Scribble",
                 "Pose",
-                "Normalbae",
+                # "Normalbae",
                 "Color",
-                "Lineart",
-                "Softedge",
-                "Seg",
-                "Inpaint",
-                "Ip2p",
-                "Shuffle",
-                "Mlsd",
-                "Tile",
-                "Blur",
-                "Lowquality",
-                "Gray",
+                # "Lineart",
+                # "Softedge",
+                # "Seg",
+                # "Inpaint",
+                # "Ip2p",
+                # "Shuffle",
+                # "Mlsd",
+                # "Tile",
+                # "Blur",
+                # "Lowquality",
+                # "Gray",
             ]
 
     modeltype_list = [
