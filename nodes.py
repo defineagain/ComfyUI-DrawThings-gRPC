@@ -34,6 +34,9 @@ import comfy.latent_formats as latent_formats
 import comfy_execution.graph_utils as graph_utils
 from comfy_execution.graph_utils import GraphBuilder
 
+from server import PromptServer
+from aiohttp import web
+
 ModelInfo = TypedDict('ModelInfo', {
     'file': str,
     'name': str,
@@ -156,6 +159,21 @@ def get_files(server, port) -> ModelsInfo:
         override = dict(response_json['override'])
         model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
         return model_info
+
+routes = PromptServer.instance.routes
+@routes.post('/dt_grpc_files_info')
+async def handle_files_info_request(request):
+    # if 'server' not in request.args or 'port' not in request.args:
+    #     return web.json_response({"error": "Missing server or port parameter"}, status=400)
+    # server = request.args['server']
+    # port = request.args['port']
+    post = await request.post()
+    server = post.get('server')
+    port = post.get('port')
+    if server is None or port is None:
+        return web.json_response({"error": "Missing server or port parameter"}, status=400)
+    all_files = get_files(server, port)
+    return web.json_response(all_files)
 
 async def dt_sampler(
                 server,
@@ -388,7 +406,7 @@ class DrawThingsLists:
     dtserver = "localhost"
     dtport = "7859"
 
-    files_list = ["Press R to (re)load this list"]
+    empty_models = ['No connection. Check server and try again', 'Click to rety']
 
     sampler_list = [
                 "DPMPP 2M Karras",
@@ -472,7 +490,7 @@ class DrawThingsSampler:
             "required": {
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
-                "model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "model": (DrawThingsLists.empty_models, {"tooltip": "The model used for denoising the input latent."}),
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
