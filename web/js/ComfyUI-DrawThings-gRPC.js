@@ -7,11 +7,13 @@ import {
 
 /** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
 
+// Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = [
     "DrawThingsSampler",
     "DrawThingsControlNet",
     "DrawThingsLoRA",
 ];
+
 // NOTE: leaving this commented out for now in case we need it later
 // const widgetParentsDT = ["high_res_fix"];
 // function hideWidgetDT(widgetObject, hide) {
