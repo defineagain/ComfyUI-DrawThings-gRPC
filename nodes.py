@@ -397,15 +397,15 @@ async def dt_sampler(
 
                         if modelinfo_version in ("v1", "v2", "svdI2v"):
                             latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                        if modelinfo_version in ("sd3", "sd3Large"):
+                        if modelinfo_version[:3] == "sd3":
                             latent_format = latent_formats.SD3()
-                        if modelinfo_version in ("sdxlBase", "sdxlRefiner", "ssd1b", "pixart", "auraflow") or modelinfo_version[:4] == "sdxl":
+                        if modelinfo_version[:4] == "sdxl" or modelinfo_version in ("ssd1b", "pixart", "auraflow"):
                             latent_format = latent_formats.SDXL()
                         if modelinfo_version in ("flux1"):
                             latent_format = latent_formats.Flux()
                         if modelinfo_version in ("hunyuanVideo"):
                             latent_format = latent_formats.HunyuanVideo()
-                        if modelinfo_version in ("wan21_1_3b", "wan21_14b"):
+                        if modelinfo_version[:3] == "wan":
                             latent_format = latent_formats.Wan21()
                         # if modelinfo_version in ("kandinsky21"):
                         # if modelinfo_version in ("wurstchenStageC", "wurstchenStageB"):
