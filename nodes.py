@@ -394,6 +394,22 @@ async def dt_sampler(
                     modelinfo_version = DrawThingsLists.modelinfo_list["version"]
                     if modelinfo_version != "":
                         print(f'version: {modelinfo_version}')
+
+                        if modelinfo_version in ("v1", "v2", "svdI2v"):
+                            latent_format = latent_formats.SD15(latent_formats.LatentFormat)
+                        if modelinfo_version in ("sd3", "sd3Large"):
+                            latent_format = latent_formats.SD3()
+                        if modelinfo_version in ("sdxlBase", "sdxlRefiner", "ssd1b", "pixart", "auraflow") or modelinfo_version[:4] == "sdxl":
+                            latent_format = latent_formats.SDXL()
+                        if modelinfo_version in ("flux1"):
+                            latent_format = latent_formats.Flux()
+                        if modelinfo_version in ("hunyuanVideo"):
+                            latent_format = latent_formats.HunyuanVideo()
+                        if modelinfo_version in ("wan21_1_3b", "wan21_14b"):
+                            latent_format = latent_formats.Wan21()
+                        # if modelinfo_version in ("kandinsky21"):
+                        # if modelinfo_version in ("wurstchenStageC", "wurstchenStageB"):
+
                         result = convert_response_image(preview_image)
                         if result is not None:
                             data = result['data']
@@ -403,22 +419,7 @@ async def dt_sampler(
 
                             np_array = data.reshape(-1, channels, height, width)
                             x0 = torch.from_numpy(np_array).to(torch.float32)
-                            # print(f"{x0.shape}")
-
-                            if modelinfo_version in ("v1", "v2", "svdI2v"):
-                                latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                            if modelinfo_version in ("sd3", "sd3Large"):
-                                latent_format = latent_formats.SD3()
-                            if modelinfo_version in ("sdxlBase", "sdxlRefiner", "ssd1b", "pixart", "auraflow"):
-                                latent_format = latent_formats.SDXL()
-                            if modelinfo_version in ("flux1"):
-                                latent_format = latent_formats.Flux()
-                            if modelinfo_version in ("hunyuanVideo"):
-                                latent_format = latent_formats.HunyuanVideo()
-                            if modelinfo_version in ("wan21_1_3b", "wan21_14b"):
-                                latent_format = latent_formats.Wan21()
-                            # if modelinfo_version in ("kandinsky21"):
-                            # if modelinfo_version in ("wurstchenStageC", "wurstchenStageB"):
+                            print(f"{x0.shape}")
 
                 prepare_callback(current_step, steps, x0, latent_format)
 
