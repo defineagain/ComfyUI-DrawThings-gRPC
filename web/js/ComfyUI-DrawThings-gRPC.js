@@ -30,7 +30,7 @@ app.registerExtension({
     },
     async nodeCreated(node) {
         if (DrawThingsNodeTypes.includes(node?.comfyClass)) {
-            if (node.id !== -1) updateNodeModels(node);
+            updateNodeModels(node);
         }
         if (node?.comfyClass === "DrawThingsSampler") {
             console.debug("nodeCreated(DrawThingsSampler)", node);
@@ -71,8 +71,10 @@ app.registerExtension({
         }
     },
     async loadedGraphNode(node) {
-        if (node?.comfyClass === "DrawThingsSampler") {
-            console.debug("loadedGraphNode(DrawThingsSampler)", node);
+        if (
+            DrawThingsNodeTypes.includes(node?.comfyClass) &&
+            node?.isDtRootNode
+        ) {
             updateNodeModels(node);
         }
     },
@@ -111,6 +113,14 @@ app.registerExtension({
                         return r;
                     };
                 }
+            }
+        }
+    },
+    refreshComboInNodes(defs, app) {
+        for (const type of DrawThingsNodeTypes) {
+            for (const node of app.graph.findNodesByType(type)) {
+                if (node.widgets.some((w) => w.options.values === "DT_MODEL"))
+                    updateNodeModels(node, true);
             }
         }
     },
