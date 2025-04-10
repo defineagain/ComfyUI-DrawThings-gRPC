@@ -70,7 +70,7 @@ def prepare_callback(step, total_steps, x0=None, latent_format=None):
     if preview_format not in ["JPEG", "PNG"]:
         preview_format = "JPEG"
 
-    if x0 is not None:
+    if latent_format is not None:
         previewer = latent_preview.get_previewer(x0.device, latent_format)
 
     pbar = comfy.utils.ProgressBar(step)
@@ -181,7 +181,6 @@ async def dt_sampler(
                 server,
                 port,
                 model,
-                preview_type,
                 seed,
                 seed_mode,
                 steps,
@@ -392,8 +391,9 @@ async def dt_sampler(
 # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
                     x0 = None
                     latent_format = None
-                    if preview_type != "Disabled":
-                        print(preview_type)
+                    modelinfo_version = DrawThingsLists.modelinfo_list["version"]
+                    if modelinfo_version != "":
+                        print(f'version: {modelinfo_version}')
                         result = convert_response_image(preview_image)
                         if result is not None:
                             data = result['data']
@@ -405,15 +405,15 @@ async def dt_sampler(
                             x0 = torch.from_numpy(np_array).to(torch.float32)
                             # print(f"{x0.shape}")
 
-                            match preview_type:
-                                case "SD1.5":
-                                    latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                                case "SD3":
-                                    latent_format = latent_formats.SD3(latent_formats.LatentFormat)
-                                case "SDXL":
-                                    latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
-                                case "Flux":
-                                    latent_format = latent_formats.Flux()
+                            if modelinfo_version[:2] == "v1":
+                                latent_format = latent_formats.SD15(latent_formats.LatentFormat)
+                            if modelinfo_version[:3] == "sd3":
+                                latent_format = latent_formats.SD3()
+                            if modelinfo_version[:4] == "sdxl":
+                                latent_format = latent_formats.SDXL()
+                            if modelinfo_version[:4] == "flux":
+                                latent_format = latent_formats.Flux()
+
                 prepare_callback(current_step, steps, x0, latent_format)
 
             if generated_images:
@@ -500,14 +500,6 @@ class DrawThingsLists:
                 # "Gray",
             ]
 
-    modeltype_list = [
-                "Disabled", # Temp option to disable previews
-                "SD1.5",
-                "SD3",
-                "SDXL",
-                "Flux",
-            ]
-
 class DrawThingsSampler:
     def __init__(self):
         pass
@@ -518,9 +510,6 @@ class DrawThingsSampler:
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
-
-                # TODO: Remove the need to manually set preview type
-                "preview_type": (DrawThingsLists.modeltype_list, {"default": "Disabled"}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
@@ -579,7 +568,6 @@ class DrawThingsSampler:
                 server,
                 port,
                 model,
-                preview_type,
                 seed,
                 seed_mode,
                 steps,
@@ -613,6 +601,7 @@ class DrawThingsSampler:
 
         all_files = get_files(server, port)
         model_file = next((m['file'] for m in all_files["models"] if m['name'] == model), None)
+        DrawThingsLists.modelinfo_list = next((m for m in all_files["models"] if m['name'] == model), None)
 
         if lora is not None:
             for lora_item in lora:
@@ -626,7 +615,6 @@ class DrawThingsSampler:
                 server,
                 port,
                 model_file,
-                preview_type,
                 seed,
                 seed_mode,
                 steps,
