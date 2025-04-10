@@ -207,6 +207,7 @@ async def dt_sampler(
                 refiner=None,
                 high_res_fix=None,
                 video=None,
+                upscaler=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -255,6 +256,8 @@ async def dt_sampler(
     start_width = width // 64 // scale_factor
     start_height = height // 64 // scale_factor
     model_name = builder.CreateString(model)
+    if upscaler is not None:
+        upscaler_model = builder.CreateString(upscaler["upscaler_model"])
     if refiner is not None:
         refiner_model = builder.CreateString(refiner["refiner_model"])
     GenerationConfiguration.Start(builder)
@@ -266,8 +269,9 @@ async def dt_sampler(
     GenerationConfiguration.AddStartHeight(builder, start_height)
     GenerationConfiguration.AddTargetImageWidth(builder, width)
     GenerationConfiguration.AddTargetImageHeight(builder, height)
-    # GenerationConfiguration.AddUpscaler(builder, 0)
-    # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
+    if upscaler is not None:
+        GenerationConfiguration.AddUpscaler(builder, upscaler_model)
+        GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["scale_factor"])
     GenerationConfiguration.AddSteps(builder, steps)
 
     if video is not None:
@@ -301,8 +305,8 @@ async def dt_sampler(
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
 
-    # GenerationConfiguration.AddTeaCache(builder, False) # flux or video option
-    # if tea_cache is not None:
+    # if tea_cache is not None: # flux or video option
+        # GenerationConfiguration.AddTeaCache(builder, False)
         # GenerationConfiguration.AddTeaCacheStart(builder, 5)
         # GenerationConfiguration.AddTeaCacheEnd(builder, -1)
         # GenerationConfiguration.AddTeaCacheThreshold(builder, 0.06)
@@ -511,6 +515,7 @@ class DrawThingsSampler:
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
+
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
@@ -520,7 +525,6 @@ class DrawThingsSampler:
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
 
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
-                # num frames
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
                 # speedup flux
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
@@ -536,9 +540,6 @@ class DrawThingsSampler:
                 "preserve_original": ("BOOLEAN", {"default": True}),
                 # face restore
 
-                # "tiled_decoding": ("BOOLEAN", {"default": False}),
-                # "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                # tea cache
                 # ti embed
             },
             "hidden": {
@@ -552,11 +553,15 @@ class DrawThingsSampler:
                     "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
-                "refiner": ("DT_REFINER", ),
-                "high_res_fix": ("DT_HIGHRES", ),
-                "video": ("DT_VIDEO", ),
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
+                "upscaler": ("DT_UPSCALER", ),
+                "video": ("DT_VIDEO", ),
+                "refiner": ("DT_REFINER", ),
+                "high_res_fix": ("DT_HIGHRES", ),
+                # "tiled_decoding": ("BOOLEAN", {"default": False}),
+                # "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                # tea cache
             }
         }
 
@@ -596,6 +601,7 @@ class DrawThingsSampler:
                 refiner=None,
                 high_res_fix=None,
                 video=None,
+                upscaler=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -641,6 +647,7 @@ class DrawThingsSampler:
                 refiner=refiner,
                 high_res_fix=high_res_fix,
                 video=video,
+                upscaler=upscaler,
                 ))
 
     # @classmethod
@@ -715,7 +722,7 @@ class DrawThingsVideo:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81}),
+                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "step": 1}),
             }
         }
 
@@ -728,6 +735,29 @@ class DrawThingsVideo:
         # as dict in case more options are needed later
         video = {"num_frames": num_frames}
         return (video,)
+
+class DrawThingsUpscaler:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                # TODO: Add modellist
+                "upscaler_model": ("STRING", {"default": "Under construction"}),
+                "scale_factor": ("INT", {"default": 2, "min": 0, "max": 4, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_UPSCALER",)
+    RETURN_NAMES = ("upscaler",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, upscaler_model, scale_factor):
+        upscaler = {"upscaler_model": upscaler_model, "scale_factor": scale_factor}
+        # return (upscaler,)
+        return (None,)
 
 class DrawThingsPositive:
     def __init__(self):
@@ -872,6 +902,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsRefiner": DrawThingsRefiner,
     "DrawThingsHighResFix": DrawThingsHighResFix,
     "DrawThingsVideo": DrawThingsVideo,
+    "DrawThingsUpscaler": DrawThingsUpscaler,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -884,4 +915,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsRefiner": "Draw Things Refiner",
     "DrawThingsHighResFix": "Draw Things High Resolution Fix",
     "DrawThingsVideo": "Draw Things Video Options",
+    "DrawThingsUpscaler": "Draw Things Upscaler",
 }
