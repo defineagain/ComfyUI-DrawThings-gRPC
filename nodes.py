@@ -507,7 +507,6 @@ class DrawThingsLists:
 class DrawThingsSampler:
     def __init__(self):
         pass
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -516,6 +515,7 @@ class DrawThingsSampler:
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
 
+                # TODO: Remove the need to manually set preview type
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
@@ -561,7 +561,7 @@ class DrawThingsSampler:
                 "high_res_fix": ("DT_HIGHRES", ),
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                # tea cache
+                # "tea_cache": ("DT_TEA", ),
             }
         }
 
@@ -762,7 +762,6 @@ class DrawThingsUpscaler:
 class DrawThingsPositive:
     def __init__(self):
         pass
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -783,7 +782,6 @@ class DrawThingsPositive:
 class DrawThingsNegative:
     def __init__(self):
         pass
-
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -814,6 +812,7 @@ class DrawThingsControlNet:
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
                 "control_end": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01}),
+                "invert_image": ("BOOLEAN", {"default": False, "tooltip": "Some Control Nets (i.e. LineArt) need their image to be inverted."}),
             },
             "optional": {
                 "control_net": ("DT_CNET",),
@@ -826,7 +825,10 @@ class DrawThingsControlNet:
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net=None, image=None):
+    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net=None, image=None, invert_image=False):
+        if invert_image == True:
+            image = 1.0 - image
+
         cnet_list = list()
 
         if control_net is not None:
@@ -908,7 +910,7 @@ NODE_CLASS_MAPPINGS = {
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsSampler": "Draw Things Sampler",
-    "DrawThingsControlNet": "Draw Things ControlNet",
+    "DrawThingsControlNet": "Draw Things Control Net",
     "DrawThingsLoRA": "Draw Things LoRA",
     "DrawThingsPositive": "Draw Things Positive Prompt",
     "DrawThingsNegative": "Draw Things Negative Prompt",
