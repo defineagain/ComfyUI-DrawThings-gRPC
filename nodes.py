@@ -785,7 +785,7 @@ class DrawThingsTeaCache:
         return {
             "required": {
                 "tea_cache_start": ("INT", {"default": 4, "min": 0, "max": 4, "step": 1}),
-                "tea_cache_end": ("INT", {"default": 4, "min": 0, "max": 4, "step": 1}),
+                "tea_cache_end": ("INT", {"default": 4, "min": 0, "max": 81, "step": 1}),
                 "tea_cache_threshold": ("FLOAT", {"default": 0.06, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
             }
         }
