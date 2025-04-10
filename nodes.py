@@ -185,7 +185,6 @@ async def dt_sampler(
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
                 sampler_name,
@@ -207,6 +206,7 @@ async def dt_sampler(
                 lora=None,
                 refiner=None,
                 high_res_fix=None,
+                video=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -270,8 +270,8 @@ async def dt_sampler(
     # GenerationConfiguration.AddUpscalerScaleFactor(builder, 0)
     GenerationConfiguration.AddSteps(builder, steps)
 
-    # if video is True:
-    GenerationConfiguration.AddNumFrames(builder, num_frames) # video option
+    if video is not None:
+        GenerationConfiguration.AddNumFrames(builder, video["num_frames"])
 
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     # GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, True) # flux dev option
@@ -302,7 +302,7 @@ async def dt_sampler(
     GenerationConfiguration.AddTiledDiffusion(builder, False)
 
     # GenerationConfiguration.AddTeaCache(builder, False) # flux or video option
-    # if tea_cache is True:
+    # if tea_cache is not None:
         # GenerationConfiguration.AddTeaCacheStart(builder, 5)
         # GenerationConfiguration.AddTeaCacheEnd(builder, -1)
         # GenerationConfiguration.AddTeaCacheThreshold(builder, 0.06)
@@ -519,8 +519,6 @@ class DrawThingsSampler:
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
 
-                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "tooltip": "Video option."}),
-
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 # num frames
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
@@ -554,10 +552,11 @@ class DrawThingsSampler:
                     "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
-                "lora": ("DT_LORA", ),
-                "control_net": ("DT_CNET", ),
                 "refiner": ("DT_REFINER", ),
                 "high_res_fix": ("DT_HIGHRES", ),
+                "video": ("DT_VIDEO", ),
+                "lora": ("DT_LORA", ),
+                "control_net": ("DT_CNET", ),
             }
         }
 
@@ -575,7 +574,6 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
                 sampler_name,
@@ -597,6 +595,7 @@ class DrawThingsSampler:
                 lora=None,
                 refiner=None,
                 high_res_fix=None,
+                video=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -620,7 +619,6 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
                 sampler_name,
@@ -642,6 +640,7 @@ class DrawThingsSampler:
                 lora=lora,
                 refiner=refiner,
                 high_res_fix=high_res_fix,
+                video=video,
                 ))
 
     # @classmethod
@@ -709,9 +708,26 @@ class DrawThingsHighResFix:
         high_res_fix = {"high_res_fix_start_width": high_res_fix_start_width, "high_res_fix_start_height": high_res_fix_start_height, "high_res_fix_strength": high_res_fix_strength}
         return (high_res_fix,)
 
+class DrawThingsVideo:
+    def __init__(self):
+        pass
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
-        return True
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_VIDEO",)
+    RETURN_NAMES = ("video",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, num_frames):
+        # as dict in case more options are needed later
+        video = {"num_frames": num_frames}
+        return (video,)
 
 class DrawThingsPositive:
     def __init__(self):
@@ -855,6 +871,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsNegative": DrawThingsNegative,
     "DrawThingsRefiner": DrawThingsRefiner,
     "DrawThingsHighResFix": DrawThingsHighResFix,
+    "DrawThingsVideo": DrawThingsVideo,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -866,4 +883,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsNegative": "Draw Things Negative Prompt",
     "DrawThingsRefiner": "Draw Things Refiner",
     "DrawThingsHighResFix": "Draw Things High Resolution Fix",
+    "DrawThingsVideo": "Draw Things Video Options",
 }
