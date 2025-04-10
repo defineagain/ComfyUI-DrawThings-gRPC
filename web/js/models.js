@@ -159,7 +159,8 @@ function findRoot(node) {
         for (const output of node.outputs.filter((o) =>
             o.type.startsWith("DT_")
         )) {
-            const outputNodes = node.getOutputNodes(output.slot_index) ?? [];
+            const outputSlot = node.findOutputSlot(output.name);
+            const outputNodes = node.getOutputNodes(outputSlot) ?? [];
             for (const outputNode of outputNodes) {
                 const root = findRoot(outputNode);
                 if (root) return root;

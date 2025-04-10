@@ -103,7 +103,8 @@ app.registerExtension({
                             this,
                             args
                         );
-                        updateNodeModels(this);
+                        const isConnected = args[2];
+                        if (isConnected) updateNodeModels(this);
                         return r;
                     };
                 }
