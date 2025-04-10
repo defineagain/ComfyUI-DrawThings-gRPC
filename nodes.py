@@ -405,14 +405,20 @@ async def dt_sampler(
                             x0 = torch.from_numpy(np_array).to(torch.float32)
                             # print(f"{x0.shape}")
 
-                            if modelinfo_version[:2] == "v1":
+                            if modelinfo_version in ("v1", "v2", "svdI2v"):
                                 latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                            if modelinfo_version[:3] == "sd3":
+                            if modelinfo_version in ("sd3", "sd3Large"):
                                 latent_format = latent_formats.SD3()
-                            if modelinfo_version[:4] == "sdxl":
+                            if modelinfo_version in ("sdxlBase", "sdxlRefiner", "ssd1b", "pixart", "auraflow"):
                                 latent_format = latent_formats.SDXL()
-                            if modelinfo_version[:4] == "flux":
+                            if modelinfo_version in ("flux1"):
                                 latent_format = latent_formats.Flux()
+                            if modelinfo_version in ("hunyuanVideo"):
+                                latent_format = latent_formats.HunyuanVideo()
+                            if modelinfo_version in ("wan21_1_3b", "wan21_14b"):
+                                latent_format = latent_formats.Wan21()
+                            # if modelinfo_version in ("kandinsky21"):
+                            # if modelinfo_version in ("wurstchenStageC", "wurstchenStageB"):
 
                 prepare_callback(current_step, steps, x0, latent_format)
 
