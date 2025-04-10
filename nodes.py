@@ -195,10 +195,6 @@ async def dt_sampler(
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -210,6 +206,7 @@ async def dt_sampler(
                 control_net=None,
                 lora=None,
                 refiner=None,
+                high_res_fix=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -293,11 +290,13 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
     # face restore
-    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
-    if high_res_fix is True:
-        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
-        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
-        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
+    if high_res_fix is not None:
+        GenerationConfiguration.AddHiresFix(builder, True)
+        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix["high_res_fix_start_width"])
+        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix["high_res_fix_start_height"])
+        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix["high_res_fix_strength"])
+    else:
+        GenerationConfiguration.AddHiresFix(builder, False)
 
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
@@ -539,11 +538,6 @@ class DrawThingsSampler:
                 "preserve_original": ("BOOLEAN", {"default": True}),
                 # face restore
 
-                "high_res_fix": ("BOOLEAN", {"default": False}),
-                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
-
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
                 # tea cache
@@ -563,6 +557,7 @@ class DrawThingsSampler:
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
                 "refiner": ("DT_REFINER", ),
+                "high_res_fix": ("DT_HIGHRES", ),
             }
         }
 
@@ -590,10 +585,6 @@ class DrawThingsSampler:
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -605,6 +596,7 @@ class DrawThingsSampler:
                 control_net=None,
                 lora=None,
                 refiner=None,
+                high_res_fix=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -638,10 +630,6 @@ class DrawThingsSampler:
                 mask_blur,
                 mask_blur_outset,
                 preserve_original,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
                 positive,
                 negative,
                 width,
@@ -653,6 +641,7 @@ class DrawThingsSampler:
                 control_net=control_net,
                 lora=lora,
                 refiner=refiner,
+                high_res_fix=high_res_fix,
                 ))
 
     # @classmethod
@@ -693,6 +682,32 @@ class DrawThingsRefiner:
     def add_to_pipeline(self, refiner_model, refiner_start):
         refiner = {"refiner_model": refiner_model, "refiner_start": refiner_start}
         return (refiner,)
+
+    @classmethod
+    def VALIDATE_INPUTS(s, **kwargs):
+        return True
+
+class DrawThingsHighResFix:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_HIGHRES",)
+    RETURN_NAMES = ("high_res_fix",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, high_res_fix_start_width, high_res_fix_start_height, high_res_fix_strength):
+        high_res_fix = {"high_res_fix_start_width": high_res_fix_start_width, "high_res_fix_start_height": high_res_fix_start_height, "high_res_fix_strength": high_res_fix_strength}
+        return (high_res_fix,)
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -839,6 +854,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsPositive": DrawThingsPositive,
     "DrawThingsNegative": DrawThingsNegative,
     "DrawThingsRefiner": DrawThingsRefiner,
+    "DrawThingsHighResFix": DrawThingsHighResFix,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -849,4 +865,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsPositive": "Draw Things Positive Prompt",
     "DrawThingsNegative": "Draw Things Negative Prompt",
     "DrawThingsRefiner": "Draw Things Refiner",
+    "DrawThingsHighResFix": "Draw Things High Resolution Fix",
 }
