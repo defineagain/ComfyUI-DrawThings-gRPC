@@ -507,21 +507,11 @@ class DrawThingsSampler:
 
     @classmethod
     def INPUT_TYPES(s):
-        def get_filtered_files():
-            file_list = ["Press R to (re)load this list"]
-            try:
-                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            except:
-                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
-            else:
-                file_list.extend([f['name'] for f in all_files['models']])
-            return file_list
-
         return {
             "required": {
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
-                "model": (DrawThingsLists.empty_models, {"tooltip": "The model used for denoising the input latent."}),
+                "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
                 "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
@@ -755,19 +745,9 @@ class DrawThingsControlNet:
         pass
     @classmethod
     def INPUT_TYPES(s):
-        def get_filtered_files():
-            file_list = ["Press R to (re)load this list"]
-            try:
-                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            except:
-                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
-            else:
-                file_list.extend([f['name'] for f in all_files['controlNets']])
-            return file_list
-
         return {
             "required": {
-                "control_name": (DrawThingsLists.empty_models, {"tooltip": "The model used."}),
+                "control_name": ("DT_MODEL", {"model_type": "controlNets", "tooltip": "The model used."}),
                 "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
@@ -816,19 +796,9 @@ class DrawThingsLoRA:
         pass
     @classmethod
     def INPUT_TYPES(s):
-        def get_lora_files():
-            file_list = ["Press R to (re)load this list"]
-            try:
-                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            except:
-                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
-            else:
-                file_list.extend([f['name'] for f in all_files['loras']])
-            return file_list
-
         return {
             "required": {
-                "lora_name": (DrawThingsLists.empty_models, {"tooltip": "The model used."}),
+                "lora_name": ("DT_MODEL", {"model_type": "loras", "tooltip": "The model used."}),
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
