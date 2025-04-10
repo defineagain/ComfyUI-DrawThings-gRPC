@@ -115,16 +115,13 @@ def decode_preview(preview, version):
     # print(f"Input size: {len(preview)} (Expected: {length + 68})")
 
     fp16 = np.frombuffer(preview, dtype=np.float16, offset=offset)
-    # np_array = data.reshape(-1, channels, height, width)
-    # x0 = torch.from_numpy(np_array)
-    bytes_array = np.zeros((height, width, channels), dtype=np.uint8)
 
     print(f'{version}')
 
     image = None
-
     match version:
         case 'v1' | 'v2' | 'svdI2v':
+            bytes_array = np.zeros((height, width, channels), dtype=np.uint8)
             for i in range(height * width):
                 v0, v1, v2, v3 = fp16[i * 4:i * 4 + 4]
                 r = 49.5210 * v0 + 29.0283 * v1 - 23.9673 * v2 - 39.4981 * v3 + 99.9368
@@ -167,28 +164,27 @@ def decode_preview(preview, version):
             image = None
 
         case 'flux1':
-            # for i in range(height * width):
-            #     v = fp16[i * 16:i * 16 + 16]
-            #     r = (-0.0346 * v[0] + 0.0034 * v[1] + 0.0275 * v[2] - 0.0174 * v[3] +
-            #          0.0859 * v[4] + 0.0004 * v[5] + 0.0405 * v[6] - 0.0236 * v[7] -
-            #          0.0245 * v[8] + 0.1008 * v[9] - 0.0515 * v[10] + 0.0428 * v[11] +
-            #          0.0817 * v[12] - 0.1264 * v[13] - 0.0280 * v[14] - 0.1262 * v[15] - 0.0329) * 127.5 + 127.5
-            #     g = (0.0244 * v[0] + 0.0210 * v[1] - 0.0668 * v[2] + 0.0160 * v[3] +
-            #          0.0721 * v[4] + 0.0383 * v[5] + 0.0861 * v[6] - 0.0185 * v[7] +
-            #          0.0250 * v[8] + 0.0755 * v[9] + 0.0201 * v[10] - 0.0012 * v[11] +
-            #          0.0765 * v[12] - 0.0522 * v[13] - 0.0881 * v[14] - 0.0982 * v[15] - 0.0718) * 127.5 + 127.5
-            #     b = (0.0681 * v[0] + 0.0687 * v[1] - 0.0433 * v[2] + 0.0617 * v[3] +
-            #          0.0329 * v[4] + 0.0115 * v[5] + 0.0915 * v[6] - 0.0259 * v[7] +
-            #          0.1180 * v[8] - 0.0421 * v[9] + 0.0011 * v[10] - 0.0036 * v[11] +
-            #          0.0749 * v[12] - 0.1103 * v[13] - 0.0499 * v[14] - 0.0778 * v[15] - 0.0851) * 127.5 + 127.5
+            bytes_array = np.zeros((height * width * 4,), dtype=np.uint8)
+            for i in range(height * width):
+                v = fp16[i * 16:i * 16 + 16]
+                r = (-0.0346 * v[0] + 0.0034 * v[1] + 0.0275 * v[2] - 0.0174 * v[3] +
+                     0.0859 * v[4] + 0.0004 * v[5] + 0.0405 * v[6] - 0.0236 * v[7] -
+                     0.0245 * v[8] + 0.1008 * v[9] - 0.0515 * v[10] + 0.0428 * v[11] +
+                     0.0817 * v[12] - 0.1264 * v[13] - 0.0280 * v[14] - 0.1262 * v[15] - 0.0329) * 127.5 + 127.5
+                g = (0.0244 * v[0] + 0.0210 * v[1] - 0.0668 * v[2] + 0.0160 * v[3] +
+                     0.0721 * v[4] + 0.0383 * v[5] + 0.0861 * v[6] - 0.0185 * v[7] +
+                     0.0250 * v[8] + 0.0755 * v[9] + 0.0201 * v[10] - 0.0012 * v[11] +
+                     0.0765 * v[12] - 0.0522 * v[13] - 0.0881 * v[14] - 0.0982 * v[15] - 0.0718) * 127.5 + 127.5
+                b = (0.0681 * v[0] + 0.0687 * v[1] - 0.0433 * v[2] + 0.0617 * v[3] +
+                     0.0329 * v[4] + 0.0115 * v[5] + 0.0915 * v[6] - 0.0259 * v[7] +
+                     0.1180 * v[8] - 0.0421 * v[9] + 0.0011 * v[10] - 0.0036 * v[11] +
+                     0.0749 * v[12] - 0.1103 * v[13] - 0.0499 * v[14] - 0.0778 * v[15] - 0.0851) * 127.5 + 127.5
                 
-            #     bytes_array[i * 4] = min(max(int(r) if np.isfinite(r) else 0, 0), 255)
-            #     bytes_array[i * 4 + 1] = min(max(int(g) if np.isfinite(g) else 0, 0), 255)
-            #     bytes_array[i * 4 + 2] = min(max(int(b) if np.isfinite(b) else 0, 0), 255)
-            #     bytes_array[i * 4 + 3] = 255
-            # image = Image.fromarray(bytes_array.reshape((height, width, 4)), 'RGBA')
-            # print(f"size: {image.size}, mode: {image.mode}")
-            image = None
+                bytes_array[i * 4] = min(max(int(r) if np.isfinite(r) else 0, 0), 255)
+                bytes_array[i * 4 + 1] = min(max(int(g) if np.isfinite(g) else 0, 0), 255)
+                bytes_array[i * 4 + 2] = min(max(int(b) if np.isfinite(b) else 0, 0), 255)
+                bytes_array[i * 4 + 3] = 255
+            image = Image.fromarray(bytes_array.reshape((height, width, 4)), 'RGBA')
 
     return image
 
