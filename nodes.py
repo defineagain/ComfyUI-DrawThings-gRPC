@@ -172,7 +172,7 @@ def get_files(server, port) -> ModelsInfo:
                 'remacri_4x_f16.ckpt',
                 '4x_ultrasharp_f16.ckpt',
             ]
-            model_info['upscalers'] = [[UpscalerInfo(file=f, name=f) for f in official if f in DrawThingsSampler.files_list]]
+            model_info['upscalers'] = [UpscalerInfo(file=f, name=f) for f in official if f in DrawThingsSampler.files_list]
 
         return model_info
 
