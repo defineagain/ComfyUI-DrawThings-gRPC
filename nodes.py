@@ -55,10 +55,15 @@ LoRAInfo = TypedDict('LoRAInfo', {
     'version': str,
     'prefix': str
 })
+UpscalerInfo = TypedDict('UpscalerInfo', {
+    'file': str,
+    'name': str,
+})
 ModelsInfo = TypedDict('ModelsInfo', {
     'models': list[ModelInfo],
     'controlNets': list[ControlNetInfo],
-    'loras': list[LoRAInfo]
+    'loras': list[LoRAInfo],
+    'upscalers': list[UpscalerInfo]
 })
 
 MAX_RESOLUTION=16384
@@ -157,6 +162,18 @@ def get_files(server, port) -> ModelsInfo:
         DrawThingsSampler.files_list = response_json["files"]
         override = dict(response_json['override'])
         model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
+
+        if 'upscalers' not in model_info:
+            official = [
+                'realesrgan_x2plus_f16.ckpt',
+                'realesrgan_x4plus_f16.ckpt',
+                'realesrgan_x4plus_anime_6b_f16.ckpt',
+                'esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt',
+                'remacri_4x_f16.ckpt',
+                '4x_ultrasharp_f16.ckpt',
+            ]
+            model_info['upscalers'] = [[UpscalerInfo(file=f, name=f) for f in official if f in DrawThingsSampler.files_list]]
+
         return model_info
 
 routes = PromptServer.instance.routes
