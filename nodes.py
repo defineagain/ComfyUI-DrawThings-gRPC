@@ -807,7 +807,7 @@ class DrawThingsControlNet:
         return {
             "required": {
                 "control_name": ("DT_MODEL", {"model_type": "controlNets", "tooltip": "The model used."}),
-                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Unspecified", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
+                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Custom", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
