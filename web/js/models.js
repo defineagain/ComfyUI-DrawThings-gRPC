@@ -2,8 +2,6 @@
 
 /** @param node {LGraphNode} */
 export function addServerListeners(node) {
-    console.log("hook");
-
     const serverWidget = node.widgets.find((w) => w.name === "server");
     serverWidget.callback = function (value, graph, node) {
         updateNodeModels(node);
@@ -59,8 +57,11 @@ export async function getFiles(server, port) {
     return filesInfoResponse;
 }
 
-/** @type Map<string, { models: any[], controlNets: any[], loras: []} */
+/** @typedef {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} ModelInfo */
+/** @type Map<string, ModelInfo> */
 const modelInfoStore = new Map();
+/** @type Map<string, Promise<void>> */
+const modelInfoRequests = new Map();
 const modelInfoStoreKey = (server, port) => `${server}:${port}`;
 
 // yes this is kind of hacky :)
@@ -76,29 +77,44 @@ const failedConnectionInfo = {
 };
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
+let fetches = 0;
 
 /** @param node {LGraphNode} */
-export async function updateNodeModels(node) {
+export async function updateNodeModels(node, updateDisconnected = false) {
     // find the sampler node
-    const root = findRoot(node);
-    if (!root) return;
+    let root = findRoot(node);
+    if (!root) {
+        if (!updateDisconnected) return;
+        root = node;
+    }
 
     // get the server and port
-    const server = root.widgets.find((w) => w.name === "server").value;
-    const port = root.widgets.find((w) => w.name === "port").value;
+    const server = root.widgets.find((w) => w.name === "server")?.value;
+    const port = root.widgets.find((w) => w.name === "port")?.value;
 
     const key = modelInfoStoreKey(server, port);
-    console.log("checking", key);
 
+    if (modelInfoRequests.has(key)) {
+        const request = modelInfoRequests.get(key);
+        await request;
+    }
     // fetch the models list and update store
-    if (server && port) {
-        const response = await getFiles(server, port);
-        if (!response.ok) {
-            modelInfoStore.set(key, failedConnectionInfo);
-        } else {
-            const data = await response.json();
-            modelInfoStore.set(key, data);
-        }
+    else if (server && port) {
+        const promise = new Promise((resolve) => {
+            console.debug("checking DT server", key, " (", fetches++, ")");
+            getFiles(server, port).then(async (response) => {
+                if (!response.ok) {
+                    modelInfoStore.set(key, failedConnectionInfo);
+                } else {
+                    const data = await response.json();
+                    modelInfoStore.set(key, data);
+                }
+                modelInfoRequests.delete(key);
+                resolve();
+            });
+        });
+        modelInfoRequests.set(key, promise);
+        const response = await promise;
     }
 
     // update the node's models list
@@ -149,9 +165,8 @@ function setValidOption(widget) {
 
 /** @param {LGraphNode} node */
 function findRoot(node) {
-    if (!node) return;
+    if (!node || node.id === -1) return;
 
-    console.debug("looking for a root from", node.comfyClass, node.id);
     if (node?.isDtRootNode === true) return node;
 
     if (node?.isDtRootNode === false) {
