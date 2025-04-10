@@ -64,7 +64,7 @@ ModelsInfo = TypedDict('ModelsInfo', {
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
 
-def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
+def prepare_callback(step, total_steps, x0=None, latent_format=None):
     previewer = None
     preview_format = "JPEG"
     if preview_format not in ["JPEG", "PNG"]:
@@ -74,13 +74,13 @@ def prepare_callback(step, total_steps, x0: torch.Tensor, latent_format):
         previewer = latent_preview.get_previewer(x0.device, latent_format)
 
     pbar = comfy.utils.ProgressBar(step)
-    def callback(step, x0: torch.Tensor, total_steps):
+    def callback(step, total_steps, x0=None):
 
         preview_bytes = None
         if previewer is not None:
             preview_bytes = previewer.decode_latent_to_preview_image(preview_format, x0)
         pbar.update_absolute(step, total_steps, preview_bytes)
-    return callback(step, x0, total_steps)
+    return callback(step, total_steps, x0)
 
 def convert_response_image(response_image: bytes):
     int_buffer = np.frombuffer(response_image, dtype=np.uint32, count=17)
@@ -208,6 +208,7 @@ async def dt_sampler(
                 high_res_fix=None,
                 video=None,
                 upscaler=None,
+                tea_cache=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -305,11 +306,11 @@ async def dt_sampler(
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
 
-    # if tea_cache is not None: # flux or video option
-        # GenerationConfiguration.AddTeaCache(builder, False)
-        # GenerationConfiguration.AddTeaCacheStart(builder, 5)
-        # GenerationConfiguration.AddTeaCacheEnd(builder, -1)
-        # GenerationConfiguration.AddTeaCacheThreshold(builder, 0.06)
+    if tea_cache is not None: # flux or video option
+        GenerationConfiguration.AddTeaCache(builder, True)
+        GenerationConfiguration.AddTeaCacheStart(builder, tea_cache["tea_cache_start"])
+        GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache["tea_cache_end"])
+        GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache["tea_cache_threshold"])
 
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
@@ -391,26 +392,28 @@ async def dt_sampler(
 # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
                     x0 = None
                     latent_format = None
-                    result = convert_response_image(preview_image)
-                    if result is not None:
-                        data = result['data']
-                        width = result['width']
-                        height = result['height']
-                        channels = result['channels']
+                    if preview_type != "Disabled":
+                        print(preview_type)
+                        result = convert_response_image(preview_image)
+                        if result is not None:
+                            data = result['data']
+                            width = result['width']
+                            height = result['height']
+                            channels = result['channels']
 
-                        np_array = data.reshape(-1, channels, height, width)
-                        x0 = torch.from_numpy(np_array).to(torch.float32)
-                        # print(f"{x0.shape}")
+                            np_array = data.reshape(-1, channels, height, width)
+                            x0 = torch.from_numpy(np_array).to(torch.float32)
+                            # print(f"{x0.shape}")
 
-                        match preview_type:
-                            case "SD1.5":
-                                latent_format = latent_formats.SD15(latent_formats.LatentFormat)
-                            case "SD3":
-                                latent_format = latent_formats.SD3(latent_formats.LatentFormat)
-                            case "SDXL":
-                                latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
-                            case "Flux":
-                                latent_format = latent_formats.Flux()
+                            match preview_type:
+                                case "SD1.5":
+                                    latent_format = latent_formats.SD15(latent_formats.LatentFormat)
+                                case "SD3":
+                                    latent_format = latent_formats.SD3(latent_formats.LatentFormat)
+                                case "SDXL":
+                                    latent_format = latent_formats.SDXL(latent_formats.LatentFormat)
+                                case "Flux":
+                                    latent_format = latent_formats.Flux()
                 prepare_callback(current_step, steps, x0, latent_format)
 
             if generated_images:
@@ -498,6 +501,7 @@ class DrawThingsLists:
             ]
 
     modeltype_list = [
+                "Disabled", # Temp option to disable previews
                 "SD1.5",
                 "SD3",
                 "SDXL",
@@ -516,7 +520,7 @@ class DrawThingsSampler:
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
 
                 # TODO: Remove the need to manually set preview type
-                "preview_type": (DrawThingsLists.modeltype_list, {"default": "SD1.5"}),
+                "preview_type": (DrawThingsLists.modeltype_list, {"default": "Disabled"}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
@@ -561,7 +565,7 @@ class DrawThingsSampler:
                 "high_res_fix": ("DT_HIGHRES", ),
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                # "tea_cache": ("DT_TEA", ),
+                "tea_cache": ("DT_TEA", ),
             }
         }
 
@@ -602,6 +606,7 @@ class DrawThingsSampler:
                 high_res_fix=None,
                 video=None,
                 upscaler=None,
+                tea_cache=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -648,6 +653,7 @@ class DrawThingsSampler:
                 high_res_fix=high_res_fix,
                 video=video,
                 upscaler=upscaler,
+                tea_cache=tea_cache,
                 ))
 
     # @classmethod
@@ -758,6 +764,28 @@ class DrawThingsUpscaler:
         upscaler = {"upscaler_model": upscaler_model, "scale_factor": scale_factor}
         # return (upscaler,)
         return (None,)
+
+class DrawThingsTeaCache:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "tea_cache_start": ("INT", {"default": 4, "min": 0, "max": 4, "step": 1}),
+                "tea_cache_end": ("INT", {"default": 4, "min": 0, "max": 4, "step": 1}),
+                "tea_cache_threshold": ("FLOAT", {"default": 0.06, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_TEA",)
+    RETURN_NAMES = ("tea_cache",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, tea_cache_start, tea_cache_end, tea_cache_threshold):
+        tea_cache = {"tea_cache_start": tea_cache_start, "tea_cache_end": tea_cache_end, "tea_cache_threshold": tea_cache_threshold}
+        return (tea_cache,)
 
 class DrawThingsPositive:
     def __init__(self):
@@ -905,6 +933,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsHighResFix": DrawThingsHighResFix,
     "DrawThingsVideo": DrawThingsVideo,
     "DrawThingsUpscaler": DrawThingsUpscaler,
+    "DrawThingsTeaCache": DrawThingsTeaCache,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -918,4 +947,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsHighResFix": "Draw Things High Resolution Fix",
     "DrawThingsVideo": "Draw Things Video Options",
     "DrawThingsUpscaler": "Draw Things Upscaler",
+    "DrawThingsTeaCache": "Draw Things Tea Cache",
 }
