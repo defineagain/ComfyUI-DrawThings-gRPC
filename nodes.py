@@ -127,7 +127,7 @@ def decode_preview(preview, version):
                 r = 49.5210 * v0 + 29.0283 * v1 - 23.9673 * v2 - 39.4981 * v3 + 99.9368
                 g = 41.1373 * v0 + 42.4951 * v1 + 24.7349 * v2 - 50.8279 * v3 + 99.8421
                 b = 40.2919 * v0 + 18.9304 * v1 + 30.0236 * v2 - 81.9976 * v3 + 99.5384
-                
+
                 bytes_array[i // width, i % width] = [
                     min(max(int(r if np.isfinite(r) else 0), 0), 255),
                     min(max(int(g if np.isfinite(g) else 0), 0), 255),
@@ -179,7 +179,7 @@ def decode_preview(preview, version):
                      0.0329 * v[4] + 0.0115 * v[5] + 0.0915 * v[6] - 0.0259 * v[7] +
                      0.1180 * v[8] - 0.0421 * v[9] + 0.0011 * v[10] - 0.0036 * v[11] +
                      0.0749 * v[12] - 0.1103 * v[13] - 0.0499 * v[14] - 0.0778 * v[15] - 0.0851) * 127.5 + 127.5
-                
+
                 bytes_array[i * 4] = min(max(int(r) if np.isfinite(r) else 0, 0), 255)
                 bytes_array[i * 4 + 1] = min(max(int(g) if np.isfinite(g) else 0, 0), 255)
                 bytes_array[i * 4 + 2] = min(max(int(b) if np.isfinite(b) else 0, 0), 255)
@@ -831,7 +831,7 @@ class DrawThingsTeaCache:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "tea_cache_start": ("INT", {"default": 4, "min": 0, "max": 4, "step": 1}),
+                "tea_cache_start": ("INT", {"default": 4, "min": 0, "max": 10, "step": 1}),
                 "tea_cache_end": ("INT", {"default": 4, "min": 0, "max": 81, "step": 1}),
                 "tea_cache_threshold": ("FLOAT", {"default": 0.06, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
             }
