@@ -1,3 +1,4 @@
+// import { LiteGraph } from "@comfyorg/litegraph";
 /** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
 
 /** @param node {LGraphNode} */
@@ -25,6 +26,7 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
         "(None selected)",
         /** @type WidgetCallback<IWidget<any, any>> */
         (value, graph, node) => {
+            console.log(this);
             const option = failedConnectionOptions.find(
                 (o) => o.name === value
             );
@@ -35,6 +37,9 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
             modelType: inputData[1].model_type,
         }
     );
+    widget.callback = function (args) {
+        console.log("model change", args, this);
+    };
     return { widget };
 }
 
@@ -145,10 +150,22 @@ function updateModelWidgets(node, models) {
 
     for (const widget of modelWidgets) {
         const type = widget.options.modelType;
-        widget.options.values = models[type]?.map((m) => m.name);
+
+        widget.options.values = models[type]
+            ?.map((m) => `${m.version} - ${m.name}`)
+            .sort();
         setValidOption(widget);
     }
 }
+
+const modelComparator = (a, b) =>
+    a.version?.localeCompare(b.version) || a.name.localeCompare(b.name);
+
+const versionNames = {
+    v1: "SD",
+    "sdxl_base_v0.9": "SDXL",
+    flux1: "Flux",
+};
 
 function setValidOption(widget) {
     if (!widget || widget.type !== "combo") return;
