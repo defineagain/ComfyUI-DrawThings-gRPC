@@ -16,6 +16,7 @@ Run your server with the following options:
 
 - Add needed code for masks
 - Add all possible options
+- Create example workflows
 - Submit to ComfyUI registry
 
 ## Discussion
