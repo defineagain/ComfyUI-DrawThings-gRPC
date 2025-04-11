@@ -5,8 +5,6 @@ import {
     updateNodeModels,
 } from "./models.js";
 
-/** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
-
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = [
     "DrawThingsSampler",
@@ -34,8 +32,6 @@ app.registerExtension({
             updateNodeModels(node);
         }
         if (node?.comfyClass === "DrawThingsSampler") {
-            console.debug("nodeCreated(DrawThingsSampler)", node);
-
             addServerListeners(node);
 
             const original_onMouseDown = node.onMouseDown;
@@ -157,3 +153,5 @@ app.registerExtension({
     //     }
     // },
 });
+
+/** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

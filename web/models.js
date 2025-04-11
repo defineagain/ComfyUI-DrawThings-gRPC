@@ -1,6 +1,3 @@
-// import { LiteGraph } from "@comfyorg/litegraph";
-/** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
-
 /** @param node {LGraphNode} */
 export function addServerListeners(node) {
     const serverWidget = node.widgets.find((w) => w.name === "server");
@@ -26,7 +23,6 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
         "(None selected)",
         /** @type WidgetCallback<IWidget<any, any>> */
         (value, graph, node) => {
-            console.log(this);
             const option = failedConnectionOptions.find(
                 (o) => o.name === value
             );
@@ -37,9 +33,6 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
             modelType: inputData[1].model_type,
         }
     );
-    widget.callback = function (args) {
-        console.log("model change", args, this);
-    };
     return { widget };
 }
 
@@ -79,6 +72,7 @@ const failedConnectionInfo = {
     models: failedConnectionOptions,
     controlNets: failedConnectionOptions,
     loras: failedConnectionOptions,
+    upscalers: failedConnectionOptions,
 };
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
@@ -119,11 +113,11 @@ export async function updateNodeModels(node, updateDisconnected = false) {
             });
         });
         modelInfoRequests.set(key, promise);
-        const response = await promise;
+        await promise;
     }
 
-    // update the node's models list
-    const modelInfo = modelInfoStore.get(key);
+    const models = modelInfoStore.get(key);
+    const modelInfo = getModelOptions(models);
 
     // update any connected nodes
     updateInputs(root);
@@ -146,16 +140,29 @@ export async function updateNodeModels(node, updateDisconnected = false) {
 /** @param node {LGraphNode}; @param models {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} */
 function updateModelWidgets(node, models) {
     if (!node || !models) return;
-    const modelWidgets = node.widgets.filter((w) => w.options.modelType);
+    const modelWidgets = node.widgets.filter((w) => w.options?.modelType);
 
     for (const widget of modelWidgets) {
         const type = widget.options.modelType;
 
-        widget.options.values = models[type]
-            ?.map((m) => `${m.version} - ${m.name}`)
-            .sort();
+        widget.options.values = models[type];
         setValidOption(widget);
     }
+}
+
+function getModelOptions(models) {
+    function toOptions(modelGroup) {
+        return modelGroup
+            .map((m) => (m.version ? `${m.name} (${m.version})` : m.name))
+            .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
+    }
+
+    return {
+        models: toOptions(models.models),
+        controlNets: toOptions(models.controlNets),
+        loras: toOptions(models.loras),
+        upscalers: models.upscalers.map((m) => `${m.name}`).sort(),
+    };
 }
 
 const modelComparator = (a, b) =>
@@ -202,3 +209,5 @@ function findRoot(node) {
 
     return undefined;
 }
+
+/** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "litegraph.js"; */
