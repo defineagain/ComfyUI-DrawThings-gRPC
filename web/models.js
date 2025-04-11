@@ -1,5 +1,3 @@
-/** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
-
 /** @param node {LGraphNode} */
 export function addServerListeners(node) {
     const serverWidget = node.widgets.find((w) => w.name === "server");
@@ -74,6 +72,7 @@ const failedConnectionInfo = {
     models: failedConnectionOptions,
     controlNets: failedConnectionOptions,
     loras: failedConnectionOptions,
+    upscalers: failedConnectionOptions,
 };
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
@@ -114,11 +113,11 @@ export async function updateNodeModels(node, updateDisconnected = false) {
             });
         });
         modelInfoRequests.set(key, promise);
-        const response = await promise;
+        await promise;
     }
 
-    // update the node's models list
-    const modelInfo = modelInfoStore.get(key);
+    const models = modelInfoStore.get(key);
+    const modelInfo = getModelOptions(models);
 
     // update any connected nodes
     updateInputs(root);
@@ -141,14 +140,39 @@ export async function updateNodeModels(node, updateDisconnected = false) {
 /** @param node {LGraphNode}; @param models {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} */
 function updateModelWidgets(node, models) {
     if (!node || !models) return;
-    const modelWidgets = node.widgets.filter((w) => w.options.modelType);
+    const modelWidgets = node.widgets.filter((w) => w.options?.modelType);
 
     for (const widget of modelWidgets) {
         const type = widget.options.modelType;
-        widget.options.values = models[type]?.map((m) => m.name);
+
+        widget.options.values = models[type];
         setValidOption(widget);
     }
 }
+
+function getModelOptions(models) {
+    function toOptions(modelGroup) {
+        return modelGroup
+            .map((m) => (m.version ? `${m.name} (${m.version})` : m.name))
+            .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
+    }
+
+    return {
+        models: toOptions(models.models),
+        controlNets: toOptions(models.controlNets),
+        loras: toOptions(models.loras),
+        upscalers: models.upscalers.map((m) => `${m.name}`).sort(),
+    };
+}
+
+const modelComparator = (a, b) =>
+    a.version?.localeCompare(b.version) || a.name.localeCompare(b.name);
+
+const versionNames = {
+    v1: "SD",
+    "sdxl_base_v0.9": "SDXL",
+    flux1: "Flux",
+};
 
 function setValidOption(widget) {
     if (!widget || widget.type !== "combo") return;
@@ -185,3 +209,5 @@ function findRoot(node) {
 
     return undefined;
 }
+
+/** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "litegraph.js"; */

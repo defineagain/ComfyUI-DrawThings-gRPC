@@ -3,6 +3,7 @@
 import os
 import sys
 import base64
+import re
 import numpy as np
 from PIL import Image, ImageOps
 import io
@@ -734,21 +735,28 @@ class DrawThingsSampler:
         # need to replace model NAMES with model FILES
 
         all_files = get_files(server, port)
-        model_file = next((m['file'] for m in all_files["models"] if m['name'] == model), None)
-        DrawThingsLists.modelinfo_list = next((m for m in all_files["models"] if m['name'] == model), None)
+
+        def getModelInfo(item, models):
+            item_name = item['name'] if 'name' in item else item
+            matches = re.match(r"^(.*) \(\w+\)$", item_name)
+            name = matches[1] if matches else item_name
+            return next((m for m in models if m['name'] == name), None)
+
+        model_info = getModelInfo(model, all_files["models"])
+        DrawThingsLists.modelinfo_list = model_info
 
         if lora is not None:
             for lora_item in lora:
-                lora_item['file'] = next((m['file'] for m in all_files['loras'] if m['name'] == lora_item['name']), None)
+                lora_item['file'] = getModelInfo(lora_item, all_files['loras'])['file']
 
         if control_net is not None:
             for cnet in control_net:
-                cnet['file'] = next((m['file'] for m in all_files['controlNets'] if m['name'] == cnet['name']), None)
+                cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
 
         return asyncio.run(dt_sampler(
                 server,
                 port,
-                model_file,
+                model_info['file'],
                 seed,
                 seed_mode,
                 steps,
