@@ -18,7 +18,7 @@ Run your server with the following options:
 - Add all possible options (including those specific to video generation)
 - Submit to ComfyUI registry
 
-## DISCUSS
+## Discussion
 
 Discuss this project on [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464)
 
