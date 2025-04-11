@@ -116,7 +116,7 @@ def decode_preview(preview, version):
 
     fp16 = np.frombuffer(preview, dtype=np.float16, offset=offset)
 
-    print(f'{version}')
+    print(f'version: {version}')
 
     image = None
     if version in ['v1', 'v2', 'svdI2v']:
