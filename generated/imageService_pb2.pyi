@@ -169,20 +169,22 @@ class ImageGenerationSignpostProto(_message.Message):
     def __init__(self, textEncoded: _Optional[_Union[ImageGenerationSignpostProto.TextEncoded, _Mapping]] = ..., imageEncoded: _Optional[_Union[ImageGenerationSignpostProto.ImageEncoded, _Mapping]] = ..., sampling: _Optional[_Union[ImageGenerationSignpostProto.Sampling, _Mapping]] = ..., imageDecoded: _Optional[_Union[ImageGenerationSignpostProto.ImageDecoded, _Mapping]] = ..., secondPassImageEncoded: _Optional[_Union[ImageGenerationSignpostProto.SecondPassImageEncoded, _Mapping]] = ..., secondPassSampling: _Optional[_Union[ImageGenerationSignpostProto.SecondPassSampling, _Mapping]] = ..., secondPassImageDecoded: _Optional[_Union[ImageGenerationSignpostProto.SecondPassImageDecoded, _Mapping]] = ..., faceRestored: _Optional[_Union[ImageGenerationSignpostProto.FaceRestored, _Mapping]] = ..., imageUpscaled: _Optional[_Union[ImageGenerationSignpostProto.ImageUpscaled, _Mapping]] = ...) -> None: ...
 
 class ImageGenerationResponse(_message.Message):
-    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags")
+    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags", "downloadSize")
     GENERATEDIMAGES_FIELD_NUMBER: _ClassVar[int]
     CURRENTSIGNPOST_FIELD_NUMBER: _ClassVar[int]
     SIGNPOSTS_FIELD_NUMBER: _ClassVar[int]
     PREVIEWIMAGE_FIELD_NUMBER: _ClassVar[int]
     SCALEFACTOR_FIELD_NUMBER: _ClassVar[int]
     TAGS_FIELD_NUMBER: _ClassVar[int]
+    DOWNLOADSIZE_FIELD_NUMBER: _ClassVar[int]
     generatedImages: _containers.RepeatedScalarFieldContainer[bytes]
     currentSignpost: ImageGenerationSignpostProto
     signposts: _containers.RepeatedCompositeFieldContainer[ImageGenerationSignpostProto]
     previewImage: bytes
     scaleFactor: int
     tags: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ...) -> None: ...
+    downloadSize: int
+    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ..., downloadSize: _Optional[int] = ...) -> None: ...
 
 class FileChunk(_message.Message):
     __slots__ = ("content", "filename", "offset")

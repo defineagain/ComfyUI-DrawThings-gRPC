@@ -12,6 +12,7 @@ const DrawThingsNodeTypes = [
     "DrawThingsSampler",
     "DrawThingsControlNet",
     "DrawThingsLoRA",
+    "DrawThingsUpscaler",
 ];
 
 // NOTE: leaving this commented out for now in case we need it later
