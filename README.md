@@ -3,7 +3,7 @@
 Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries) and let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
 
 > [!NOTE]
-> Previews are still a work-in-progress and will look wrong, however, this does not have any influence over the final image.
+> Previews might look wrong for some models, however this does not have any influence over the final image.
 
 ## Draw Things gRPC server
 
@@ -14,12 +14,13 @@ Run your server with the following options:
 
 ## TODO
 
-- Fix connecting to any server other than localhost:7859
-- Complete the Javascript extension
 - Add needed code for masks
-- Fix previews
 - Add all possible options (including those specific to video generation)
 - Submit to ComfyUI registry
+
+## DISCUSS
+
+Discuss this project on [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464)
 
 ## Quickstart
 
@@ -30,7 +31,8 @@ Run your server with the following options:
 
 # Features
 
-- A list of features
+- Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries).
+- Let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
 
 ## Develop
 
