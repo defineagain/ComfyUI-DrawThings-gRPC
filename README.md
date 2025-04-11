@@ -15,7 +15,7 @@ Run your server with the following options:
 ## TODO
 
 - Add needed code for masks
-- Add all possible options (including those specific to video generation)
+- Add all possible options
 - Submit to ComfyUI registry
 
 ## Discussion
