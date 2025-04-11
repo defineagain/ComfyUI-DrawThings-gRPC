@@ -429,7 +429,7 @@ async def dt_sampler(
     GenerationConfiguration.AddTargetImageHeight(builder, height)
     if upscaler is not None:
         GenerationConfiguration.AddUpscaler(builder, upscaler_model)
-        GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["scale_factor"])
+        GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["upscaler_scale_factor"])
     GenerationConfiguration.AddSteps(builder, steps)
 
     if video is not None:
@@ -871,9 +871,8 @@ class DrawThingsUpscaler:
     def INPUT_TYPES(s):
         return {
             "required": {
-                # TODO: Add modellist
-                "upscaler_model": ("STRING", {"default": "Under construction"}),
-                "scale_factor": ("INT", {"default": 2, "min": 0, "max": 4, "step": 1}),
+                "upscaler_model": ("DT_MODEL", {"model_type": "upscalers"}),
+                "upscaler_scale_factor": ("INT", {"default": 2, "min": 0, "max": 4, "step": 1}),
             }
         }
 
@@ -882,10 +881,9 @@ class DrawThingsUpscaler:
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
-    def add_to_pipeline(self, upscaler_model, scale_factor):
-        upscaler = {"upscaler_model": upscaler_model, "scale_factor": scale_factor}
-        # return (upscaler,)
-        return (None,)
+    def add_to_pipeline(self, upscaler_model, upscaler_scale_factor):
+        upscaler = {"upscaler_model": upscaler_model, "upscaler_scale_factor": upscaler_scale_factor}
+        return (upscaler,)
 
 class DrawThingsTeaCache:
     def __init__(self):
