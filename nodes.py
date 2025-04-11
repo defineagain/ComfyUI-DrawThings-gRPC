@@ -15,11 +15,11 @@ import logging
 import grpc
 import flatbuffers
 import google.protobuf as pb
-from . import imageService_pb2
-from . import imageService_pb2_grpc
-from . import Control
-from . import LoRA
-from . import GenerationConfiguration
+# from generated import imageService_pb2
+from .generated import imageService_pb2, imageService_pb2_grpc
+from .generated import Control
+from .generated import LoRA
+from .generated import GenerationConfiguration
 import json
 import struct
 
