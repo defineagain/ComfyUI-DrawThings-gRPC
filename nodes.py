@@ -618,8 +618,7 @@ class DrawThingsLists:
 
     control_input_type = [
         # NOTE: Draw Things currently only supports these input slots: Custom, Depth, Scribble, Pose, Color
-        # But in order to have Union cnets working, we still need to full list to set the hints-type, only input-override has to be set to one of the slots.
-                # "Unspecified",
+        # But in order to have Union cnets working, we still need the full list to set the hints-type, only input-override has to be set to one of the slots.
                 "Custom",
                 "Depth",
                 "Canny", # -> Custom
@@ -743,7 +742,7 @@ class DrawThingsSampler:
 
         def getModelInfo(item, models):
             item_name = item['name'] if 'name' in item else item
-            matches = re.match(r"^(.*) \(\w+\)$", item_name)
+            matches = re.match(r"^(.*) \((\w|\.)+\)$", item_name)
             name = matches[1] if matches else item_name
             return next((m for m in models if m['name'] == name), None)
 
