@@ -392,10 +392,15 @@ async def dt_sampler(
     if control_net is not None and len(control_net):
         fin_controls = []
         for c in control_net:
+            if c["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
+                c_input_slot = "Custom"
+            else:
+                c_input_slot = c["input_type"]
+            print(f"{c_input_slot}")
             control_name = builder.CreateString(c["file"])
             Control.Start(builder)
             Control.AddFile(builder, control_name)
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
+            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c_input_slot))
             Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
             Control.AddWeight(builder, c["weight"])
             Control.AddGuidanceStart(builder, c["start"])
@@ -612,27 +617,27 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
-        # NOTE: Draw Things currently only supports these input slots
-        # Any other controlnet needs to use "Custom"
+        # NOTE: Draw Things currently only supports these input slots: Custom, Depth, Scribble, Pose, Color
+        # But in order to have Union cnets working, we still need to full list to set the hints-type, only input-override has to be set to one of the slots.
                 # "Unspecified",
                 "Custom",
                 "Depth",
-                # "Canny",
+                "Canny", # -> Custom
                 "Scribble",
                 "Pose",
-                # "Normalbae",
+                "Normalbae", # -> Custom
                 "Color",
-                # "Lineart",
-                # "Softedge",
-                # "Seg",
-                # "Inpaint",
-                # "Ip2p",
-                # "Shuffle",
-                # "Mlsd",
-                # "Tile",
-                # "Blur",
-                # "Lowquality",
-                # "Gray",
+                "Lineart", # -> Custom
+                "Softedge", # -> Custom
+                "Seg", # -> Custom
+                "Inpaint", # -> Custom
+                "Ip2p", # -> Custom
+                "Shuffle", # -> Custom
+                "Mlsd", # -> Custom
+                "Tile", # -> Custom
+                "Blur", # -> Custom
+                "Lowquality", # -> Custom
+                "Gray", # -> Custom
             ]
 
 class DrawThingsSampler:
