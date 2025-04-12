@@ -366,7 +366,7 @@ async def dt_sampler(
                 high_res_fix=None,
                 video=None,
                 upscaler=None,
-                tea_cache=None,
+                flux=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -469,11 +469,19 @@ async def dt_sampler(
     GenerationConfiguration.AddTiledDecoding(builder, False)
     GenerationConfiguration.AddTiledDiffusion(builder, False)
 
-    if tea_cache is not None: # flux or video option
-        GenerationConfiguration.AddTeaCache(builder, True)
-        GenerationConfiguration.AddTeaCacheStart(builder, tea_cache["tea_cache_start"])
-        GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache["tea_cache_end"])
-        GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache["tea_cache_threshold"])
+    if video is not None: # flux or video option
+        if video["tea_cache"] is not None: # flux or video option
+            GenerationConfiguration.AddTeaCache(builder, True)
+            GenerationConfiguration.AddTeaCacheStart(builder, video["tea_cache"]["tea_cache_start"])
+            GenerationConfiguration.AddTeaCacheEnd(builder, video["tea_cache"]["tea_cache_end"])
+            GenerationConfiguration.AddTeaCacheThreshold(builder, video["tea_cache"]["tea_cache_threshold"])
+
+    if flux is not None: # flux or video option
+        if flux["tea_cache"] is not None: # flux or video option
+            GenerationConfiguration.AddTeaCache(builder, True)
+            GenerationConfiguration.AddTeaCacheStart(builder, flux["tea_cache"]["tea_cache_start"])
+            GenerationConfiguration.AddTeaCacheEnd(builder, flux["tea_cache"]["tea_cache_end"])
+            GenerationConfiguration.AddTeaCacheThreshold(builder, flux["tea_cache"]["tea_cache_threshold"])
 
     # ti embed
     GenerationConfiguration.AddBatchCount(builder, batch_count)
@@ -688,12 +696,12 @@ class DrawThingsSampler:
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
                 "upscaler": ("DT_UPSCALER", ),
+                "flux": ("DT_FLUX", ),
                 "video": ("DT_VIDEO", ),
                 "refiner": ("DT_REFINER", ),
                 "high_res_fix": ("DT_HIGHRES", ),
                 # "tiled_decoding": ("BOOLEAN", {"default": False}),
                 # "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                "tea_cache": ("DT_TEA", ),
             }
         }
 
@@ -733,7 +741,7 @@ class DrawThingsSampler:
                 high_res_fix=None,
                 video=None,
                 upscaler=None,
-                tea_cache=None,
+                flux=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -787,7 +795,7 @@ class DrawThingsSampler:
                 high_res_fix=high_res_fix,
                 video=video,
                 upscaler=upscaler,
-                tea_cache=tea_cache,
+                flux=flux,
                 ))
 
     # @classmethod
@@ -797,6 +805,30 @@ class DrawThingsSampler:
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
+
+class DrawThingsFlux:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "speed_up": ("BOOLEAN", {"default": True}),
+                "res_dpt_shift": ("BOOLEAN", {"default": True}),
+            },
+            "optional": {
+                "tea_cache": ("DT_TEA", ),
+            }
+        }
+
+    RETURN_TYPES = ("DT_FLUX",)
+    RETURN_NAMES = ("flux",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, speed_up, res_dpt_shift, tea_cache):
+        flux = {"speed_up": speed_up, "res_dpt_shift": res_dpt_shift, "tea_cache": tea_cache}
+        return (flux,)
 
 class DrawThingsRefiner:
     def __init__(self):
@@ -863,6 +895,9 @@ class DrawThingsVideo:
         return {
             "required": {
                 "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "step": 1}),
+            },
+            "optional": {
+                "tea_cache": ("DT_TEA", ),
             }
         }
 
@@ -871,9 +906,8 @@ class DrawThingsVideo:
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
-    def add_to_pipeline(self, num_frames):
-        # as dict in case more options are needed later
-        video = {"num_frames": num_frames}
+    def add_to_pipeline(self, num_frames, tea_cache):
+        video = {"num_frames": num_frames, "tea_cache": tea_cache}
         return (video,)
 
 class DrawThingsUpscaler:
@@ -1066,6 +1100,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsVideo": DrawThingsVideo,
     "DrawThingsUpscaler": DrawThingsUpscaler,
     "DrawThingsTeaCache": DrawThingsTeaCache,
+    "DrawThingsFlux": DrawThingsFlux,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1080,4 +1115,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsVideo": "Draw Things Video Options",
     "DrawThingsUpscaler": "Draw Things Upscaler",
     "DrawThingsTeaCache": "Draw Things Tea Cache",
+    "DrawThingsFlux": "Draw Things Flux Options",
 }
