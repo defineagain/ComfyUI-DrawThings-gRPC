@@ -570,8 +570,8 @@ async def dt_sampler(
             # print(f"current_step: {current_step}")
 
             if current_step:
+                x0 = None
                 if preview_image:
-                    x0 = None
                     modelinfo_version = DrawThingsLists.modelinfo_list["version"]
                     if modelinfo_version != "":
                         x0 = decode_preview(preview_image, modelinfo_version)
