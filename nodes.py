@@ -442,9 +442,7 @@ async def dt_sampler(
         GenerationConfiguration.AddNumFrames(builder, video["num_frames"])
 
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    # GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, True) # flux dev option
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    # res shift # flux dev option
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
     if refiner is not None:
@@ -938,9 +936,9 @@ class DrawThingsTeaCache:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "tea_cache_start": ("INT", {"default": 4, "min": 0, "max": 10, "step": 1}),
-                "tea_cache_end": ("INT", {"default": 4, "min": 0, "max": 81, "step": 1}),
-                "tea_cache_threshold": ("FLOAT", {"default": 0.06, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
+                "tea_cache_start": ("INT", {"default": 5, "min": 0, "max": 10, "step": 1}),
+                "tea_cache_end": ("INT", {"default": 2, "min": 0, "max": 81, "step": 1}),
+                "tea_cache_threshold": ("FLOAT", {"default": 0.2, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
             }
         }
 
