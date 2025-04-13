@@ -960,6 +960,7 @@ class DrawThingsTeaCache:
     RETURN_TYPES = ("DT_TEA",)
     RETURN_NAMES = ("tea_cache",)
     FUNCTION = "add_to_pipeline"
+    DESCRIPTION = "Connect this via a supported node, like Flux or Video."
     CATEGORY = "DrawThings"
 
     def add_to_pipeline(self, tea_cache_start, tea_cache_end, tea_cache_threshold):
