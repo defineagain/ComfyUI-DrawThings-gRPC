@@ -526,6 +526,21 @@ async def dt_sampler(
                 hnt.hintType = control_cfg["input_type"].lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
+    if lora is not None:
+        # Needed for loras like FLUX.1-Depth-dev-lora
+        for lora_cfg in lora:
+            lora_image = None
+            if "image" in lora_cfg:
+                lora_image = lora_cfg["image"]
+            if lora_image is not None:
+                taw = imageService_pb2.TensorAndWeight()
+                taw.tensor = convert_image_for_request(lora_image, lora_cfg["input_type"].lower())
+                taw.weight = lora_cfg["weight"]
+
+                hnt = imageService_pb2.HintProto()
+                hnt.hintType = lora_cfg["input_type"].lower()
+                hnt.tensors.append(taw)
+                hints.append(hnt)
 
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
 
@@ -999,7 +1014,7 @@ class DrawThingsControlNet:
         return {
             "required": {
                 "control_name": ("DT_MODEL", {"model_type": "controlNets", "tooltip": "The model used."}),
-                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Custom", "tooltip": "Draw Things currently only supports these input slots, any other controlnet needs to use 'Custom'"}),
+                "control_input_type": (DrawThingsLists.control_input_type, {"default": "Custom"}),
                 "control_mode": (DrawThingsLists.control_mode, {"default": "Balanced", "tooltip": ""}),
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
@@ -1085,6 +1100,56 @@ class DrawThingsLoRA:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
+class DrawThingsLoRANet:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("IMAGE", ),
+                "lora_name": ("DT_MODEL", {"model_type": "loras", "tooltip": "The model used."}),
+                "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "lora_input_type": (DrawThingsLists.control_input_type, {"default": "Custom"}),
+                "invert_image": ("BOOLEAN", {"default": False, "tooltip": "Some Control Nets (i.e. LineArt) need their image to be inverted."}),
+            },
+            "optional": {
+                "lora": ("DT_LORA",),
+            }
+        }
+
+    RETURN_TYPES = ("DT_LORA",)
+    RETURN_NAMES = ("lora",)
+    CATEGORY = "DrawThings"
+    DESCRIPTION = "Some LoRAs (i.e. FLUX.1-Depth-dev-lora) perform the function of Control Net and need to be supplied with an image and type. Use this node in that case."
+    FUNCTION = "add_to_pipeline"
+
+    def add_to_pipeline(self, lora_name, lora_weight, image, lora_input_type, invert_image, lora=None):
+        if invert_image == True:
+            image = 1.0 - image
+
+        lora_list = list()
+
+        if lora is not None:
+            lora_list.extend(lora)
+
+        lora_list.append({
+            "name": lora_name, 
+            "weight": lora_weight, 
+            "image": image, 
+            "input_type": lora_input_type
+        })
+
+        return (lora_list,)
+
+    # @classmethod
+    # def IS_CHANGED(s, **kwargs):
+    #     return float("NaN")
+
+    @classmethod
+    def VALIDATE_INPUTS(s, **kwargs):
+        return True
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -1099,6 +1164,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsUpscaler": DrawThingsUpscaler,
     "DrawThingsTeaCache": DrawThingsTeaCache,
     "DrawThingsFlux": DrawThingsFlux,
+    "DrawThingsLoRANet": DrawThingsLoRANet,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1114,4 +1180,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsUpscaler": "Draw Things Upscaler",
     "DrawThingsTeaCache": "Draw Things Tea Cache",
     "DrawThingsFlux": "Draw Things Flux Options",
+    "DrawThingsLoRANet": "Draw Things LoRA Net",
 }
