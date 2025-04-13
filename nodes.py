@@ -839,7 +839,7 @@ class DrawThingsFlux:
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
-    def add_to_pipeline(self, speed_up, res_dpt_shift, tea_cache):
+    def add_to_pipeline(self, speed_up, res_dpt_shift, tea_cache=None):
         flux = {"speed_up": speed_up, "res_dpt_shift": res_dpt_shift, "tea_cache": tea_cache}
         return (flux,)
 
@@ -919,7 +919,7 @@ class DrawThingsVideo:
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
-    def add_to_pipeline(self, num_frames, tea_cache):
+    def add_to_pipeline(self, num_frames, tea_cache=None):
         video = {"num_frames": num_frames, "tea_cache": tea_cache}
         return (video,)
 
