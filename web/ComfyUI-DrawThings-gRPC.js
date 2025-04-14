@@ -14,12 +14,11 @@ const DrawThingsNodeTypes = [
     "DrawThingsLoRANet",
 ];
 
-// NOTE: leaving this commented out for now in case we need it later
 // const widgetParentsDT = ["high_res_fix"];
-// function hideWidgetDT(widgetObject, hide) {
-//     widgetObject.disabled = hide;
-//     // widgetObject.hidden = hide;
-// }
+function hideWidgetDT(widgetObject, hide) {
+    widgetObject.disabled = hide;
+    // widgetObject.hidden = hide;
+}
 
 app.registerExtension({
     name: "ComfyUI-DrawThings-gRPC",
@@ -40,32 +39,35 @@ app.registerExtension({
                 console.debug("Click!", node);
                 return original_onMouseDown?.apply(this, arguments);
             };
-
-            // NOTE: leaving this commented out for now in case we need it later
-            // const widgetsList = {};
-            // node.widgets.forEach(listWidgets);
-            // function listWidgets(widget) {
-            //     widgetsList[widget.name] = widget;
-            // }
-
-            // widgetParentsDT.forEach(listParents);
-            // function listParents(parent) {
-            //     const widgetParent = widgetsList[parent];
-            //     // console.log(widgetParent);
-
-            //     widgetParent.callback = function () {
-            //         for (let [name, child] of Object.entries(widgetsList)) {
-            //             if (child.name.startsWith(parent + "_")) {
-            //                 if (this.value == true) {
-            //                     hideWidgetDT(child, false);
-            //                 } else {
-            //                     hideWidgetDT(child, true);
-            //                 }
-            //                 // console.log(child);
-            //             }
-            //         }
-            //     };
-            // }
+        }
+        if (node?.comfyClass === "DrawThingsTiled") {
+            const widgetList = {};
+            node.widgets.forEach(listWidgets);
+            function listWidgets(widget) {
+                widgetList[widget.name] = widget;
+            };
+            widgetList["tiled_decoding"].callback = function () {
+                if (widgetList["tiled_decoding"].value == true) {
+                    hideWidgetDT(widgetList["decoding_tile_width"], false);
+                    hideWidgetDT(widgetList["decoding_tile_height"], false);
+                    hideWidgetDT(widgetList["decoding_tile_overlap"], false);
+                } else {
+                    hideWidgetDT(widgetList["decoding_tile_width"], true);
+                    hideWidgetDT(widgetList["decoding_tile_height"], true);
+                    hideWidgetDT(widgetList["decoding_tile_overlap"], true);
+                }
+            };
+            widgetList["tiled_diffusion"].callback = function () {
+                if (widgetList["tiled_diffusion"].value == true) {
+                    hideWidgetDT(widgetList["diffusion_tile_width"], false);
+                    hideWidgetDT(widgetList["diffusion_tile_height"], false);
+                    hideWidgetDT(widgetList["diffusion_tile_overlap"], false);
+                } else {
+                    hideWidgetDT(widgetList["diffusion_tile_width"], true);
+                    hideWidgetDT(widgetList["diffusion_tile_height"], true);
+                    hideWidgetDT(widgetList["diffusion_tile_overlap"], true);
+                }
+            };
         }
     },
     async loadedGraphNode(node) {
@@ -122,37 +124,37 @@ app.registerExtension({
             }
         }
     },
-    // NOTE: leaving this commented out for now in case we need it later
-    // async afterConfigureGraph() {
-    //     console.log(app);
-    //     app.graph._nodes.forEach(listNodes);
-    //     function listNodes(node) {
-    //         if (node.type === "DrawThingsSampler") {
-    //             const widgetsList = {};
-    //             node.widgets.forEach(listWidgets);
-    //             function listWidgets(widget) {
-    //                 widgetsList[widget.name] = widget;
-    //             }
-
-    //             widgetParentsDT.forEach(listParents);
-    //             function listParents(parent) {
-    //                 const widgetParent = widgetsList[parent];
-    //                 // console.log(widgetParent);
-
-    //                 for (let [name, child] of Object.entries(widgetsList)) {
-    //                     if (child.name.startsWith(parent + "_")) {
-    //                         if (widgetParent.value == true) {
-    //                             hideWidgetDT(child, false);
-    //                         } else {
-    //                             hideWidgetDT(child, true);
-    //                         }
-    //                         // console.log(child);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // },
+    async afterConfigureGraph() {
+        const widgetList = [];
+        app.graph._nodes.forEach(listNodes);
+        function listNodes(node) {
+            if (node.type === "DrawThingsTiled") {
+                node.widgets.forEach(listWidgets);
+                function listWidgets(widget) {
+                    widgetList[widget.name] = widget;
+                    // console.log(widget);
+                }
+                if (widgetList["tiled_decoding"].value == true) {
+                    hideWidgetDT(widgetList["decoding_tile_width"], false);
+                    hideWidgetDT(widgetList["decoding_tile_height"], false);
+                    hideWidgetDT(widgetList["decoding_tile_overlap"], false);
+                } else {
+                    hideWidgetDT(widgetList["decoding_tile_width"], true);
+                    hideWidgetDT(widgetList["decoding_tile_height"], true);
+                    hideWidgetDT(widgetList["decoding_tile_overlap"], true);
+                }
+                if (widgetList["tiled_diffusion"].value == true) {
+                    hideWidgetDT(widgetList["diffusion_tile_width"], false);
+                    hideWidgetDT(widgetList["diffusion_tile_height"], false);
+                    hideWidgetDT(widgetList["diffusion_tile_overlap"], false);
+                } else {
+                    hideWidgetDT(widgetList["diffusion_tile_width"], true);
+                    hideWidgetDT(widgetList["diffusion_tile_height"], true);
+                    hideWidgetDT(widgetList["diffusion_tile_overlap"], true);
+                }
+            }
+        }
+    },
 });
 
 /** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
