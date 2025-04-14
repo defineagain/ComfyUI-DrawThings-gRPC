@@ -518,12 +518,18 @@ async def dt_sampler(
         for control_cfg in control_net:
             control_image = control_cfg["image"]
             if control_image is not None:
+                # NOTE: So apparantly other cnets don't work if it's not one of these 5
+                # TODO: Fix Union cnets
+                if control_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
+                    c_input_slot = "Custom"
+                else:
+                    c_input_slot = control_cfg["input_type"]
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(control_image, control_cfg["input_type"].lower())
+                taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
                 taw.weight = control_cfg["weight"]
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = control_cfg["input_type"].lower()
+                hnt.hintType = c_input_slot.lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
     if lora is not None:
