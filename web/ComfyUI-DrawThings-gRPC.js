@@ -11,6 +11,7 @@ const DrawThingsNodeTypes = [
     "DrawThingsControlNet",
     "DrawThingsLoRA",
     "DrawThingsUpscaler",
+    "DrawThingsLoRANet",
 ];
 
 // NOTE: leaving this commented out for now in case we need it later
