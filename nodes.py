@@ -356,6 +356,18 @@ async def dt_sampler(
                 negative,
                 width,
                 height,
+                high_res_fix,
+                high_res_fix_start_width, 
+                high_res_fix_start_height, 
+                high_res_fix_strength,
+                tiled_decoding,
+                decoding_tile_width,
+                decoding_tile_height,
+                decoding_tile_overlap,
+                tiled_diffusion,
+                diffusion_tile_width,
+                diffusion_tile_height,
+                diffusion_tile_overlap,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -363,7 +375,6 @@ async def dt_sampler(
                 control_net=None,
                 lora=None,
                 refiner=None,
-                high_res_fix=None,
                 video=None,
                 upscaler=None,
                 flux=None,
@@ -454,16 +465,23 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
     # face restore
-    if high_res_fix is not None:
-        GenerationConfiguration.AddHiresFix(builder, True)
-        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix["high_res_fix_start_width"])
-        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix["high_res_fix_start_height"])
-        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix["high_res_fix_strength"])
-    else:
-        GenerationConfiguration.AddHiresFix(builder, False)
+    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
+    if high_res_fix is True:
+        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
+        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
+        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
 
-    GenerationConfiguration.AddTiledDecoding(builder, False)
-    GenerationConfiguration.AddTiledDiffusion(builder, False)
+    GenerationConfiguration.AddTiledDecoding(builder, tiled_decoding)
+    if tiled_decoding is True:
+        GenerationConfiguration.AddDecodingTileWidth(builder, decoding_tile_width)
+        GenerationConfiguration.AddDecodingTileHeight(builder, decoding_tile_height)
+        GenerationConfiguration.AddDecodingTileOverlap(builder, decoding_tile_overlap)
+
+    GenerationConfiguration.AddTiledDiffusion(builder, tiled_diffusion)
+    if tiled_diffusion is True:
+        GenerationConfiguration.AddDiffusionTileWidth(builder, diffusion_tile_width)
+        GenerationConfiguration.AddDiffusionTileHeight(builder, diffusion_tile_height)
+        GenerationConfiguration.AddDiffusionTileOverlap(builder, diffusion_tile_overlap)
 
     if video is not None: # flux or video option
         if video["tea_cache"] is not None: # flux or video option
@@ -485,18 +503,6 @@ async def dt_sampler(
         GenerationConfiguration.AddControls(builder, controls_out)
     if loras_out is not None:
         GenerationConfiguration.AddLoras(builder, loras_out)
-
-    if tiled is not None:
-        if tiled["tiled_decoding"] is True:
-            GenerationConfiguration.AddTiledDecoding(builder, tiled["tiled_decoding"])
-            GenerationConfiguration.AddDecodingTileWidth(builder, tiled["decoding_tile_width"])
-            GenerationConfiguration.AddDecodingTileHeight(builder, tiled["decoding_tile_height"])
-            GenerationConfiguration.AddDecodingTileOverlap(builder, tiled["decoding_tile_overlap"])
-        if tiled["tiled_diffusion"] is True:
-            GenerationConfiguration.AddTiledDiffusion(builder, tiled["tiled_diffusion"])
-            GenerationConfiguration.AddDiffusionTileWidth(builder, tiled["diffusion_tile_width"])
-            GenerationConfiguration.AddDiffusionTileHeight(builder, tiled["diffusion_tile_height"])
-            GenerationConfiguration.AddDiffusionTileOverlap(builder, tiled["diffusion_tile_overlap"])
 
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
@@ -708,6 +714,21 @@ class DrawThingsSampler:
                 "preserve_original": ("BOOLEAN", {"default": True}),
                 # face restore
 
+                "high_res_fix": ("BOOLEAN", {"default": False}),
+                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+
+                "tiled_decoding": ("BOOLEAN", {"default": False}),
+                "decoding_tile_width": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_height": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_overlap": ("INT", {"default": 128, "min": 64, "max": 1024, "step": 64}),
+
+                "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                "diffusion_tile_width": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_height": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_overlap": ("INT", {"default": 64, "min": 64, "max": 1024, "step": 64}),
+
                 # ti embed
             },
             "hidden": {
@@ -727,7 +748,6 @@ class DrawThingsSampler:
                 "flux": ("DT_FLUX", ),
                 "video": ("DT_VIDEO", ),
                 "refiner": ("DT_REFINER", ),
-                "high_res_fix": ("DT_HIGHRES", ),
                 "tiled": ("DT_TILED", ),
             }
         }
@@ -758,6 +778,18 @@ class DrawThingsSampler:
                 negative,
                 width,
                 height,
+                high_res_fix,
+                high_res_fix_start_width, 
+                high_res_fix_start_height, 
+                high_res_fix_strength,
+                tiled_decoding,
+                decoding_tile_width,
+                decoding_tile_height,
+                decoding_tile_overlap,
+                tiled_diffusion,
+                diffusion_tile_width,
+                diffusion_tile_height,
+                diffusion_tile_overlap,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -765,7 +797,6 @@ class DrawThingsSampler:
                 control_net=None,
                 lora=None,
                 refiner=None,
-                high_res_fix=None,
                 video=None,
                 upscaler=None,
                 flux=None,
@@ -815,6 +846,18 @@ class DrawThingsSampler:
                 negative,
                 width,
                 height,
+                high_res_fix,
+                high_res_fix_start_width, 
+                high_res_fix_start_height, 
+                high_res_fix_strength,
+                tiled_decoding,
+                decoding_tile_width,
+                decoding_tile_height,
+                decoding_tile_overlap,
+                tiled_diffusion,
+                diffusion_tile_width,
+                diffusion_tile_height,
+                diffusion_tile_overlap,
                 batch_count=batch_count,
                 scale_factor=scale_factor,
                 image=image,
@@ -822,7 +865,6 @@ class DrawThingsSampler:
                 control_net=control_net,
                 lora=lora,
                 refiner=refiner,
-                high_res_fix=high_res_fix,
                 video=video,
                 upscaler=upscaler,
                 flux=flux,
@@ -895,28 +937,6 @@ class DrawThingsRefiner:
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
-
-class DrawThingsHighResFix:
-    def __init__(self):
-        pass
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
-            }
-        }
-
-    RETURN_TYPES = ("DT_HIGHRES",)
-    RETURN_NAMES = ("high_res_fix",)
-    FUNCTION = "add_to_pipeline"
-    CATEGORY = "DrawThings"
-
-    def add_to_pipeline(self, high_res_fix_start_width, high_res_fix_start_height, high_res_fix_strength):
-        high_res_fix = {"high_res_fix_start_width": high_res_fix_start_width, "high_res_fix_start_height": high_res_fix_start_height, "high_res_fix_strength": high_res_fix_strength}
-        return (high_res_fix,)
 
 class DrawThingsVideo:
     def __init__(self):
@@ -1169,33 +1189,6 @@ class DrawThingsLoRANet:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
-class DrawThingsTiled:
-    def __init__(self):
-        pass
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required": {
-                "tiled_decoding": ("BOOLEAN", {"default": False}),
-                "decoding_tile_width": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
-                "decoding_tile_height": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
-                "decoding_tile_overlap": ("INT", {"default": 128, "min": 64, "max": 1024, "step": 64}),
-                "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                "diffusion_tile_width": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
-                "diffusion_tile_height": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
-                "diffusion_tile_overlap": ("INT", {"default": 64, "min": 64, "max": 1024, "step": 64}),
-            }
-        }
-
-    RETURN_TYPES = ("DT_TILED",)
-    RETURN_NAMES = ("tiled",)
-    FUNCTION = "add_to_pipeline"
-    CATEGORY = "DrawThings"
-
-    def add_to_pipeline(self, tiled_decoding, decoding_tile_width, decoding_tile_height, decoding_tile_overlap, tiled_diffusion, diffusion_tile_width, diffusion_tile_height, diffusion_tile_overlap):
-        tiled = {"tiled_decoding": tiled_decoding, "decoding_tile_width": decoding_tile_width, "decoding_tile_height": decoding_tile_height, "decoding_tile_overlap": decoding_tile_overlap, "tiled_diffusion": tiled_diffusion, "diffusion_tile_width": diffusion_tile_width, "diffusion_tile_height": diffusion_tile_height, "diffusion_tile_overlap": diffusion_tile_overlap}
-        return (tiled,)
-
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -1205,13 +1198,11 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsPositive": DrawThingsPositive,
     "DrawThingsNegative": DrawThingsNegative,
     "DrawThingsRefiner": DrawThingsRefiner,
-    "DrawThingsHighResFix": DrawThingsHighResFix,
     "DrawThingsVideo": DrawThingsVideo,
     "DrawThingsUpscaler": DrawThingsUpscaler,
     "DrawThingsTeaCache": DrawThingsTeaCache,
     "DrawThingsFlux": DrawThingsFlux,
     "DrawThingsLoRANet": DrawThingsLoRANet,
-    "DrawThingsTiled": DrawThingsTiled,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1222,11 +1213,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsPositive": "Draw Things Positive Prompt",
     "DrawThingsNegative": "Draw Things Negative Prompt",
     "DrawThingsRefiner": "Draw Things Refiner",
-    "DrawThingsHighResFix": "Draw Things High Resolution Fix",
     "DrawThingsVideo": "Draw Things Video Options",
     "DrawThingsUpscaler": "Draw Things Upscaler",
     "DrawThingsTeaCache": "Draw Things Tea Cache",
     "DrawThingsFlux": "Draw Things Flux Options",
     "DrawThingsLoRANet": "Draw Things LoRA Net",
-    "DrawThingsTiled": "Draw Things Tiled Decoding/Diffusion",
 }
