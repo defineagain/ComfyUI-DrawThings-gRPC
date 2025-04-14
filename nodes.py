@@ -392,15 +392,12 @@ async def dt_sampler(
     if control_net is not None and len(control_net):
         fin_controls = []
         for c in control_net:
-            if c["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
-                c_input_slot = "Custom"
-            else:
-                c_input_slot = c["input_type"]
-            print(f"{c_input_slot}")
+            print(f'{c["input_type"]}')
             control_name = builder.CreateString(c["file"])
             Control.Start(builder)
             Control.AddFile(builder, control_name)
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c_input_slot))
+            # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
+            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
             Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
             Control.AddWeight(builder, c["weight"])
             Control.AddGuidanceStart(builder, c["start"])
@@ -518,7 +515,7 @@ async def dt_sampler(
         for control_cfg in control_net:
             control_image = control_cfg["image"]
             if control_image is not None:
-                # NOTE: So apparantly other cnets don't work if it's not one of these 5
+                # NOTE: So apparantly THIS is where you set which slot to use, NOT via InputOverride as that's for all the types
                 # TODO: Fix Union cnets
                 if control_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
                     c_input_slot = "Custom"
@@ -644,8 +641,6 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
-        # NOTE: Draw Things currently only supports these input slots: Custom, Depth, Scribble, Pose, Color
-        # But in order to have Union cnets working, we still need the full list to set the hints-type, only input-override has to be set to one of the slots.
                 "Custom",
                 "Depth",
                 "Canny", # -> Custom
