@@ -367,6 +367,7 @@ async def dt_sampler(
                 video=None,
                 upscaler=None,
                 flux=None,
+                tiled=None,
                 ) -> None:
 
     builder = flatbuffers.Builder(0)
@@ -375,7 +376,7 @@ async def dt_sampler(
     if lora is not None and len(lora):
         fin_loras = []
         for l in lora:
-            print(l)
+            # print(l)
             lora_file = builder.CreateString(l['file'])
             LoRA.Start(builder)
             LoRA.AddFile(builder, lora_file)
@@ -484,6 +485,19 @@ async def dt_sampler(
         GenerationConfiguration.AddControls(builder, controls_out)
     if loras_out is not None:
         GenerationConfiguration.AddLoras(builder, loras_out)
+
+    if tiled is not None:
+        if tiled["tiled_decoding"] is True:
+            GenerationConfiguration.AddTiledDecoding(builder, tiled["tiled_decoding"])
+            GenerationConfiguration.AddDecodingTileWidth(builder, tiled["decoding_tile_width"])
+            GenerationConfiguration.AddDecodingTileHeight(builder, tiled["decoding_tile_height"])
+            GenerationConfiguration.AddDecodingTileOverlap(builder, tiled["decoding_tile_overlap"])
+        if tiled["tiled_diffusion"] is True:
+            GenerationConfiguration.AddTiledDiffusion(builder, tiled["tiled_diffusion"])
+            GenerationConfiguration.AddDiffusionTileWidth(builder, tiled["diffusion_tile_width"])
+            GenerationConfiguration.AddDiffusionTileHeight(builder, tiled["diffusion_tile_height"])
+            GenerationConfiguration.AddDiffusionTileOverlap(builder, tiled["diffusion_tile_overlap"])
+
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
     # generated = GenerationConfiguration.GenerationConfiguration.GetRootAs(configuration, 0)
@@ -680,9 +694,9 @@ class DrawThingsSampler:
 
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
                 "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
-                # speedup flux
+
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
-                # res shift
+
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
 
                 # zero neg
@@ -714,8 +728,7 @@ class DrawThingsSampler:
                 "video": ("DT_VIDEO", ),
                 "refiner": ("DT_REFINER", ),
                 "high_res_fix": ("DT_HIGHRES", ),
-                # "tiled_decoding": ("BOOLEAN", {"default": False}),
-                # "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                "tiled": ("DT_TILED", ),
             }
         }
 
@@ -756,6 +769,7 @@ class DrawThingsSampler:
                 video=None,
                 upscaler=None,
                 flux=None,
+                tiled=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -770,6 +784,7 @@ class DrawThingsSampler:
 
         model_info = getModelInfo(model, all_files["models"])
         DrawThingsLists.modelinfo_list = model_info
+        # print(model_info)
 
         if lora is not None:
             for lora_item in lora:
@@ -778,6 +793,7 @@ class DrawThingsSampler:
         if control_net is not None:
             for cnet in control_net:
                 cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
+                print(getModelInfo(cnet, all_files['controlNets']))
 
         return asyncio.run(dt_sampler(
                 server,
@@ -810,6 +826,7 @@ class DrawThingsSampler:
                 video=video,
                 upscaler=upscaler,
                 flux=flux,
+                tiled=tiled,
                 ))
 
     # @classmethod
@@ -1152,6 +1169,33 @@ class DrawThingsLoRANet:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
+class DrawThingsTiled:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "tiled_decoding": ("BOOLEAN", {"default": False}),
+                "decoding_tile_width": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_height": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_overlap": ("INT", {"default": 128, "min": 64, "max": 1024, "step": 64}),
+                "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                "diffusion_tile_width": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_height": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_overlap": ("INT", {"default": 64, "min": 64, "max": 1024, "step": 64}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_TILED",)
+    RETURN_NAMES = ("tiled",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, tiled_decoding, decoding_tile_width, decoding_tile_height, decoding_tile_overlap, tiled_diffusion, diffusion_tile_width, diffusion_tile_height, diffusion_tile_overlap):
+        tiled = {"tiled_decoding": tiled_decoding, "decoding_tile_width": decoding_tile_width, "decoding_tile_height": decoding_tile_height, "decoding_tile_overlap": decoding_tile_overlap, "tiled_diffusion": tiled_diffusion, "diffusion_tile_width": diffusion_tile_width, "diffusion_tile_height": diffusion_tile_height, "diffusion_tile_overlap": diffusion_tile_overlap}
+        return (tiled,)
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -1167,6 +1211,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsTeaCache": DrawThingsTeaCache,
     "DrawThingsFlux": DrawThingsFlux,
     "DrawThingsLoRANet": DrawThingsLoRANet,
+    "DrawThingsTiled": DrawThingsTiled,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1183,4 +1228,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsTeaCache": "Draw Things Tea Cache",
     "DrawThingsFlux": "Draw Things Flux Options",
     "DrawThingsLoRANet": "Draw Things LoRA Net",
+    "DrawThingsTiled": "Draw Things Tiled Decoding/Diffusion",
 }
