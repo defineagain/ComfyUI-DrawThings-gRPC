@@ -182,14 +182,6 @@ app.registerExtension({
         const nodeType = node.constructor.type;
         if (getSetTypes.includes(nodeType)) {
             getSetters(node);
-            node.widgets.forEach(listWidgets);
-            function listWidgets(widget) {
-                console.log(widget);
-                widget.callback = function () {
-                    console.log("widget");
-                    getSetters(node);
-                };
-            }
         }
     },
     async afterConfigureGraph() {
