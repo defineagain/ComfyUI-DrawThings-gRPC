@@ -31,7 +31,14 @@ function updateInputs(node) {
     const s = saveSize(node);
 
     // the first input should always be lora
-    if (node.inputs.length === 0 || node.inputs[0].type !== "DT_LORA") {
+    if (
+        node.inputs.length < 1 ||
+        node.inputs.length > 2 ||
+        node.inputs[0].type !== "DT_LORA"
+    ) {
+        for (let i = node.inputs.length - 1; i >= 0; i++) {
+            node.removeInput(i);
+        }
         node.addInput("lora", "DT_LORA");
     }
 
@@ -43,11 +50,12 @@ function updateInputs(node) {
     )?.modifier;
 
     if (hintType) {
-        if (node.inputs.length !== 2) {
+        if (node.inputs.length < 2 || node.inputs[1]?.type !== "IMAGE") {
+            node.removeInput(1);
             node.addInput("control_image", "IMAGE");
         }
     } else {
-        if (node.inputs.length > 1) {
+        while (node.inputs.length > 1) {
             node.removeInput(1);
         }
     }
