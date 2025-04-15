@@ -556,12 +556,16 @@ async def dt_sampler(
             if "image" in lora_cfg:
                 lora_image = lora_cfg["image"]
             if lora_image is not None:
+                if lora_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
+                    c_input_slot = "Custom"
+                else:
+                    c_input_slot = lora_cfg["input_type"]
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(lora_image, lora_cfg["input_type"].lower())
+                taw.tensor = convert_image_for_request(lora_image, c_input_slot.lower())
                 taw.weight = lora_cfg["weight"]
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = lora_cfg["input_type"].lower()
+                hnt.hintType = c_input_slot.lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
