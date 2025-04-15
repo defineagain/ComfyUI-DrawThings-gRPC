@@ -11,7 +11,6 @@ const DrawThingsNodeTypes = [
     "DrawThingsControlNet",
     "DrawThingsLoRA",
     "DrawThingsUpscaler",
-    "DrawThingsLoRANet",
 ];
 
 app.registerExtension({
