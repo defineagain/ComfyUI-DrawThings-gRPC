@@ -93,3 +93,4 @@ A Github action will run on every git push. You can also run the Github action m
 - https://github.com/JosephThomasParker/ComfyUI-DrawThingsWrapper for starting me off looking into what's possible connecting ComfyUI to Draw Things.
 - https://github.com/kcjerrell/dt-grpc-ts
 - https://github.com/drawthingsai/draw-things-community
+- https://github.com/TinyTerra/ComfyUI_tinyterraNodes for collapsing widgets.
