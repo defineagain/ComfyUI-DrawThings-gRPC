@@ -555,13 +555,14 @@ async def dt_sampler(
         # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
             if 'control_image' in lora_cfg:
-                print(lora_cfg)
+                modifier = lora_cfg["modifier"]
+
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(lora_cfg["control_image"], lora_cfg["modifier"])
+                taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
                 taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = lora_cfg["modifier"].lower()
+                hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
