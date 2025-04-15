@@ -52,7 +52,6 @@ function widgetLogic(node, widget) {
             }
 
             if (isFlux === false && isVideo === false) {
-                // findWidgetByName(node, "tea_cache").value = false; // is this needed?
                 showWidget(node, findWidgetByName(node, "tea_cache"), false)
                 showWidget(node, findWidgetByName(node, "tea_cache_start"), false)
                 showWidget(node, findWidgetByName(node, "tea_cache_end"), false)
@@ -148,7 +147,7 @@ const getSetWidgets = [
     "tiled_diffusion",
     "tea_cache"
 ]
-const getSetTitles = [
+const getSetTypes = [
     "DrawThingsSampler",
 ];
 
@@ -178,18 +177,26 @@ function getSetters(node) {
 
 app.registerExtension({
     name: "ComfyUI-DrawThings-gRPC-Widgets",
-    
-    nodeCreated(node) {
-        const nodeTitle = node.constructor.title;
-        if (getSetTitles.includes(nodeTitle)) {
+
+    async nodeCreated(node) {
+        const nodeType = node.constructor.type;
+        if (getSetTypes.includes(nodeType)) {
             getSetters(node);
+            node.widgets.forEach(listWidgets);
+            function listWidgets(widget) {
+                console.log(widget);
+                widget.callback = function () {
+                    console.log("widget");
+                    getSetters(node);
+                };
+            }
         }
     },
     async afterConfigureGraph() {
         app.graph._nodes.forEach(listNodes);
         function listNodes(node) {
-            const nodeTitle = node.constructor.type;
-            if (getSetTitles.includes(nodeTitle)) {
+            const nodeType = node.constructor.type;
+            if (getSetTypes.includes(nodeType)) {
                 getSetters(node);
             }
         }

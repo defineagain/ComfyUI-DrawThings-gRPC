@@ -748,12 +748,10 @@ class DrawThingsSampler:
                 "batch_count": ("INT", {"default": 1, "min": 1, "max": 1, "step": 1}),
             },
             "optional": {
-                "positive": ("STRING", {
-                    "multiline": True, "default": "a lovely cat", "tooltip": "The conditioning describing the attributes you want to include in the image."}),
-                "negative": ("STRING", {
-                    "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
+                "positive": ("STRING", {"forceInput":True}),
+                "negative": ("STRING", {"forceInput":True}),
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
                 "upscaler": ("DT_UPSCALER", ),
