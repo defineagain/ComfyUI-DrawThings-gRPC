@@ -357,8 +357,8 @@ async def dt_sampler(
                 width,
                 height,
                 high_res_fix,
-                high_res_fix_start_width, 
-                high_res_fix_start_height, 
+                high_res_fix_start_width,
+                high_res_fix_start_height,
                 high_res_fix_strength,
                 tiled_decoding,
                 decoding_tile_width,
@@ -380,14 +380,14 @@ async def dt_sampler(
                 flux=None,
                 tiled=None,
                 ) -> None:
-
+    print(positive, negative)
     builder = flatbuffers.Builder(0)
 
     loras_out = None
     if lora is not None and len(lora):
         fin_loras = []
         for l in lora:
-            # print(l)
+            print(l)
             lora_file = builder.CreateString(l['file'])
             LoRA.Start(builder)
             LoRA.AddFile(builder, lora_file)
@@ -549,19 +549,19 @@ async def dt_sampler(
                 hnt.hintType = c_input_slot.lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
+
     if lora is not None:
+        print(lora)
         # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
-            lora_image = None
-            if "image" in lora_cfg:
-                lora_image = lora_cfg["image"]
-            if lora_image is not None:
+            if 'control_image' in lora_cfg:
+                print(lora_cfg)
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(lora_image, lora_cfg["input_type"].lower())
-                taw.weight = lora_cfg["weight"]
+                taw.tensor = convert_image_for_request(lora_cfg["control_image"], lora_cfg["modifier"])
+                taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = lora_cfg["input_type"].lower()
+                hnt.hintType = lora_cfg["modifier"].lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
@@ -779,8 +779,8 @@ class DrawThingsSampler:
                 width,
                 height,
                 high_res_fix,
-                high_res_fix_start_width, 
-                high_res_fix_start_height, 
+                high_res_fix_start_width,
+                high_res_fix_start_height,
                 high_res_fix_strength,
                 tiled_decoding,
                 decoding_tile_width,
@@ -809,17 +809,26 @@ class DrawThingsSampler:
 
         def getModelInfo(item, models):
             item_name = item['name'] if 'name' in item else item
-            matches = re.match(r"^(.*) \((\w|\.)+\)$", item_name)
+            matches = re.match(r"^(.*) \(.+\)$", item_name)
             name = matches[1] if matches else item_name
+            print("Looking up", name)
             return next((m for m in models if m['name'] == name), None)
 
         model_info = getModelInfo(model, all_files["models"])
         DrawThingsLists.modelinfo_list = model_info
         # print(model_info)
 
+        lora_stack = []
         if lora is not None:
             for lora_item in lora:
-                lora_item['file'] = getModelInfo(lora_item, all_files['loras'])['file']
+                lora_info = getModelInfo(lora_item, all_files['loras'])
+                if 'file' in lora_info:
+                    lora_item['file'] = lora_info['file']
+                    print(lora_info)
+                    if 'modifier' in lora_info and 'control_image' in lora_item:
+                        lora_item['modifier'] = lora_info['modifier']
+                    lora_stack.append(lora_item)
+                    print(lora_item)
 
         if control_net is not None:
             for cnet in control_net:
@@ -847,8 +856,8 @@ class DrawThingsSampler:
                 width,
                 height,
                 high_res_fix,
-                high_res_fix_start_width, 
-                high_res_fix_start_height, 
+                high_res_fix_start_width,
+                high_res_fix_start_height,
                 high_res_fix_strength,
                 tiled_decoding,
                 decoding_tile_width,
@@ -863,7 +872,7 @@ class DrawThingsSampler:
                 image=image,
                 mask=mask,
                 control_net=control_net,
-                lora=lora,
+                lora=lora_stack,
                 refiner=refiner,
                 video=video,
                 upscaler=upscaler,
@@ -1111,7 +1120,7 @@ class DrawThingsLoRA:
                 "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
-                "lora": ("DT_LORA",),
+                # "lora": ("DT_LORA",),
             }
         }
 
@@ -1121,13 +1130,19 @@ class DrawThingsLoRA:
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, lora_name, lora_weight, lora=None):
-        lora_list = list()
+    def add_to_pipeline(self, lora_name, lora_weight, **kwargs):
+        lora = kwargs.get("lora", None)
+        control_image = kwargs.get("control_image", None)
 
+        lora_list = list()
         if lora is not None:
             lora_list.extend(lora)
 
-        lora_list.append({"name": lora_name, "weight": lora_weight})
+        lora_item = {"name": lora_name, "weight": lora_weight}
+        if control_image is not None:
+            lora_item["control_image"] = control_image
+
+        lora_list.append(lora_item)
 
         return (lora_list,)
 
@@ -1173,9 +1188,9 @@ class DrawThingsLoRANet:
             lora_list.extend(lora)
 
         lora_list.append({
-            "name": lora_name, 
-            "weight": lora_weight, 
-            "image": image, 
+            "name": lora_name,
+            "weight": lora_weight,
+            "image": image,
             "input_type": lora_input_type
         })
 

@@ -210,4 +210,20 @@ function findRoot(node) {
     return undefined;
 }
 
+export function findModel(option, type) {
+    const name = extractModelName(option);
+
+    for (const info of modelInfoStore.values()) {
+        const model = info[type].find((m) => m.name === name);
+        if (model) return model;
+    }
+
+    return undefined;
+}
+
+function extractModelName(option) {
+    const matches = option.match(/^(.*) \(.+\)$/);
+    return matches ? matches[1] : option;
+}
+
 /** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "litegraph.js"; */
