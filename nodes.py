@@ -536,7 +536,7 @@ async def dt_sampler(
             control_image = control_cfg["image"]
             if control_image is not None:
                 # NOTE: So apparantly THIS is where you set which slot to use, NOT via InputOverride as that's for all the types
-                # TODO: Fix Union cnets
+                # Invalid ControlHintType 'unspecified'
                 if control_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
                     c_input_slot = "Custom"
                 else:
@@ -661,6 +661,7 @@ class DrawThingsLists:
             ]
 
     control_input_type = [
+                "Unspecified",
                 "Custom",
                 "Depth",
                 "Canny", # -> Custom
@@ -824,7 +825,9 @@ class DrawThingsSampler:
         if control_net is not None:
             for cnet in control_net:
                 cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
-                print(getModelInfo(cnet, all_files['controlNets']))
+                cnet['net_type'] = getModelInfo(cnet, all_files['controlNets'])['type']
+                # print(getModelInfo(cnet, all_files['controlNets']))
+                print(cnet['net_type'])
 
         return asyncio.run(dt_sampler(
                 server,
