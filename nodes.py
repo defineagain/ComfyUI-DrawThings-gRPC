@@ -622,7 +622,7 @@ class DrawThingsLists:
     dtserver = "localhost"
     dtport = "7859"
 
-    empty_models = ['No connection. Check server and try again', 'Click to rety']
+    empty_models = ['No connection. Check server and try again', 'Click to retry']
 
     sampler_list = [
                 "DPMPP 2M Karras",

@@ -1,14 +1,14 @@
 /** @param node {LGraphNode} */
 export function addServerListeners(node) {
-    const serverWidget = node.widgets.find((w) => w.name === "server");
-    serverWidget.callback = function (value, graph, node) {
-        updateNodeModels(node);
-    };
+  const serverWidget = node.widgets.find((w) => w.name === "server");
+  serverWidget.callback = function (value, graph, node) {
+    updateNodeModels(node);
+  };
 
-    const portWidget = node.widgets.find((w) => w.name === "port");
-    portWidget.callback = function (value, graph, node) {
-        updateNodeModels(node);
-    };
+  const portWidget = node.widgets.find((w) => w.name === "port");
+  portWidget.callback = function (value, graph, node) {
+    updateNodeModels(node);
+  };
 }
 
 /**
@@ -17,23 +17,21 @@ export function addServerListeners(node) {
  * @param inputData {["DT_MODEL", {model_type: string}]}
  */
 export function DtModelTypeHandler(node, inputName, inputData, app) {
-    const widget = node.addWidget(
-        "combo",
-        inputName,
-        "(None selected)",
-        /** @type WidgetCallback<IWidget<any, any>> */
-        (value, graph, node) => {
-            const option = failedConnectionOptions.find(
-                (o) => o.name === value
-            );
-            if (option) updateNodeModels(node);
-        },
-        {
-            values: failedConnectionOptions.map((o) => o.name),
-            modelType: inputData[1].model_type,
-        }
-    );
-    return { widget };
+  const widget = node.addWidget(
+    "combo",
+    inputName,
+    "(None selected)",
+    /** @type WidgetCallback<IWidget<any, any>> */
+    (value, graph, node) => {
+      const option = failedConnectionOptions.find((o) => o.name === value);
+      if (option) updateNodeModels(node);
+    },
+    {
+      values: failedConnectionOptions.map((o) => o.name),
+      modelType: inputData[1].model_type,
+    }
+  );
+  return { widget };
 }
 
 /**
@@ -41,18 +39,18 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
  * @param {number | string} port
  */
 export async function getFiles(server, port) {
-    const body = new FormData();
-    body.append("server", server);
-    body.append("port", port);
+  const body = new FormData();
+  body.append("server", server);
+  body.append("port", port);
 
-    const api = window.comfyAPI.api.api;
+  const api = window.comfyAPI.api.api;
 
-    const filesInfoResponse = await api.fetchApi(`/dt_grpc_files_info`, {
-        method: "POST",
-        body,
-    });
+  const filesInfoResponse = await api.fetchApi(`/dt_grpc_files_info`, {
+    method: "POST",
+    body,
+  });
 
-    return filesInfoResponse;
+  return filesInfoResponse;
 }
 
 /** @typedef {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} ModelInfo */
@@ -63,16 +61,13 @@ const modelInfoRequests = new Map();
 const modelInfoStoreKey = (server, port) => `${server}:${port}`;
 
 // yes this is kind of hacky :)
-const failedConnectionOptions = [
-    { name: "No connection. Check server and try again" },
-    { name: "Click to retry" },
-];
+const failedConnectionOptions = [{ name: "No connection. Check server and try again" }, { name: "Click to retry" }];
 
 const failedConnectionInfo = {
-    models: failedConnectionOptions,
-    controlNets: failedConnectionOptions,
-    loras: failedConnectionOptions,
-    upscalers: failedConnectionOptions,
+  models: failedConnectionOptions,
+  controlNets: failedConnectionOptions,
+  loras: failedConnectionOptions,
+  upscalers: failedConnectionOptions,
 };
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
@@ -80,150 +75,192 @@ let fetches = 0;
 
 /** @param node {LGraphNode} */
 export async function updateNodeModels(node, updateDisconnected = false) {
-    // find the sampler node
-    let root = findRoot(node);
-    if (!root) {
-        if (!updateDisconnected) return;
-        root = node;
-    }
+  // find the sampler node
+  let root = findRoot(node);
+  if (!root) {
+    if (!updateDisconnected) return;
+    root = node;
+  }
 
-    // get the server and port
-    const server = root.widgets.find((w) => w.name === "server")?.value;
-    const port = root.widgets.find((w) => w.name === "port")?.value;
+  // get the server and port
+  const server = root.widgets.find((w) => w.name === "server")?.value;
+  const port = root.widgets.find((w) => w.name === "port")?.value;
 
-    const key = modelInfoStoreKey(server, port);
+  const key = modelInfoStoreKey(server, port);
 
-    if (modelInfoRequests.has(key)) {
-        const request = modelInfoRequests.get(key);
-        await request;
-    }
-    // fetch the models list and update store
-    else if (server && port) {
-        const promise = new Promise((resolve) => {
-            console.debug("checking DT server", key, " (", fetches++, ")");
-            getFiles(server, port).then(async (response) => {
-                if (!response.ok) {
-                    modelInfoStore.set(key, failedConnectionInfo);
-                } else {
-                    const data = await response.json();
-                    modelInfoStore.set(key, data);
-                }
-                modelInfoRequests.delete(key);
-                resolve();
-            });
-        });
-        modelInfoRequests.set(key, promise);
-        await promise;
-    }
-
-    const models = modelInfoStore.get(key);
-    const modelInfo = getModelOptions(models);
-
-    // update any connected nodes
-    updateInputs(root);
-
-    /** @param node {LGraphNode} */
-    function updateInputs(dtNode) {
-        if (!dtNode) return;
-
-        updateModelWidgets(dtNode, modelInfo);
-
-        const inputs = dtNode.inputs.filter((i) => i.type.startsWith("DT_"));
-        for (const input of inputs) {
-            const slot = dtNode.findInputSlot(input.name);
-            const inputNode = dtNode.getInputNode(slot);
-            updateInputs(inputNode);
+  if (modelInfoRequests.has(key)) {
+    const request = modelInfoRequests.get(key);
+    await request;
+  }
+  // fetch the models list and update store
+  else if (server && port) {
+    const promise = new Promise((resolve) => {
+      console.debug("checking DT server", key, " (", fetches++, ")");
+      getFiles(server, port).then(async (response) => {
+        if (!response.ok) {
+          modelInfoStore.set(key, failedConnectionInfo);
+        } else {
+          const data = await response.json();
+          modelInfoStore.set(key, data);
         }
+        modelInfoRequests.delete(key);
+        resolve();
+      });
+    });
+    modelInfoRequests.set(key, promise);
+    await promise;
+  }
+
+  const models = modelInfoStore.get(key);
+  const samplerModel = root.widgets.find((w) => w.options?.modelType === "models")?.value;
+  const version = findModel(samplerModel, "models")?.version;
+
+  const modelInfo = getModelOptions(models, version);
+
+  // update any connected nodes
+  updateInputs(root);
+
+  /** @param node {LGraphNode} */
+  function updateInputs(dtNode, version) {
+    if (!dtNode) return;
+
+    updateModelWidgets(dtNode, modelInfo);
+
+    const inputs = dtNode.inputs.filter((i) => i.type.startsWith("DT_"));
+    for (const input of inputs) {
+      const slot = dtNode.findInputSlot(input.name);
+      const inputNode = dtNode.getInputNode(slot);
+      updateInputs(inputNode);
     }
+  }
 }
 
 /** @param node {LGraphNode}; @param models {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} */
 function updateModelWidgets(node, models) {
-    if (!node || !models) return;
-    const modelWidgets = node.widgets.filter((w) => w.options?.modelType);
+  if (!node || !models) return;
+  const modelWidgets = node.widgets.filter((w) => w.options?.modelType);
 
-    for (const widget of modelWidgets) {
-        const type = widget.options.modelType;
+  for (const widget of modelWidgets) {
+    const type = widget.options.modelType;
 
-        widget.options.values = models[type];
-        setValidOption(widget);
-    }
+    widget.options.values = models[type];
+    setValidOption(widget);
+  }
 }
 
-function getModelOptions(models) {
-    function toOptions(modelGroup) {
-        return modelGroup
-            .map((m) => (m.version ? `${m.name} (${m.version})` : m.name))
-            .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
-    }
+function getModelOptions(models, version) {
+  function toOptions(modelGroup) {
+    // if (version) {
+    //   const compat = modelGroup
+    //     .filter((m) => m.version === version)
+    //     .map((m) => (m.version ? `◦ ${m.name} (${m.version})` : m.name))
+    //     .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
+    //   const rest = modelGroup
+    //     .filter((m) => m.version !== version)
+    //     .map((m) => (m.version ? `⁃ ${m.name} (${m.version})` : m.name))
+    //     .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
+    //   return ["Compatible:", ...compat, "Incompatible:", ...rest];
+    // }
+    return (
+      modelGroup
+        // .map((m) => (m.version ? `${m.name} (${m.version})` : m.name))
+        .sort((a, b) => a.name.toUpperCase().localeCompare(b.name.toUpperCase()))
+        .map((m) => getMenuItem(m))
+    );
+  }
 
-    return {
-        models: toOptions(models.models),
-        controlNets: toOptions(models.controlNets),
-        loras: toOptions(models.loras),
-        upscalers: models.upscalers.map((m) => `${m.name}`).sort(),
-    };
+  return {
+    models: toOptions(models.models),
+    controlNets: toOptions(models.controlNets),
+    loras: toOptions(models.loras),
+    upscalers: models.upscalers.map((m) => `${m.name}`).sort(),
+  };
 }
 
-const modelComparator = (a, b) =>
-    a.version?.localeCompare(b.version) || a.name.localeCompare(b.name);
+function getMenuItem(model, disabled) {
+  return {
+    value: model,
+    content: model.version ? `${model.name} (${model.version})` : model.name,
+    toString() {
+      return model.name;
+    },
+    // has_submenu?: boolean;
+    disabled,
+    // submenu?: IContextMenuSubmenu<TValue>;
+    // property?: string;
+    // type?: string;
+    // slot?: IFoundSlot;
+    // callback(this: ContextMenuDivElement<TValue>, value?: TCallbackValue, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu<TValue>, extra?: TExtra) {
+    callback(...args) {
+      console.log(args);
+      return false;
+    },
+  };
+}
+
+const modelComparator = (a, b) => a.version?.localeCompare(b.version) || a.name.localeCompare(b.name);
 
 const versionNames = {
-    v1: "SD",
-    "sdxl_base_v0.9": "SDXL",
-    flux1: "Flux",
+  v1: "SD",
+  "sdxl_base_v0.9": "SDXL",
+  flux1: "Flux",
 };
 
 function setValidOption(widget) {
-    if (!widget || widget.type !== "combo") return;
-    const values = widget.options?.values;
-    const selected = widget?.value;
+  if (!widget || widget.type !== "combo") return;
+  const values = widget.options?.values;
+  const selected = widget?.value;
 
-    // to avoid clearing a selected model, only changing value if a 'failure' option
-    // is selected
-    const option = failedConnectionOptions.find((o) => o.name === selected);
-    if (option) {
-        widget.value = values[0];
-    }
+  // to avoid clearing a selected model, only changing value if a 'failure' option
+  // is selected
+  const option = failedConnectionOptions.find((o) => o.name === selected);
+  if (option) {
+    widget.value = values[0];
+  }
 }
 
 /** @param {LGraphNode} node */
 function findRoot(node) {
-    if (!node || node.id === -1) return;
+  if (!node || node.id === -1) return;
 
-    if (node?.isDtRootNode === true) return node;
+  if (node?.isDtServerNode === true) return node;
 
-    if (node?.isDtRootNode === false) {
-        // this isn't necesarrily a safe assumption but it is for now
-        for (const output of node.outputs.filter((o) =>
-            o.type.startsWith("DT_")
-        )) {
-            const outputSlot = node.findOutputSlot(output.name);
-            const outputNodes = node.getOutputNodes(outputSlot) ?? [];
-            for (const outputNode of outputNodes) {
-                const root = findRoot(outputNode);
-                if (root) return root;
-            }
-        }
+  if (node?.isDtServerNode === false) {
+    // this isn't necesarrily a safe assumption but it is for now
+    for (const output of node.outputs.filter((o) => o.type.startsWith("DT_"))) {
+      const outputSlot = node.findOutputSlot(output.name);
+      const outputNodes = node.getOutputNodes(outputSlot) ?? [];
+      for (const outputNode of outputNodes) {
+        const root = findRoot(outputNode);
+        if (root) return root;
+      }
     }
+  }
 
-    return undefined;
+  return undefined;
 }
 
 export function findModel(option, type) {
-    const name = extractModelName(option);
+  const name = extractModelName(option);
 
-    for (const info of modelInfoStore.values()) {
-        const model = info[type].find((m) => m.name === name);
-        if (model) return model;
-    }
+  for (const info of modelInfoStore.values()) {
+    const model = info[type].find((m) => m.name === name);
+    if (model) return model;
+  }
 
-    return undefined;
+  return undefined;
 }
 
 function extractModelName(option) {
+  if (typeof option === "string") {
     const matches = option.match(/^(.*) \(.+\)$/);
     return matches ? matches[1] : option;
+  }
+  if (typeof option === "object") {
+    if ("content" in option) return option.content;
+    if ("name" in option) return option.name;
+  }
+  return option;
 }
 
 /** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "litegraph.js"; */
