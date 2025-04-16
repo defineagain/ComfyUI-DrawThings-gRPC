@@ -2,7 +2,6 @@ numpy
 pillow
 torch
 torchvision
-tensorflow
 grpcio
 flatbuffers
 protobuf
