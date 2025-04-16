@@ -654,24 +654,24 @@ class DrawThingsLists:
 
     control_input_type = [
                 "Unspecified",
-                "Custom",
-                "Depth",
-                "Canny", # -> Custom
-                "Scribble",
-                "Pose",
-                "Normalbae", # -> Custom
-                "Color",
-                "Lineart", # -> Custom
-                "Softedge", # -> Custom
-                "Seg", # -> Custom
-                "Inpaint", # -> Custom
-                "Ip2p", # -> Custom
-                "Shuffle", # -> Custom
-                "Mlsd", # -> Custom
-                "Tile", # -> Custom
-                "Blur", # -> Custom
-                "Lowquality", # -> Custom
-                "Gray", # -> Custom
+                "Custom", # -> Slot
+                "Depth", # -> Slot
+                "Canny",
+                "Scribble", # -> Slot
+                "Pose", # -> Slot
+                "Normalbae",
+                "Color", # -> Slot
+                "Lineart",
+                "Softedge",
+                "Seg",
+                "Inpaint",
+                "Ip2p",
+                "Shuffle",
+                "Mlsd",
+                "Tile",
+                "Blur",
+                "Lowquality",
+                "Gray",
             ]
 
 class DrawThingsSampler:
@@ -1048,7 +1048,7 @@ class DrawThingsControlNet:
                 "control_weight": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 2.50, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
                 "control_start": ("FLOAT", {"default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01}),
                 "control_end": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01}),
-                "invert_image": ("BOOLEAN", {"default": False}),
+                "invert_image": ("BOOLEAN", {"default": False, "tooltip": "Some Control Nets (i.e. LineArt) need their image to be inverted."}),
             },
             "optional": {
                 "control_net": ("DT_CNET",),
