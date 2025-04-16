@@ -2,6 +2,6 @@ numpy
 pillow
 torch
 torchvision
-grpcio
+grpcio>=1.71.0
 flatbuffers
 protobuf
