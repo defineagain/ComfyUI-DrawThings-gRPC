@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { setCallback } from "./dynamicInputs.js";
 
 let origProps = {};
 
@@ -37,7 +38,6 @@ function widgetLogic(node, widget) {
         case "model":
             const selectedModel = widget.value;
             const version = selectedModel?.value?.version;
-            console.log(version);
             if (!version) break;
 
             let isSD3 = version === "sd3";
@@ -61,16 +61,24 @@ function widgetLogic(node, widget) {
                     showWidget(node, findWidgetByName(node, "tea_cache_threshold"), true);
                 }
             }
+
+            // this conditional could written as
+            // if (!isSD3 && !isFlux)
             if (isSD3 === false && isFlux === false) {
                 showWidget(node, findWidgetByName(node, "res_dpt_shift"), false);
             } else {
                 showWidget(node, findWidgetByName(node, "res_dpt_shift"), true);
             }
+
             if (isFlux === false) {
                 showWidget(node, findWidgetByName(node, "speed_up"), false);
             } else {
                 showWidget(node, findWidgetByName(node, "speed_up"), true);
             }
+            // you could also rewrite the previous 5 lines as...
+            // showWidget(node, findWidgetByName(node, "speed_up"), isFlux);
+            // just use the condition expression/variable as the argument
+
             if (isVideo === false) {
                 showWidget(node, findWidgetByName(node, "num_frames"), false);
             } else {
@@ -79,6 +87,9 @@ function widgetLogic(node, widget) {
             break;
 
         case "high_res_fix":
+            // you can do the same thing here, just use `widget.value` for the show arg in the function calls
+            // and skip the if/else
+            // i mean, they're functionally equivalent, it just might be a bit easier
             if (widget.value === false) {
                 showWidget(node, findWidgetByName(node, "high_res_fix_start_width"), false);
                 showWidget(node, findWidgetByName(node, "high_res_fix_start_height"), false);
@@ -138,12 +149,11 @@ const getSetWidgets = [
     "high_res_fix",
     "tiled_decoding",
     "tiled_diffusion",
-    "tea_cache"
-]
-const getSetTypes = [
-    "DrawThingsSampler",
+    "tea_cache",
 ];
+const getSetTypes = ["DrawThingsSampler"];
 
+/** @param {import("@comfyorg/litegraph").LGraphNode} node */
 function getSetters(node) {
     if (node.widgets) {
         for (const w of node.widgets) {
@@ -152,16 +162,23 @@ function getSetters(node) {
                 let widgetValue = w.value;
 
                 // Define getters and setters for widget values
-                Object.defineProperty(w, "value", {
-                    get() {
-                        return widgetValue;
-                    },
-                    set(newVal) {
-                        if (newVal !== widgetValue) {
-                            widgetValue = newVal;
-                            widgetLogic(node, w);
-                        }
-                    }
+                // Object.defineProperty(w, "value", {
+                //     get() {
+                //         return widgetValue;
+                //     },
+                //     set(newVal) {
+                //         if (newVal !== widgetValue) {
+                //             widgetValue = newVal;
+                //             widgetLogic(node, w);
+                //         }
+                //     },
+                // });
+
+                // changing the built-in properties might have unexpected results
+                // but you can use the widget callback, which fires any time the value changes
+
+                setCallback(w, "callback", function (value, canvas, node, pos, event) {
+                    widgetLogic(node, w);
                 });
             }
         }
