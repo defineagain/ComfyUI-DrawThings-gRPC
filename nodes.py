@@ -343,12 +343,9 @@ async def dt_sampler(
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
-                speed_up,
                 sampler_name,
-                res_dpt_shift,
                 shift,
                 clip_skip,
                 sharpness,
@@ -359,22 +356,6 @@ async def dt_sampler(
                 negative,
                 width,
                 height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -382,7 +363,11 @@ async def dt_sampler(
                 control_net=None,
                 lora=None,
                 refiner=None,
+                high_res_fix=None,
+                video=None,
                 upscaler=None,
+                flux=None,
+                tiled=None,
                 ) -> None:
     print(positive, negative)
     builder = flatbuffers.Builder(0)
@@ -452,11 +437,12 @@ async def dt_sampler(
         GenerationConfiguration.AddUpscaler(builder, upscaler_model)
         GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["upscaler_scale_factor"])
     GenerationConfiguration.AddSteps(builder, steps)
-    GenerationConfiguration.AddNumFrames(builder, num_frames)
+
+    if video is not None:
+        GenerationConfiguration.AddNumFrames(builder, video["num_frames"])
+
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
     GenerationConfiguration.AddShift(builder, shift)
     GenerationConfiguration.AddBatchSize(builder, 1)
     if refiner is not None:
@@ -470,29 +456,30 @@ async def dt_sampler(
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
     # face restore
-    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
-    if high_res_fix is True:
-        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
-        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
-        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
+    if high_res_fix is not None:
+        GenerationConfiguration.AddHiresFix(builder, True)
+        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix["high_res_fix_start_width"])
+        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix["high_res_fix_start_height"])
+        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix["high_res_fix_strength"])
+    else:
+        GenerationConfiguration.AddHiresFix(builder, False)
 
-    GenerationConfiguration.AddTiledDecoding(builder, tiled_decoding)
-    if tiled_decoding is True:
-        GenerationConfiguration.AddDecodingTileWidth(builder, decoding_tile_width)
-        GenerationConfiguration.AddDecodingTileHeight(builder, decoding_tile_height)
-        GenerationConfiguration.AddDecodingTileOverlap(builder, decoding_tile_overlap)
+    GenerationConfiguration.AddTiledDecoding(builder, False)
+    GenerationConfiguration.AddTiledDiffusion(builder, False)
 
-    GenerationConfiguration.AddTiledDiffusion(builder, tiled_diffusion)
-    if tiled_diffusion is True:
-        GenerationConfiguration.AddDiffusionTileWidth(builder, diffusion_tile_width)
-        GenerationConfiguration.AddDiffusionTileHeight(builder, diffusion_tile_height)
-        GenerationConfiguration.AddDiffusionTileOverlap(builder, diffusion_tile_overlap)
+    if video is not None: # flux or video option
+        if video["tea_cache"] is not None: # flux or video option
+            GenerationConfiguration.AddTeaCache(builder, True)
+            GenerationConfiguration.AddTeaCacheStart(builder, video["tea_cache"]["tea_cache_start"])
+            GenerationConfiguration.AddTeaCacheEnd(builder, video["tea_cache"]["tea_cache_end"])
+            GenerationConfiguration.AddTeaCacheThreshold(builder, video["tea_cache"]["tea_cache_threshold"])
 
-    GenerationConfiguration.AddTeaCache(builder, tea_cache)
-    if tea_cache is True: # flux or video option
-        GenerationConfiguration.AddTeaCacheStart(builder, tea_cache_start)
-        GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache_end)
-        GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
+    if flux is not None: # flux or video option
+        if flux["tea_cache"] is not None: # flux or video option
+            GenerationConfiguration.AddTeaCache(builder, True)
+            GenerationConfiguration.AddTeaCacheStart(builder, flux["tea_cache"]["tea_cache_start"])
+            GenerationConfiguration.AddTeaCacheEnd(builder, flux["tea_cache"]["tea_cache_end"])
+            GenerationConfiguration.AddTeaCacheThreshold(builder, flux["tea_cache"]["tea_cache_threshold"])
 
     # ti embed
 
@@ -501,6 +488,18 @@ async def dt_sampler(
         GenerationConfiguration.AddControls(builder, controls_out)
     if loras_out is not None:
         GenerationConfiguration.AddLoras(builder, loras_out)
+
+    if tiled is not None:
+        if tiled["tiled_decoding"] is True:
+            GenerationConfiguration.AddTiledDecoding(builder, tiled["tiled_decoding"])
+            GenerationConfiguration.AddDecodingTileWidth(builder, tiled["decoding_tile_width"])
+            GenerationConfiguration.AddDecodingTileHeight(builder, tiled["decoding_tile_height"])
+            GenerationConfiguration.AddDecodingTileOverlap(builder, tiled["decoding_tile_overlap"])
+        if tiled["tiled_diffusion"] is True:
+            GenerationConfiguration.AddTiledDiffusion(builder, tiled["tiled_diffusion"])
+            GenerationConfiguration.AddDiffusionTileWidth(builder, tiled["diffusion_tile_width"])
+            GenerationConfiguration.AddDiffusionTileHeight(builder, tiled["diffusion_tile_height"])
+            GenerationConfiguration.AddDiffusionTileOverlap(builder, tiled["diffusion_tile_overlap"])
 
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
@@ -688,7 +687,6 @@ class DrawThingsSampler:
     def INPUT_TYPES(s):
         return {
             "required": {
-                # "settings": (["Basic", "Advanced", "All"], {"default": "Basic"}),
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
@@ -698,19 +696,14 @@ class DrawThingsSampler:
                 "seed_mode": (DrawThingsLists.seed_mode, {"default": "ScaleAlike"}),
                 "width": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
                 "height": ("INT", {"default": 512, "min": 1, "max": MAX_RESOLUTION, "step": 1}),
-                # upscaler
-                "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
-                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "step": 1}),
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
 
-                "speed_up": ("BOOLEAN", {"default": True}),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 10000, "tooltip": "The number of steps used in the denoising process."}),
+                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
 
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
 
-                "res_dpt_shift": ("BOOLEAN", {"default": True}),
-
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
-                # refiner
+
                 # zero neg
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
@@ -720,26 +713,6 @@ class DrawThingsSampler:
                 "preserve_original": ("BOOLEAN", {"default": True}),
                 # face restore
 
-                "high_res_fix": ("BOOLEAN", {"default": False}),
-                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
-                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
-
-                "tiled_decoding": ("BOOLEAN", {"default": False}),
-                "decoding_tile_width": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
-                "decoding_tile_height": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
-                "decoding_tile_overlap": ("INT", {"default": 128, "min": 64, "max": 1024, "step": 64}),
-
-                "tiled_diffusion": ("BOOLEAN", {"default": False}),
-                "diffusion_tile_width": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
-                "diffusion_tile_height": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
-                "diffusion_tile_overlap": ("INT", {"default": 64, "min": 64, "max": 1024, "step": 64}),
-
-                "tea_cache": ("BOOLEAN", {"default": False}),
-                "tea_cache_start": ("INT", {"default": 5, "min": 0, "max": 10, "step": 1}),
-                "tea_cache_end": ("INT", {"default": 2, "min": 0, "max": 81, "step": 1}),
-                "tea_cache_threshold": ("FLOAT", {"default": 0.2, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
-
                 # ti embed
             },
             "hidden": {
@@ -747,14 +720,20 @@ class DrawThingsSampler:
                 "batch_count": ("INT", {"default": 1, "min": 1, "max": 1, "step": 1}),
             },
             "optional": {
+                "positive": ("STRING", {
+                    "multiline": True, "default": "a lovely cat", "tooltip": "The conditioning describing the attributes you want to include in the image."}),
+                "negative": ("STRING", {
+                    "multiline": True, "default": "text, watermark", "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "image": ("IMAGE", ),
                 "mask": ("MASK", ),
-                "positive": ("STRING", {"forceInput":True}),
-                "negative": ("STRING", {"forceInput":True}),
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
                 "upscaler": ("DT_UPSCALER", ),
+                "flux": ("DT_FLUX", ),
+                "video": ("DT_VIDEO", ),
                 "refiner": ("DT_REFINER", ),
+                "high_res_fix": ("DT_HIGHRES", ),
+                "tiled": ("DT_TILED", ),
             }
         }
 
@@ -771,12 +750,9 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
-                speed_up,
                 sampler_name,
-                res_dpt_shift,
                 shift,
                 clip_skip,
                 sharpness,
@@ -787,22 +763,6 @@ class DrawThingsSampler:
                 negative,
                 width,
                 height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -810,7 +770,11 @@ class DrawThingsSampler:
                 control_net=None,
                 lora=None,
                 refiner=None,
+                high_res_fix=None,
+                video=None,
                 upscaler=None,
+                flux=None,
+                tiled=None,
                 ):
 
         # need to replace model NAMES with model FILES
@@ -854,12 +818,9 @@ class DrawThingsSampler:
                 seed,
                 seed_mode,
                 steps,
-                num_frames,
                 cfg,
                 strength,
-                speed_up,
                 sampler_name,
-                res_dpt_shift,
                 shift,
                 clip_skip,
                 sharpness,
@@ -870,22 +831,6 @@ class DrawThingsSampler:
                 negative,
                 width,
                 height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
                 batch_count=batch_count,
                 scale_factor=scale_factor,
                 image=image,
@@ -893,7 +838,11 @@ class DrawThingsSampler:
                 control_net=control_net,
                 lora=lora,
                 refiner=refiner,
+                high_res_fix=high_res_fix,
+                video=video,
                 upscaler=upscaler,
+                flux=flux,
+                tiled=tiled,
                 ))
 
     # @classmethod
@@ -903,6 +852,30 @@ class DrawThingsSampler:
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
+
+class DrawThingsFlux:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "speed_up": ("BOOLEAN", {"default": True}),
+                "res_dpt_shift": ("BOOLEAN", {"default": True}),
+            },
+            "optional": {
+                "tea_cache": ("DT_TEA", ),
+            }
+        }
+
+    RETURN_TYPES = ("DT_FLUX",)
+    RETURN_NAMES = ("flux",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, speed_up, res_dpt_shift, tea_cache=None):
+        flux = {"speed_up": speed_up, "res_dpt_shift": res_dpt_shift, "tea_cache": tea_cache}
+        return (flux,)
 
 class DrawThingsRefiner:
     def __init__(self):
@@ -939,6 +912,51 @@ class DrawThingsRefiner:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
+class DrawThingsHighResFix:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_start_height": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
+                "high_res_fix_strength": ("FLOAT", {"default": 0.70, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_HIGHRES",)
+    RETURN_NAMES = ("high_res_fix",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, high_res_fix_start_width, high_res_fix_start_height, high_res_fix_strength):
+        high_res_fix = {"high_res_fix_start_width": high_res_fix_start_width, "high_res_fix_start_height": high_res_fix_start_height, "high_res_fix_strength": high_res_fix_strength}
+        return (high_res_fix,)
+
+class DrawThingsVideo:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "num_frames": ("INT", {"default": 14, "min": 1, "max": 81, "step": 1}),
+            },
+            "optional": {
+                "tea_cache": ("DT_TEA", ),
+            }
+        }
+
+    RETURN_TYPES = ("DT_VIDEO",)
+    RETURN_NAMES = ("video",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, num_frames, tea_cache=None):
+        video = {"num_frames": num_frames, "tea_cache": tea_cache}
+        return (video,)
+
 class DrawThingsUpscaler:
     def __init__(self):
         pass
@@ -959,6 +977,29 @@ class DrawThingsUpscaler:
     def add_to_pipeline(self, upscaler_model, upscaler_scale_factor):
         upscaler = {"upscaler_model": upscaler_model, "upscaler_scale_factor": upscaler_scale_factor}
         return (upscaler,)
+
+class DrawThingsTeaCache:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "tea_cache_start": ("INT", {"default": 5, "min": 0, "max": 10, "step": 1}),
+                "tea_cache_end": ("INT", {"default": 2, "min": 0, "max": 81, "step": 1}),
+                "tea_cache_threshold": ("FLOAT", {"default": 0.2, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_TEA",)
+    RETURN_NAMES = ("tea_cache",)
+    FUNCTION = "add_to_pipeline"
+    DESCRIPTION = "Connect this via a supported node, like Flux or Video."
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, tea_cache_start, tea_cache_end, tea_cache_threshold):
+        tea_cache = {"tea_cache_start": tea_cache_start, "tea_cache_end": tea_cache_end, "tea_cache_threshold": tea_cache_threshold}
+        return (tea_cache,)
 
 class DrawThingsPositive:
     def __init__(self):
@@ -1106,6 +1147,33 @@ class DrawThingsLoRA:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
+class DrawThingsTiled:
+    def __init__(self):
+        pass
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "tiled_decoding": ("BOOLEAN", {"default": False}),
+                "decoding_tile_width": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_height": ("INT", {"default": 640, "min": 128, "max": 2048, "step": 64}),
+                "decoding_tile_overlap": ("INT", {"default": 128, "min": 64, "max": 1024, "step": 64}),
+                "tiled_diffusion": ("BOOLEAN", {"default": False}),
+                "diffusion_tile_width": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_height": ("INT", {"default": 512, "min": 128, "max": 2048, "step": 64}),
+                "diffusion_tile_overlap": ("INT", {"default": 64, "min": 64, "max": 1024, "step": 64}),
+            }
+        }
+
+    RETURN_TYPES = ("DT_TILED",)
+    RETURN_NAMES = ("tiled",)
+    FUNCTION = "add_to_pipeline"
+    CATEGORY = "DrawThings"
+
+    def add_to_pipeline(self, tiled_decoding, decoding_tile_width, decoding_tile_height, decoding_tile_overlap, tiled_diffusion, diffusion_tile_width, diffusion_tile_height, diffusion_tile_overlap):
+        tiled = {"tiled_decoding": tiled_decoding, "decoding_tile_width": decoding_tile_width, "decoding_tile_height": decoding_tile_height, "decoding_tile_overlap": decoding_tile_overlap, "tiled_diffusion": tiled_diffusion, "diffusion_tile_width": diffusion_tile_width, "diffusion_tile_height": diffusion_tile_height, "diffusion_tile_overlap": diffusion_tile_overlap}
+        return (tiled,)
+
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
@@ -1115,7 +1183,12 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsPositive": DrawThingsPositive,
     "DrawThingsNegative": DrawThingsNegative,
     "DrawThingsRefiner": DrawThingsRefiner,
+    "DrawThingsHighResFix": DrawThingsHighResFix,
+    "DrawThingsVideo": DrawThingsVideo,
     "DrawThingsUpscaler": DrawThingsUpscaler,
+    "DrawThingsTeaCache": DrawThingsTeaCache,
+    "DrawThingsFlux": DrawThingsFlux,
+    "DrawThingsTiled": DrawThingsTiled,
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
@@ -1126,5 +1199,10 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsPositive": "Draw Things Positive Prompt",
     "DrawThingsNegative": "Draw Things Negative Prompt",
     "DrawThingsRefiner": "Draw Things Refiner",
+    "DrawThingsHighResFix": "Draw Things High Resolution Fix",
+    "DrawThingsVideo": "Draw Things Video Options",
     "DrawThingsUpscaler": "Draw Things Upscaler",
+    "DrawThingsTeaCache": "Draw Things Tea Cache",
+    "DrawThingsFlux": "Draw Things Flux Options",
+    "DrawThingsTiled": "Draw Things Tiled Decoding/Diffusion",
 }
