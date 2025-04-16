@@ -162,24 +162,24 @@ function getSetters(node) {
                 let widgetValue = w.value;
 
                 // Define getters and setters for widget values
-                // Object.defineProperty(w, "value", {
-                //     get() {
-                //         return widgetValue;
-                //     },
-                //     set(newVal) {
-                //         if (newVal !== widgetValue) {
-                //             widgetValue = newVal;
-                //             widgetLogic(node, w);
-                //         }
-                //     },
-                // });
+                Object.defineProperty(w, "value", {
+                    get() {
+                        return widgetValue;
+                    },
+                    set(newVal) {
+                        if (newVal !== widgetValue) {
+                            widgetValue = newVal;
+                            widgetLogic(node, w);
+                        }
+                    },
+                });
 
                 // changing the built-in properties might have unexpected results
                 // but you can use the widget callback, which fires any time the value changes
 
-                setCallback(w, "callback", function (value, canvas, node, pos, event) {
-                    widgetLogic(node, w);
-                });
+                // w.callback = function (value, canvas, node, pos, event) {
+                //     widgetLogic(node, w);
+                // });
             }
         }
     }
