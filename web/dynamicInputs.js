@@ -36,17 +36,17 @@ function updateInputs(node) {
 
   const modelWidget = node?.widgets?.find((w) => w.options?.modelType);
   if (!modelWidget) return;
-  const hintType = findModel(modelWidget.value, modelWidget.options?.modelType)?.modifier;
+  const modifier = modelWidget.value?.value?.modifier;
 
-  if (hintType) {
-    if (node.inputs.length < 2 || node.inputs[1]?.type !== "IMAGE") {
-      node.removeInput(1);
-      node.addInput("control_image", "IMAGE");
-    }
+  if (modifier) {
+      if (node.inputs.length < 2 || node.inputs[1]?.type !== "IMAGE") {
+          node.removeInput(1);
+          node.addInput("control_image", "IMAGE");
+      }
   } else {
-    while (node.inputs.length > 1) {
-      node.removeInput(1);
-    }
+      while (node.inputs.length > 1) {
+          node.removeInput(1);
+      }
   }
   s();
 }

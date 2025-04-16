@@ -5,7 +5,7 @@ torch
 torchvision
 tensorflow
 asyncio
-grpc
+grpcio
 flatbuffers
 protobuf
 json

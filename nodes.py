@@ -392,7 +392,8 @@ async def dt_sampler(
         fin_loras = []
         for l in lora:
             print(l)
-            lora_file = builder.CreateString(l['file'])
+            lora_model = l['model']
+            lora_file = builder.CreateString(lora_model['file'])
             LoRA.Start(builder)
             LoRA.AddFile(builder, lora_file)
             LoRA.AddWeight(builder, l['weight'])
@@ -409,7 +410,8 @@ async def dt_sampler(
         fin_controls = []
         for c in control_net:
             print(f'{c["input_type"]}')
-            control_name = builder.CreateString(c["file"])
+            cnet_model = c['model']
+            control_name = builder.CreateString(cnet_model["file"])
             Control.Start(builder)
             Control.AddFile(builder, control_name)
             # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
@@ -551,7 +553,7 @@ async def dt_sampler(
         # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
             if 'control_image' in lora_cfg:
-                modifier = lora_cfg["modifier"]
+                modifier = lora_cfg["model"]["modifier"]
 
                 taw = imageService_pb2.TensorAndWeight()
                 taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
@@ -813,37 +815,37 @@ class DrawThingsSampler:
 
         # need to replace model NAMES with model FILES
 
-        all_files = get_files(server, port)
+        # all_files = get_files(server, port)
 
-        def getModelInfo(item, models):
-            item_name = item['name'] if 'name' in item else item
-            matches = re.match(r"^(.*) \(.+\)$", item_name)
-            name = matches[1] if matches else item_name
-            print("Looking up", name)
-            return next((m for m in models if m['name'] == name), None)
+        # def getModelInfo(item, models):
+        #     item_name = item['name'] if 'name' in item else item
+        #     matches = re.match(r"^(.*) \(.+\)$", item_name)
+        #     name = matches[1] if matches else item_name
+        #     print("Looking up", name)
+        #     return next((m for m in models if m['name'] == name), None)
 
-        model_info = getModelInfo(model, all_files["models"])
+        model_info = model["value"]
         DrawThingsLists.modelinfo_list = model_info
-        # print(model_info)
+        print(model_info)
 
-        lora_stack = []
-        if lora is not None:
-            for lora_item in lora:
-                lora_info = getModelInfo(lora_item, all_files['loras'])
-                if 'file' in lora_info:
-                    lora_item['file'] = lora_info['file']
-                    print(lora_info)
-                    if 'modifier' in lora_info and 'control_image' in lora_item:
-                        lora_item['modifier'] = lora_info['modifier']
-                    lora_stack.append(lora_item)
-                    print(lora_item)
+        # lora_stack = []
+        # if lora is not None:
+        #     for lora_item in lora:
+        #         lora_info = getModelInfo(lora_item, all_files['loras'])
+        #         if 'file' in lora_info:
+        #             lora_item['file'] = lora_info['file']
+        #             print(lora_info)
+        #             if 'modifier' in lora_info and 'control_image' in lora_item:
+        #                 lora_item['modifier'] = lora_info['modifier']
+        #             lora_stack.append(lora_item)
+        #             print(lora_item)
 
-        if control_net is not None:
-            for cnet in control_net:
-                cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
-                cnet['net_type'] = getModelInfo(cnet, all_files['controlNets'])['type']
-                # print(getModelInfo(cnet, all_files['controlNets']))
-                print(cnet['net_type'])
+        # if control_net is not None:
+        #     for cnet in control_net:
+        #         cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
+        #         cnet['net_type'] = getModelInfo(cnet, all_files['controlNets'])['type']
+        #         # print(getModelInfo(cnet, all_files['controlNets']))
+        #         print(cnet['net_type'])
 
         return asyncio.run(dt_sampler(
                 server,
@@ -889,7 +891,7 @@ class DrawThingsSampler:
                 image=image,
                 mask=mask,
                 control_net=control_net,
-                lora=lora_stack,
+                lora=lora,
                 refiner=refiner,
                 upscaler=upscaler,
                 ))
@@ -1033,15 +1035,19 @@ class DrawThingsControlNet:
         if control_net is not None:
             cnet_list.extend(control_net)
 
-        cnet_list.append({
-            "name": control_name,
-            "input_type": control_input_type,
-            "mode": control_mode,
-            "weight": control_weight,
-            "start": control_start,
-            "end": control_end,
-            "image": image
-        })
+        cnet_info = control_name["value"] if 'value' in control_name else None
+
+        if cnet_info is not None and 'file' in cnet_info:
+            cnet_item = {
+                "model": cnet_info,
+                "input_type": control_input_type,
+                "mode": control_mode,
+                "weight": control_weight,
+                "start": control_start,
+                "end": control_end,
+                "image": image
+            }
+            cnet_list.append(cnet_item)
 
         return (cnet_list,)
 
@@ -1075,18 +1081,20 @@ class DrawThingsLoRA:
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, lora_name, lora_weight, **kwargs):
-        lora = kwargs.get("lora", None)
+        prev_lora = kwargs.get("lora", None)
         control_image = kwargs.get("control_image", None)
 
         lora_list = list()
-        if lora is not None:
-            lora_list.extend(lora)
+        if prev_lora is not None:
+            lora_list.extend(prev_lora)
 
-        lora_item = {"name": lora_name, "weight": lora_weight}
-        if control_image is not None:
-            lora_item["control_image"] = control_image
+        lora_info = lora_name["value"] if 'value' in lora_name else None
 
-        lora_list.append(lora_item)
+        if lora_info is not None and 'file' in lora_info:
+            lora_item = { "model": lora_info, "weight": lora_weight }
+            if control_image is not None:
+                lora_item["control_image"] = control_image
+            lora_list.append(lora_item)
 
         return (lora_list,)
 
