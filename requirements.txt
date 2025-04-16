@@ -1,12 +1,8 @@
-base64
 numpy
 pillow
 torch
 torchvision
 tensorflow
-asyncio
 grpcio
 flatbuffers
 protobuf
-json
-struct
