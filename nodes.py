@@ -63,6 +63,22 @@ ModelsInfo = TypedDict('ModelsInfo', {
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
 
+CCV_TENSOR_CPU_MEMORY = 0x1
+CCV_TENSOR_GPU_MEMORY = 0x2
+
+CCV_TENSOR_FORMAT_NCHW = 0x01
+CCV_TENSOR_FORMAT_NHWC = 0x02
+CCV_TENSOR_FORMAT_CHWN = 0x04
+
+CCV_8U   = 0x01000
+CCV_32S  = 0x02000
+CCV_32F  = 0x04000
+CCV_64S  = 0x08000
+CCV_64F  = 0x10000
+CCV_16F  = 0x20000
+CCV_QX   = 0x40000 # QX is a catch-all for quantized models (anything less than or equal to 1-byte). We can still squeeze in 1 more primitive type, which probably will be 8F or BF16. (0xFF000 are for data types).
+CCV_16BF = 0x80000
+
 def prepare_callback(step, total_steps, x0=None):
     pbar = comfy.utils.ProgressBar(step)
     def callback(step, total_steps, x0=None):
@@ -258,8 +274,8 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
     # print(f"Request image tensor is {width}x{height} with {channels} channels")
 
     image_tensor = image_tensor.to(torch.float16)
-
     image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(image_tensor)
 
@@ -269,10 +285,6 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
             pil_image = transform(pil_image)
             # print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
             channels = 1
-
-    CCV_TENSOR_CPU_MEMORY = 0x1
-    CCV_TENSOR_FORMAT_NHWC = 0x02
-    CCV_16F = 0x20000
 
     image_bytes = bytearray(68 + width * height * channels * 2)
     struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NHWC, CCV_16F, 0, 1, height, width, channels)
@@ -286,6 +298,38 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
                     v = pixel / 255 * 2 - 1
                 else:
                     v = pixel[c] / 255 * 2 - 1
+                struct.pack_into("<e", image_bytes, offset + c * 2, v)
+
+    return bytes(image_bytes)
+
+def convert_mask_for_request(image_tensor: torch.Tensor, req_width, req_height):
+    width = image_tensor.size(dim=2)
+    height = image_tensor.size(dim=1)
+    channels = 1
+
+    image_tensor = image_tensor.to(torch.uint8).unsqueeze(-1)
+    image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+
+    transform = torchvision.transforms.ToPILImage()
+    pil_image = transform(image_tensor)
+    transform = torchvision.transforms.Grayscale(num_output_channels=1)
+    pil_image = transform(pil_image)
+
+    width = req_width
+    height = req_height
+    req_size = (width, height)
+    pil_image = pil_image.resize(req_size)
+    # print(f"Converted request mask is {pil_image.size}, {pil_image.mode}")
+
+    image_bytes = bytearray(68 + width * height * channels * 2)
+    struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NCHW, CCV_8U, 0, height, width, 0, 0)
+
+    for y in range(height):
+        for x in range(width):
+            pixel = pil_image.getpixel((x, y))
+            offset = 68 + (y * width + x) * (channels * 2)
+            for c in range(channels):
+                v = pixel / 255 * 2 - 1
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
 
     return bytes(image_bytes)
@@ -505,7 +549,7 @@ async def dt_sampler(
     if image is not None:
         img2img = convert_image_for_request(image)
     if mask is not None:
-        maskimg = convert_image_for_request(mask)
+        maskimg = convert_mask_for_request(mask, width, height)
 
     override = imageService_pb2.MetadataOverride()
     # models_override = [{
