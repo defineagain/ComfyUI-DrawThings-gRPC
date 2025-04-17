@@ -317,13 +317,10 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
     height = mask_tensor.size(dim=1)
     channels = 1
 
-    mask_tensor = mask_tensor.to(torch.uint8).unsqueeze(-1)
-    mask_tensor = mask_tensor.permute(3, 1, 2, 0).squeeze(3)
+    mask_tensor = mask_tensor.to(torch.uint8)
 
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(mask_tensor)
-    transform = torchvision.transforms.Grayscale(num_output_channels=1)
-    pil_image = transform(pil_image)
 
     # match mask size to image size
     width = image_tensor.size(dim=2)
@@ -350,7 +347,7 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
             pixel = pil_image.getpixel((x, y))
             offset = 68 + (y * width + x) * (channels * 2)
             for c in range(channels):
-                v = pixel / 255 * 2 - 1
+                v = pixel
                 struct.pack_into("<e", image_bytes, offset + c * 2, v)
 
     return bytes(image_bytes)
