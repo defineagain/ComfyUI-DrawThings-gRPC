@@ -287,7 +287,17 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
             channels = 1
 
     image_bytes = bytearray(68 + width * height * channels * 2)
-    struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NHWC, CCV_16F, 0, 1, height, width, channels)
+    struct.pack_into(
+        "<9I", 
+        image_bytes, 
+        0, 
+        0, 
+        CCV_TENSOR_CPU_MEMORY, 
+        CCV_TENSOR_FORMAT_NHWC, 
+        CCV_16F, 
+        0,
+        1, height, width, channels
+    )
 
     for y in range(height):
         for x in range(width):
@@ -302,27 +312,38 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
 
     return bytes(image_bytes)
 
-def convert_mask_for_request(image_tensor: torch.Tensor, req_width, req_height):
-    width = image_tensor.size(dim=2)
-    height = image_tensor.size(dim=1)
+def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tensor):
+    width = mask_tensor.size(dim=2)
+    height = mask_tensor.size(dim=1)
     channels = 1
 
-    image_tensor = image_tensor.to(torch.uint8).unsqueeze(-1)
-    image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+    mask_tensor = mask_tensor.to(torch.uint8).unsqueeze(-1)
+    mask_tensor = mask_tensor.permute(3, 1, 2, 0).squeeze(3)
 
     transform = torchvision.transforms.ToPILImage()
-    pil_image = transform(image_tensor)
+    pil_image = transform(mask_tensor)
     transform = torchvision.transforms.Grayscale(num_output_channels=1)
     pil_image = transform(pil_image)
 
-    width = req_width
-    height = req_height
+    # match mask size to image size
+    width = image_tensor.size(dim=2)
+    height = image_tensor.size(dim=1)
     req_size = (width, height)
     pil_image = pil_image.resize(req_size)
     # print(f"Converted request mask is {pil_image.size}, {pil_image.mode}")
 
     image_bytes = bytearray(68 + width * height * channels * 2)
-    struct.pack_into("<9I", image_bytes, 0, 0, CCV_TENSOR_CPU_MEMORY, CCV_TENSOR_FORMAT_NCHW, CCV_8U, 0, height, width, 0, 0)
+    struct.pack_into(
+        "<9I", 
+        image_bytes, 
+        0, 
+        0, 
+        CCV_TENSOR_CPU_MEMORY, 
+        CCV_TENSOR_FORMAT_NCHW, 
+        CCV_8U, 
+        0, 
+        height, width, 0, 0
+    )
 
     for y in range(height):
         for x in range(width):
@@ -548,8 +569,8 @@ async def dt_sampler(
     maskimg = None
     if image is not None:
         img2img = convert_image_for_request(image)
-    if mask is not None:
-        maskimg = convert_mask_for_request(mask, width, height)
+        if mask is not None:
+            maskimg = convert_mask_for_request(mask, image)
 
     override = imageService_pb2.MetadataOverride()
     # models_override = [{
