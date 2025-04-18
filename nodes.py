@@ -11,7 +11,7 @@ import torchvision
 import asyncio
 import grpc
 import flatbuffers
-import google.protobuf as pb
+from google.protobuf.json_format import MessageToJson
 # from generated import imageService_pb2
 from .generated import imageService_pb2, imageService_pb2_grpc
 from .generated import Control
@@ -288,13 +288,13 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
 
     image_bytes = bytearray(68 + width * height * channels * 2)
     struct.pack_into(
-        "<9I", 
-        image_bytes, 
-        0, 
-        0, 
-        CCV_TENSOR_CPU_MEMORY, 
-        CCV_TENSOR_FORMAT_NHWC, 
-        CCV_16F, 
+        "<9I",
+        image_bytes,
+        0,
+        0,
+        CCV_TENSOR_CPU_MEMORY,
+        CCV_TENSOR_FORMAT_NHWC,
+        CCV_16F,
         0,
         1, height, width, channels
     )
@@ -331,14 +331,14 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
 
     image_bytes = bytearray(68 + width * height * channels * 2)
     struct.pack_into(
-        "<9I", 
-        image_bytes, 
-        0, 
-        0, 
-        CCV_TENSOR_CPU_MEMORY, 
-        CCV_TENSOR_FORMAT_NCHW, 
-        CCV_8U, 
-        0, 
+        "<9I",
+        image_bytes,
+        0,
+        0,
+        CCV_TENSOR_CPU_MEMORY,
+        CCV_TENSOR_FORMAT_NCHW,
+        CCV_8U,
+        0,
         height, width, 0, 0
     )
 
@@ -356,7 +356,7 @@ def get_files(server, port) -> ModelsInfo:
     with grpc.insecure_channel(f"{server}:{port}") as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         response = stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
-        response_json = json.loads(pb.json_format.MessageToJson(response))
+        response_json = json.loads(MessageToJson(response))
         DrawThingsSampler.files_list = response_json["files"]
         override = dict(response_json['override'])
         model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
@@ -389,7 +389,8 @@ async def handle_files_info_request(request):
             return web.json_response({"error": "Missing server or port parameter"}, status=400)
         all_files = get_files(server, port)
         return web.json_response(all_files)
-    except:
+    except Exception as e:
+        print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
 async def dt_sampler(

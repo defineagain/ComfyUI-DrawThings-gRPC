@@ -28,7 +28,7 @@ function updateInputs(node) {
 
     // the first input should always be lora
     if (node.inputs.length < 1 || node.inputs.length > 2 || node.inputs[0].type !== "DT_LORA") {
-        for (let i = node.inputs.length - 1; i >= 0; i++) {
+        for (let i = node.inputs.length - 1; i >= 0; i--) {
             node.removeInput(i);
         }
         node.addInput("lora", "DT_LORA");
