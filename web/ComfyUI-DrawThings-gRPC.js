@@ -24,6 +24,14 @@ app.registerExtension({
                 return original_onMouseDown?.apply(this, arguments);
             };
         }
+        if (node?.comfyClass === "DrawThingsPositive") {
+            node.color = LGraphCanvas.node_colors.green.color;
+            node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
+        }
+        if (node?.comfyClass === "DrawThingsNegative") {
+            node.color = LGraphCanvas.node_colors.red.color;
+            node.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
+        }
     },
     async loadedGraphNode(node) {
         if (DrawThingsNodeTypes.includes(node?.comfyClass) && node?.isDtServerNode) {
@@ -78,4 +86,4 @@ app.registerExtension({
     },
 });
 
-/** @import { LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
+/** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */
