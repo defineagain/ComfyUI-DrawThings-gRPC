@@ -313,6 +313,19 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
     return bytes(image_bytes)
 
 def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tensor):
+# The binary mask is a shape of (height, width), with content of 0, 1, 2, 3
+# 2 means it is explicit masked, if 2 is presented, we will treat 0 as areas to retain, and
+# 1 as areas to fill in from pure noise. If 2 is not presented, we will fill in 1 as pure noise
+# still, but treat 0 as areas masked. If no 1 or 2 presented, this degrades back to generate
+# from image.
+# In more academic point of view, when 1 is presented, we will go from 0 to step - tEnc to
+# generate things from noise with text guidance in these areas. When 2 is explicitly masked, we will
+# retain these areas during 0 to step - tEnc, and make these areas mixing during step - tEnc to end.
+# When 2 is explicitly masked, we will retain areas marked as 0 during 0 to steps, otherwise
+# we will only retain them during 0 to step - tEnc (depending on whether we have 1, if we don't,
+# we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly).
+# Regardless of these, when marked as 3, it will be retained.
+
     width = mask_tensor.size(dim=2)
     height = mask_tensor.size(dim=1)
     channels = 1
