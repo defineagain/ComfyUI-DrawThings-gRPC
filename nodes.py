@@ -326,21 +326,14 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
 # we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly).
 # Regardless of these, when marked as 3, it will be retained.
 
-    width = mask_tensor.size(dim=2)
-    height = mask_tensor.size(dim=1)
-    channels = 1
-
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(mask_tensor)
 
     # match mask size to image size
-    width = image_tensor.size(dim=2)
-    height = image_tensor.size(dim=1)
-    req_size = (width, height)
-    pil_image = pil_image.resize(req_size)
-    # print(f"Converted request mask is {pil_image.size}, {pil_image.mode}")
+    [width, height] = image_tensor.size()[1:3]
+    pil_image = pil_image.resize((width, height))
 
-    image_bytes = bytearray(68 + width * height + channels)
+    image_bytes = bytearray(68 + width * height)
     struct.pack_into(
         "<9I",
         image_bytes,
@@ -358,10 +351,16 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
             pixel = pil_image.getpixel((x, y))
             offset = 68 + (y * width + x)
 
-# basically, 0 is the area to retain and 2 is the area to apply % strength, if any area marked with 1, these will apply 100% strength no matter your denoising strength settings. Higher bits are available (we retain the lower 3-bits) as alpha blending values
-            v = 0 if pixel == 0 else 1 if pixel == 255 else 2
+            # basically, 0 is the area to retain and 2 is the area to apply % strength,
+            # if any area marked with 1, these will apply 100% strength no matter your
+            # denoising strength settings. Higher bits are available (we retain the lower
+            # 3-bits) as alpha blending values - liuliu
+            # https://discord.com/channels/1038516303666876436/1343683611467186207/1354887139225243733
 
-            struct.pack_into("<e", image_bytes, offset, v)
+            # for simpliciity, dark values will be retained (0) and light values will be %strength (2)
+            # i believe this is how that app works
+            v = 0 if pixel < 50 else 2
+            image_bytes[offset] = v
 
     return bytes(image_bytes)
 
@@ -688,7 +687,8 @@ async def dt_sampler(
                         # Convert to float32 tensor and normalize
                         tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
                         images.append(tensor_image)
-                return (torch.stack(images),)
+
+                return (torch.stack(images), mask,)
 
 class DrawThingsLists:
     dtserver = "localhost"
@@ -828,8 +828,8 @@ class DrawThingsSampler:
             }
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "MASK",)
+    RETURN_NAMES = ("IMAGE", "MASK",)
     DESCRIPTION = ""
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
