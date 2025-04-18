@@ -344,8 +344,7 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
         for x in range(width):
             pixel = pil_image.getpixel((x, y))
             offset = 68 + (y * width + x)
-            v = pixel
-            v = 0 if v == 0 else 1 if v == 255 else 2
+            v = 0 if pixel == 0 else 1 if pixel == 255 else 2
             struct.pack_into("<e", image_bytes, offset, v)
 
     return bytes(image_bytes)
