@@ -1,8 +1,4 @@
-/** @import { ComfyApi, ComfyApp } from "@comfyorg/comfyui-frontend-types"; */
-/** @import { LGraphNode } from "@comfyorg/litegraph" */
 import { app } from "../../scripts/app.js";
-
-import { findModel } from "./models.js";
 
 app.registerExtension({
     name: "ComfyUI-Dynamic-Inputs",
@@ -72,3 +68,6 @@ export function setCallback(target, callbackName, callback) {
         return r;
     };
 }
+
+/** @import { ComfyApi, ComfyApp } from "@comfyorg/comfyui-frontend-types"; */
+/** @import { LGraphNode } from "@comfyorg/litegraph" */

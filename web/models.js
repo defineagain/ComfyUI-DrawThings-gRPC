@@ -23,14 +23,14 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
         "(None selected)",
         /** @type WidgetCallback<IWidget<any, any>> */
         (value, graph, node) => {
-            const option = failedConnectionOptions.find((o) => o.name === value);
-            if (option) updateNodeModels(node);
+            updateNodeModels(node);
         },
         {
-            values: failedConnectionOptions.map((o) => o.name),
+            values: failedConnectionOptions.map((o) => getMenuItem(o, false)),
             modelType: inputData[1].model_type,
         }
     );
+
     return { widget };
 }
 
@@ -113,7 +113,7 @@ export async function updateNodeModels(node, updateDisconnected = false) {
 
     const models = modelInfoStore.get(key);
     const samplerModel = root.widgets.find((w) => w.options?.modelType === "models")?.value;
-    const version = findModel(samplerModel, "models")?.version;
+    const version = samplerModel?.value?.version;
 
     const modelInfo = getModelOptions(models, version);
 
@@ -148,33 +148,23 @@ function updateModelWidgets(node, models) {
     }
 }
 
-function getModelOptions(models, version) {
-    function toOptions(modelGroup) {
-        // if (version) {
-        //   const compat = modelGroup
-        //     .filter((m) => m.version === version)
-        //     .map((m) => (m.version ? `◦ ${m.name} (${m.version})` : m.name))
-        //     .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
-        //   const rest = modelGroup
-        //     .filter((m) => m.version !== version)
-        //     .map((m) => (m.version ? `⁃ ${m.name} (${m.version})` : m.name))
-        //     .sort((a, b) => a.toUpperCase().localeCompare(b.toUpperCase()));
-        //   return ["Compatible:", ...compat, "Incompatible:", ...rest];
-        // }
-        return (
-            modelGroup
-                // .map((m) => (m.version ? `${m.name} (${m.version})` : m.name))
-                .sort((a, b) => a.name.toUpperCase().localeCompare(b.name.toUpperCase()))
-                .map((m) => getMenuItem(m))
-        );
+function getModelOptions(modelInfo, version) {
+    function toOptions(modelGroup, disableByVersion = false) {
+        return modelGroup
+            .map((m) => getMenuItem(m, disableByVersion && version && m.version && m.version !== version))
+            .sort((a, b) => {
+                if (a.disabled && !b.disabled) return 1;
+                if (!a.disabled && b.disabled) return -1;
+                return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
+            });
     }
 
-    return {
-        models: toOptions(models.models),
-        controlNets: toOptions(models.controlNets),
-        loras: toOptions(models.loras),
-        upscalers: models.upscalers.map((m) => `${m.name}`).sort(),
-    };
+    const models = toOptions(modelInfo.models);
+    const controlNets = toOptions(modelInfo.controlNets, true);
+    const loras = toOptions(modelInfo.loras, true);
+    const upscalers = modelInfo.upscalers.map((m) => `${m.name}`).sort();
+
+    return { models, controlNets, loras, upscalers };
 }
 
 function getMenuItem(model, disabled) {
@@ -273,4 +263,4 @@ function extractModelName(option) {
     return option;
 }
 
-/** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "litegraph.js"; */
+/** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "@comfyorg/litegraph"; */
