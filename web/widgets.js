@@ -18,11 +18,14 @@ const allWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    // zero neg
+    // sep clip
     "clip_skip",
     "sharpness",
     "mask_blur",
     "mask_blur_outset",
     "preserve_original",
+    // ti embed
 ];
 const basicWidgets = [
     "server",
@@ -48,6 +51,7 @@ const advancedWidgets = [
     "mask_blur",
     "mask_blur_outset",
     "preserve_original",
+    // ti embed
 ];
 
 const getSetWidgets = [
