@@ -688,7 +688,7 @@ async def dt_sampler(
                         tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
                         images.append(tensor_image)
 
-                return (torch.stack(images), mask,)
+                return (torch.stack(images),)
 
 class DrawThingsLists:
     dtserver = "localhost"
@@ -828,8 +828,8 @@ class DrawThingsSampler:
             }
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK",)
-    RETURN_NAMES = ("IMAGE", "MASK",)
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("IMAGE",)
     DESCRIPTION = ""
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
