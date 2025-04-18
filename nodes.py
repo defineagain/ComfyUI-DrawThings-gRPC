@@ -357,7 +357,10 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
         for x in range(width):
             pixel = pil_image.getpixel((x, y))
             offset = 68 + (y * width + x)
+
+# basically, 0 is the area to retain and 2 is the area to apply % strength, if any area marked with 1, these will apply 100% strength no matter your denoising strength settings. Higher bits are available (we retain the lower 3-bits) as alpha blending values
             v = 0 if pixel == 0 else 1 if pixel == 255 else 2
+
             struct.pack_into("<e", image_bytes, offset, v)
 
     return bytes(image_bytes)
