@@ -35,6 +35,15 @@ function showWidget(node, widget, show = false, suffix = "") {
 
 function widgetLogic(node, widget) {
     switch (widget.name) {
+        case "settings":
+            switch (widget.value) {
+                case "Basic":
+                break
+                case "Advanced":
+                break
+                case "All":
+                break
+            }
         case "model":
             const selectedModel = widget.value;
             const version = selectedModel?.value?.version;
@@ -70,71 +79,32 @@ function widgetLogic(node, widget) {
                 showWidget(node, findWidgetByName(node, "res_dpt_shift"), true);
             }
 
-            if (isFlux === false) {
-                showWidget(node, findWidgetByName(node, "speed_up"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "speed_up"), true);
-            }
-            // you could also rewrite the previous 5 lines as...
-            // showWidget(node, findWidgetByName(node, "speed_up"), isFlux);
-            // just use the condition expression/variable as the argument
-
-            if (isVideo === false) {
-                showWidget(node, findWidgetByName(node, "num_frames"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "num_frames"), true);
-            }
+            showWidget(node, findWidgetByName(node, "speed_up"), isFlux);
+            showWidget(node, findWidgetByName(node, "num_frames"), isVideo);
             break;
 
         case "high_res_fix":
-            // you can do the same thing here, just use `widget.value` for the show arg in the function calls
-            // and skip the if/else
-            // i mean, they're functionally equivalent, it just might be a bit easier
-            if (widget.value === false) {
-                showWidget(node, findWidgetByName(node, "high_res_fix_start_width"), false);
-                showWidget(node, findWidgetByName(node, "high_res_fix_start_height"), false);
-                showWidget(node, findWidgetByName(node, "high_res_fix_strength"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "high_res_fix_start_width"), true);
-                showWidget(node, findWidgetByName(node, "high_res_fix_start_height"), true);
-                showWidget(node, findWidgetByName(node, "high_res_fix_strength"), true);
-            }
+            showWidget(node, findWidgetByName(node, "high_res_fix_start_width"), widget.value);
+            showWidget(node, findWidgetByName(node, "high_res_fix_start_height"), widget.value);
+            showWidget(node, findWidgetByName(node, "high_res_fix_strength"), widget.value);
             break;
 
         case "tiled_decoding":
-            if (widget.value === false) {
-                showWidget(node, findWidgetByName(node, "decoding_tile_width"), false);
-                showWidget(node, findWidgetByName(node, "decoding_tile_height"), false);
-                showWidget(node, findWidgetByName(node, "decoding_tile_overlap"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "decoding_tile_width"), true);
-                showWidget(node, findWidgetByName(node, "decoding_tile_height"), true);
-                showWidget(node, findWidgetByName(node, "decoding_tile_overlap"), true);
-            }
+            showWidget(node, findWidgetByName(node, "decoding_tile_width"), widget.value);
+            showWidget(node, findWidgetByName(node, "decoding_tile_height"), widget.value);
+            showWidget(node, findWidgetByName(node, "decoding_tile_overlap"), widget.value);
             break;
 
         case "tiled_diffusion":
-            if (widget.value === false) {
-                showWidget(node, findWidgetByName(node, "diffusion_tile_width"), false);
-                showWidget(node, findWidgetByName(node, "diffusion_tile_height"), false);
-                showWidget(node, findWidgetByName(node, "diffusion_tile_overlap"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "diffusion_tile_width"), true);
-                showWidget(node, findWidgetByName(node, "diffusion_tile_height"), true);
-                showWidget(node, findWidgetByName(node, "diffusion_tile_overlap"), true);
-            }
+            showWidget(node, findWidgetByName(node, "diffusion_tile_width"), widget.value);
+            showWidget(node, findWidgetByName(node, "diffusion_tile_height"), widget.value);
+            showWidget(node, findWidgetByName(node, "diffusion_tile_overlap"), widget.value);
             break;
 
         case "tea_cache":
-            if (widget.value === false) {
-                showWidget(node, findWidgetByName(node, "tea_cache_start"), false);
-                showWidget(node, findWidgetByName(node, "tea_cache_end"), false);
-                showWidget(node, findWidgetByName(node, "tea_cache_threshold"), false);
-            } else {
-                showWidget(node, findWidgetByName(node, "tea_cache_start"), true);
-                showWidget(node, findWidgetByName(node, "tea_cache_end"), true);
-                showWidget(node, findWidgetByName(node, "tea_cache_threshold"), true);
-            }
+            showWidget(node, findWidgetByName(node, "tea_cache_start"), widget.value);
+            showWidget(node, findWidgetByName(node, "tea_cache_end"), widget.value);
+            showWidget(node, findWidgetByName(node, "tea_cache_threshold"), widget.value);
             break;
     }
 }
