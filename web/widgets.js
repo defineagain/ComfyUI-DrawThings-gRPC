@@ -103,7 +103,7 @@ function widgetLogic(node, widget) {
             // First show all, then either hide basic or advanced
             allWidgets.forEach(listAllWidgets);
             function listAllWidgets(listedWidget) {
-                console.log(listedWidget);
+                // console.log(listedWidget);
                 showWidget(node, listedWidget, true);
             }
 
