@@ -742,7 +742,7 @@ class DrawThingsSampler:
     def INPUT_TYPES(s):
         return {
             "required": {
-                # "settings": (["Basic", "Advanced", "All"], {"default": "Basic"}),
+                "settings": (["Basic", "Advanced", "All"], {"default": "Basic"}),
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
@@ -819,6 +819,7 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self,
+                settings,
                 server,
                 port,
                 model,

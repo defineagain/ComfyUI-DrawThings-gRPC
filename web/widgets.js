@@ -1,6 +1,65 @@
 import { app } from "../../scripts/app.js";
 import { setCallback } from "./dynamicInputs.js";
 
+const allWidgets = [
+    "settings",
+    "server",
+    "port",
+    "model",
+    "strength",
+    "seed",
+    "seed_mode",
+    "width",
+    "height",
+    "steps",
+    // "num_frames", // For now not touching widgets that are hidden/shown by other widgets
+    "cfg",
+    // "speed_up",
+    "sampler_name",
+    // "res_dpt_shift",
+    "shift",
+    "clip_skip",
+    "sharpness",
+    "mask_blur",
+    "mask_blur_outset",
+    "preserve_original",
+];
+const basicWidgets = [
+    "server",
+    "port",
+    // "model",
+    "strength",
+    "seed",
+    "width",
+    "height",
+    "steps",
+    "cfg",
+    "sampler_name",
+    // "res_dpt_shift",
+    "shift",
+];
+const advancedWidgets = [
+    "seed_mode",
+    // "speed_up",
+    // zero neg
+    // sep clip
+    "clip_skip",
+    "sharpness",
+    "mask_blur",
+    "mask_blur_outset",
+    "preserve_original",
+];
+
+const getSetWidgets = [
+    "settings",
+    "model",
+    "high_res_fix",
+    "tiled_decoding",
+    "tiled_diffusion",
+    "tea_cache",
+];
+const getSetTypes = ["DrawThingsSampler"];
+
 let origProps = {};
 
 function findWidgetByName(node, name) {
@@ -12,6 +71,7 @@ function doesInputWithNameExist(node, name) {
 }
 
 function showWidget(node, widget, show = false, suffix = "") {
+    widget = findWidgetByName(node, widget);
     if (!widget || !doesInputWithNameExist(node, widget.name)) return;
     if (!origProps[widget.name]) {
         origProps[widget.name] = {
@@ -36,14 +96,30 @@ function showWidget(node, widget, show = false, suffix = "") {
 function widgetLogic(node, widget) {
     switch (widget.name) {
         case "settings":
+            // First show all, then either hide basic or advanced
+            allWidgets.forEach(listAllWidgets);
+            function listAllWidgets(listedWidget) {
+                console.log(listedWidget);
+                showWidget(node, listedWidget, true);
+            }
+
             switch (widget.value) {
                 case "Basic":
-                break
+                    // Hide advanced
+                    advancedWidgets.forEach(listAdvancedWidgets);
+                    function listAdvancedWidgets(listedWidget) {
+                        showWidget(node, listedWidget, false);
+                    }
+                    break;
                 case "Advanced":
-                break
-                case "All":
-                break
+                    // Hide basic
+                    basicWidgets.forEach(listBasicWidgets);
+                    function listBasicWidgets(listedWidget) {
+                        showWidget(node, listedWidget, false);
+                    }
+                    break;
             }
+            break;
         case "model":
             const selectedModel = widget.value;
             const version = selectedModel?.value?.version;
@@ -54,74 +130,58 @@ function widgetLogic(node, widget) {
             let isVideo = ["svdI2v", "Video", "wan"].includes(version);
 
             if (isFlux === false && isVideo === false) {
-                showWidget(node, findWidgetByName(node, "tea_cache"), false);
-                showWidget(node, findWidgetByName(node, "tea_cache_start"), false);
-                showWidget(node, findWidgetByName(node, "tea_cache_end"), false);
-                showWidget(node, findWidgetByName(node, "tea_cache_threshold"), false);
+                showWidget(node, "tea_cache", false);
+                showWidget(node, "tea_cache_start", false);
+                showWidget(node, "tea_cache_end", false);
+                showWidget(node, "tea_cache_threshold", false);
             } else {
-                showWidget(node, findWidgetByName(node, "tea_cache"), true);
+                showWidget(node, "tea_cache", true);
                 if (findWidgetByName(node, "tea_cache").value === false) {
-                    showWidget(node, findWidgetByName(node, "tea_cache_start"), false);
-                    showWidget(node, findWidgetByName(node, "tea_cache_end"), false);
-                    showWidget(node, findWidgetByName(node, "tea_cache_threshold"), false);
+                    showWidget(node, "tea_cache_start", false);
+                    showWidget(node, "tea_cache_end", false);
+                    showWidget(node, "tea_cache_threshold", false);
                 } else {
-                    showWidget(node, findWidgetByName(node, "tea_cache_start"), true);
-                    showWidget(node, findWidgetByName(node, "tea_cache_end"), true);
-                    showWidget(node, findWidgetByName(node, "tea_cache_threshold"), true);
+                    showWidget(node, "tea_cache_start", true);
+                    showWidget(node, "tea_cache_end", true);
+                    showWidget(node, "tea_cache_threshold", true);
                 }
             }
 
-            // this conditional could written as
-            // if (!isSD3 && !isFlux)
             if (isSD3 === false && isFlux === false) {
-                showWidget(node, findWidgetByName(node, "res_dpt_shift"), false);
+                showWidget(node, "res_dpt_shift", false);
             } else {
-                showWidget(node, findWidgetByName(node, "res_dpt_shift"), true);
+                showWidget(node, "res_dpt_shift", true);
             }
 
-            showWidget(node, findWidgetByName(node, "speed_up"), isFlux);
-            showWidget(node, findWidgetByName(node, "num_frames"), isVideo);
+            showWidget(node, "speed_up", isFlux);
+            showWidget(node, "num_frames", isVideo);
             break;
 
         case "high_res_fix":
-            showWidget(node, findWidgetByName(node, "high_res_fix_start_width"), widget.value);
-            showWidget(node, findWidgetByName(node, "high_res_fix_start_height"), widget.value);
-            showWidget(node, findWidgetByName(node, "high_res_fix_strength"), widget.value);
+            showWidget(node, "high_res_fix_start_width", widget.value);
+            showWidget(node, "high_res_fix_start_height", widget.value);
+            showWidget(node, "high_res_fix_strength", widget.value);
             break;
 
         case "tiled_decoding":
-            showWidget(node, findWidgetByName(node, "decoding_tile_width"), widget.value);
-            showWidget(node, findWidgetByName(node, "decoding_tile_height"), widget.value);
-            showWidget(node, findWidgetByName(node, "decoding_tile_overlap"), widget.value);
+            showWidget(node, "decoding_tile_width", widget.value);
+            showWidget(node, "decoding_tile_height", widget.value);
+            showWidget(node, "decoding_tile_overlap", widget.value);
             break;
 
         case "tiled_diffusion":
-            showWidget(node, findWidgetByName(node, "diffusion_tile_width"), widget.value);
-            showWidget(node, findWidgetByName(node, "diffusion_tile_height"), widget.value);
-            showWidget(node, findWidgetByName(node, "diffusion_tile_overlap"), widget.value);
+            showWidget(node, "diffusion_tile_width", widget.value);
+            showWidget(node, "diffusion_tile_height", widget.value);
+            showWidget(node, "diffusion_tile_overlap", widget.value);
             break;
 
         case "tea_cache":
-            showWidget(node, findWidgetByName(node, "tea_cache_start"), widget.value);
-            showWidget(node, findWidgetByName(node, "tea_cache_end"), widget.value);
-            showWidget(node, findWidgetByName(node, "tea_cache_threshold"), widget.value);
+            showWidget(node, "tea_cache_start", widget.value);
+            showWidget(node, "tea_cache_end", widget.value);
+            showWidget(node, "tea_cache_threshold", widget.value);
             break;
     }
 }
-
-const getSetWidgets = [
-    "server",
-    "port",
-    "model",
-    "strength",
-    "seed_mode",
-
-    "high_res_fix",
-    "tiled_decoding",
-    "tiled_diffusion",
-    "tea_cache",
-];
-const getSetTypes = ["DrawThingsSampler"];
 
 /** @param {import("@comfyorg/litegraph").LGraphNode} node */
 function getSetters(node) {
