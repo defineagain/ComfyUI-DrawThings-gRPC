@@ -30,8 +30,6 @@ from comfy_execution.graph_utils import GraphBuilder
 from server import PromptServer
 from aiohttp import web
 
-
-
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
 
@@ -776,8 +774,8 @@ class DrawThingsSampler:
             "optional": {
                 "image": ("IMAGE", ),
                 "mask": ("MASK", {"tooltip": "A black/white image where black areas will be kept and the rest will be regenerated according to your strength setting."}),
-                "positive": ("STRING", {"forceInput":True}),
-                "negative": ("STRING", {"forceInput":True}),
+                "positive": ("STRING", {"forceInput": True, "tooltip": "The conditioning describing the attributes you want to include in the image."}),
+                "negative": ("STRING", {"forceInput": True, "tooltip": "The conditioning describing the attributes you want to exclude from the image."}),
                 "lora": ("DT_LORA", ),
                 "control_net": ("DT_CNET", ),
                 "upscaler": ("DT_UPSCALER", ),
