@@ -84,7 +84,6 @@ function showWidget(node, widget, show = false, suffix = "") {
             origComputedHeight: widget.computedHeight,
         };
     }
-    const origSize = node.size;
 
     widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
     widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
@@ -92,8 +91,7 @@ function showWidget(node, widget, show = false, suffix = "") {
 
     widget.linkedWidgets?.forEach((w) => showWidget(node, w, ":" + widget.name, show));
 
-    const height = show ? Math.max(node.computeSize()[1], origSize[1]) : node.size[1];
-    node.setSize([node.size[0], height]);
+    node.setSize([node.size[0], node.computeSize()[1]]);
     app.canvas.dirty_canvas = true;
 }
 
