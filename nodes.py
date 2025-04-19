@@ -286,17 +286,8 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
 
 def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tensor):
 # The binary mask is a shape of (height, width), with content of 0, 1, 2, 3
-# 2 means it is explicit masked, if 2 is presented, we will treat 0 as areas to retain, and
-# 1 as areas to fill in from pure noise. If 2 is not presented, we will fill in 1 as pure noise
-# still, but treat 0 as areas masked. If no 1 or 2 presented, this degrades back to generate
-# from image.
-# In more academic point of view, when 1 is presented, we will go from 0 to step - tEnc to
-# generate things from noise with text guidance in these areas. When 2 is explicitly masked, we will
-# retain these areas during 0 to step - tEnc, and make these areas mixing during step - tEnc to end.
-# When 2 is explicitly masked, we will retain areas marked as 0 during 0 to steps, otherwise
-# we will only retain them during 0 to step - tEnc (depending on whether we have 1, if we don't,
-# we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly).
-# Regardless of these, when marked as 3, it will be retained.
+# 2 means it is explicit masked, if 2 is presented, we will treat 0 as areas to retain, and 1 as areas to fill in from pure noise. If 2 is not presented, we will fill in 1 as pure noise still, but treat 0 as areas masked. If no 1 or 2 presented, this degrades back to generate from image.
+# In more academic point of view, when 1 is presented, we will go from 0 to step - tEnc to generate things from noise with text guidance in these areas. When 2 is explicitly masked, we will retain these areas during 0 to step - tEnc, and make these areas mixing during step - tEnc to end. When 2 is explicitly masked, we will retain areas marked as 0 during 0 to steps, otherwise we will only retain them during 0 to step - tEnc (depending on whether we have 1, if we don't, we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly). Regardless of these, when marked as 3, it will be retained.
 
     transform = torchvision.transforms.ToPILImage()
     pil_image = transform(mask_tensor)
@@ -323,14 +314,11 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
             pixel = pil_image.getpixel((x, y))
             offset = 68 + (y * width + x)
 
-            # basically, 0 is the area to retain and 2 is the area to apply % strength,
-            # if any area marked with 1, these will apply 100% strength no matter your
-            # denoising strength settings. Higher bits are available (we retain the lower
-            # 3-bits) as alpha blending values - liuliu
-            # https://discord.com/channels/1038516303666876436/1343683611467186207/1354887139225243733
+# basically, 0 is the area to retain and 2 is the area to apply % strength, if any area marked with 1, these will apply 100% strength no matter your denoising strength settings. Higher bits are available (we retain the lower 3-bits) as alpha blending values - liuliu
+# https://discord.com/channels/1038516303666876436/1343683611467186207/1354887139225243733
 
-            # for simpliciity, dark values will be retained (0) and light values will be %strength (2)
-            # i believe this is how that app works
+# for simpliciity, dark values will be retained (0) and light values will be %strength (2)
+# i believe this is how that app works
             v = 0 if pixel < 50 else 2
             image_bytes[offset] = v
 
@@ -787,7 +775,7 @@ class DrawThingsSampler:
             },
             "optional": {
                 "image": ("IMAGE", ),
-                "mask": ("MASK", ),
+                "mask": ("MASK", {"tooltip": "A black/white image where black areas will be kept and the rest will be regenerated according to your strength setting."}),
                 "positive": ("STRING", {"forceInput":True}),
                 "negative": ("STRING", {"forceInput":True}),
                 "lora": ("DT_LORA", ),
