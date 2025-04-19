@@ -5,7 +5,6 @@ import sys
 import base64
 import numpy as np
 from PIL import Image
-from typing import TypedDict
 import torch
 import torchvision
 import asyncio
@@ -19,6 +18,7 @@ from .generated import LoRA
 from .generated import GenerationConfiguration
 import json
 import struct
+from .data_types import *
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
@@ -30,35 +30,7 @@ from comfy_execution.graph_utils import GraphBuilder
 from server import PromptServer
 from aiohttp import web
 
-ModelInfo = TypedDict('ModelInfo', {
-    'file': str,
-    'name': str,
-    'version': str,
-    'prefix': str
-})
-ControlNetInfo = TypedDict('ControlNetInfo', {
-    'file': str,
-    'name': str,
-    'version': str,
-    'modifier': str,
-    'type': str
-})
-LoRAInfo = TypedDict('LoRAInfo', {
-    'file': str,
-    'name': str,
-    'version': str,
-    'prefix': str
-})
-UpscalerInfo = TypedDict('UpscalerInfo', {
-    'file': str,
-    'name': str,
-})
-ModelsInfo = TypedDict('ModelsInfo', {
-    'models': list[ModelInfo],
-    'controlNets': list[ControlNetInfo],
-    'loras': list[LoRAInfo],
-    'upscalers': list[UpscalerInfo]
-})
+
 
 MAX_RESOLUTION=16384
 MAX_PREVIEW_RESOLUTION = args.preview_size
@@ -408,7 +380,7 @@ async def handle_files_info_request(request):
 async def dt_sampler(
                 server,
                 port,
-                model,
+                model: ModelInfo,
                 seed,
                 seed_mode,
                 steps,
@@ -448,8 +420,8 @@ async def dt_sampler(
                 scale_factor=1,
                 image=None,
                 mask=None,
-                control_net=None,
-                lora=None,
+                control_net: ControlStack=None,
+                lora: LoraStack=None,
                 refiner=None,
                 upscaler=None,
                 ) -> None:
@@ -503,7 +475,7 @@ async def dt_sampler(
 
     start_width = width // 64 // scale_factor
     start_height = height // 64 // scale_factor
-    model_name = builder.CreateString(model)
+    model_name = builder.CreateString(model['file'])
     if upscaler is not None:
         upscaler_model = builder.CreateString(upscaler["upscaler_model"])
     if refiner is not None:
@@ -658,14 +630,13 @@ async def dt_sampler(
             current_step = response.currentSignpost.sampling.step
             preview_image = response.previewImage
             generated_images = response.generatedImages
-            # print(f"current_step: {current_step}")
 
             if current_step:
                 x0 = None
                 if preview_image:
-                    modelinfo_version = DrawThingsLists.modelinfo_list["version"]
-                    if modelinfo_version != "":
-                        x0 = decode_preview(preview_image, modelinfo_version)
+                    model_version = model["version"]
+                    if model_version:
+                        x0 = decode_preview(preview_image, model_version)
                 prepare_callback(current_step, steps, x0)
 
             if generated_images:
@@ -694,8 +665,6 @@ class DrawThingsLists:
     dtserver = "localhost"
     dtport = "7859"
 
-    empty_models = ['No connection. Check server and try again', 'Click to retry']
-
     sampler_list = [
                 "DPMPP 2M Karras",
                 "Euler A",
@@ -709,7 +678,7 @@ class DrawThingsLists:
                 "TCD",
                 "Euler A Trailing",
                 "DPMPP SDE Trailing",
-                "DPMPP 2MA YS",
+                "DPMPP 2M AYS",
                 "Euler A AYS",
                 "DPMPP SDE AYS",
                 "DPMPP 2M Trailing",
@@ -775,7 +744,7 @@ class DrawThingsSampler:
 
                 "speed_up": ("BOOLEAN", {"default": True}),
 
-                "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M Trailing", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
 
                 "res_dpt_shift": ("BOOLEAN", {"default": True}),
 
@@ -878,50 +847,16 @@ class DrawThingsSampler:
                 scale_factor=1,
                 image=None,
                 mask=None,
-                control_net=None,
-                lora=None,
+                control_net: ControlStack=None,
+                lora: LoraStack=None,
                 refiner=None,
                 upscaler=None,
                 ):
 
-        # need to replace model NAMES with model FILES
-
-        # all_files = get_files(server, port)
-
-        # def getModelInfo(item, models):
-        #     item_name = item['name'] if 'name' in item else item
-        #     matches = re.match(r"^(.*) \(.+\)$", item_name)
-        #     name = matches[1] if matches else item_name
-        #     print("Looking up", name)
-        #     return next((m for m in models if m['name'] == name), None)
-
-        model_info = model["value"]
-        DrawThingsLists.modelinfo_list = model_info
-        print(model_info)
-
-        # lora_stack = []
-        # if lora is not None:
-        #     for lora_item in lora:
-        #         lora_info = getModelInfo(lora_item, all_files['loras'])
-        #         if 'file' in lora_info:
-        #             lora_item['file'] = lora_info['file']
-        #             print(lora_info)
-        #             if 'modifier' in lora_info and 'control_image' in lora_item:
-        #                 lora_item['modifier'] = lora_info['modifier']
-        #             lora_stack.append(lora_item)
-        #             print(lora_item)
-
-        # if control_net is not None:
-        #     for cnet in control_net:
-        #         cnet['file'] = getModelInfo(cnet, all_files['controlNets'])['file']
-        #         cnet['net_type'] = getModelInfo(cnet, all_files['controlNets'])['type']
-        #         # print(getModelInfo(cnet, all_files['controlNets']))
-        #         print(cnet['net_type'])
-
         return asyncio.run(dt_sampler(
                 server,
                 port,
-                model_info['file'],
+                model["value"],
                 seed,
                 seed_mode,
                 steps,
@@ -1097,16 +1032,16 @@ class DrawThingsControlNet:
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net=None, image=None, invert_image=False):
+    def add_to_pipeline(self, control_name, control_input_type, control_mode, control_weight, control_start, control_end, control_net=None, image=None, invert_image=False) -> ControlNetInfo:
         if invert_image == True:
             image = 1.0 - image
 
-        cnet_list = list()
+        cnet_list: ControlStack = list()
 
         if control_net is not None:
             cnet_list.extend(control_net)
 
-        cnet_info = control_name["value"] if 'value' in control_name else None
+        cnet_info = ControlNetInfo(control_name["value"]) if 'value' in control_name else None
 
         if cnet_info is not None and 'file' in cnet_info:
             cnet_item = {
@@ -1151,15 +1086,15 @@ class DrawThingsLoRA:
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, lora_name, lora_weight, **kwargs):
-        prev_lora = kwargs.get("lora", None)
+    def add_to_pipeline(self, lora_name, lora_weight, **kwargs) -> LoraStack:
+        prev_lora: LoraStack = kwargs.get("lora", None)
         control_image = kwargs.get("control_image", None)
 
-        lora_list = list()
+        lora_list: LoraStack = list()
         if prev_lora is not None:
             lora_list.extend(prev_lora)
 
-        lora_info = lora_name["value"] if 'value' in lora_name else None
+        lora_info = LoRAInfo(lora_name["value"]) if 'value' in lora_name else None
 
         if lora_info is not None and 'file' in lora_info:
             lora_item = { "model": lora_info, "weight": lora_weight }
