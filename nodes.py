@@ -652,22 +652,22 @@ class DrawThingsLists:
     dtport = "7859"
 
     sampler_list = [
-                "DPMPP 2M Karras",
+                "DPM++ 2M Karras",
                 "Euler A",
                 "DDIM",
                 "PLMS",
-                "DPMPP SDE Karras",
+                "DPM++ SDE Karras",
                 "UniPC",
                 "LCM",
                 "Euler A Substep",
-                "DPMPP SDE Substep",
+                "DPM++ SDE Substep",
                 "TCD",
                 "Euler A Trailing",
-                "DPMPP SDE Trailing",
-                "DPMPP 2M AYS",
+                "DPM++ SDE Trailing",
+                "DPM++ 2M AYS",
                 "Euler A AYS",
-                "DPMPP SDE AYS",
-                "DPMPP 2M Trailing",
+                "DPM++ SDE AYS",
+                "DPM++ 2M Trailing",
                 "DDIM Trailing",
             ]
 
