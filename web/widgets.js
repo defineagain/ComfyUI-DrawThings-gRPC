@@ -195,8 +195,6 @@ function widgetLogic(node, widget) {
                 const option = options.find(option => option.toLowerCase() == modifier) 
                 if (option != null) {
                     typeWidget.value = option;
-                } else {
-                    typeWidget.value = "Custom";
                 }
             }
             break;
@@ -223,13 +221,6 @@ function getSetters(node) {
                         }
                     },
                 });
-
-                // changing the built-in properties might have unexpected results
-                // but you can use the widget callback, which fires any time the value changes
-
-                // w.callback = function (value, canvas, node, pos, event) {
-                //     widgetLogic(node, w);
-                // });
             }
         }
     }
