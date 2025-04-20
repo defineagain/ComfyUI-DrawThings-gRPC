@@ -9,21 +9,16 @@ import torch
 import asyncio
 import grpc
 import flatbuffers
+import json
 from google.protobuf.json_format import MessageToJson
-# from generated import imageService_pb2
 from .generated import imageService_pb2, imageService_pb2_grpc
 from .generated import Control
 from .generated import LoRA
 from .generated import GenerationConfiguration
-import json
 from .data_types import *
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
-import comfy.utils
-import comfy_execution.graph_utils as graph_utils
-from comfy_execution.graph_utils import GraphBuilder
 
 from server import PromptServer
 from aiohttp import web
@@ -736,10 +731,6 @@ class DrawThingsControlNet:
             cnet_list.extend(control_net)
 
         cnet_info = ControlNetInfo(control_name["value"]) if 'value' in control_name else None
-        cnet_modifier = cnet_info["modifier"] if "modifier" in cnet_info else None
-        print(f'modifier: {cnet_modifier}')
-        cnet_type = cnet_info["type"] if "type" in cnet_info else None
-        print(f'type: {cnet_type}')
 
         if cnet_info is not None and 'file' in cnet_info:
             cnet_item = {
