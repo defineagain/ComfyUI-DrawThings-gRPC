@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { addServerListeners, DtModelTypeHandler, updateNodeModels } from "./models.js";
+import { setCallback } from "./dynamicInputs.js";
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"];
@@ -38,7 +39,6 @@ app.registerExtension({
             updateNodeModels(node);
         }
     },
-    /** @param nodeType {typeof LGraphNode} */
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (DrawThingsNodeTypes.includes(nodeType.comfyClass)) {
             // is this a 'root' node (ie - it has a server and port)
@@ -75,6 +75,36 @@ app.registerExtension({
                     };
                 }
             }
+
+            if (nodeType.comfyClass === "DrawThingsSampler") {
+                setCallback(nodeType.prototype, "getExtraMenuOptions", function (canvas, options) {
+                    options.push({
+                        content: "Paste Draw Things config",
+                        callback: () => {
+                            navigator.clipboard.readText().then((text) => {
+                                try {
+                                    for (const [k, v] of Object.entries(JSON.parse(text))) {
+                                        const name = getWidgetName(k);
+                                        const w = this.widgets.find((w) => w.name === name);
+                                        if (w) {
+                                            if (k === "sampler") w.value = samplers[v];
+                                            else if (name === "model") {
+                                                const model = w.options.values.find((val) => val?.value?.file === v);
+                                                if (model) w.value = model;
+                                                else w.value = w.options.values[0];
+                                            } else if (name === "seed_mode") w.value = seedModes[v];
+                                            else w.value = v;
+                                        }
+                                    }
+                                } catch (e) {
+                                    alert("Failed to parse Draw Things config from clipboard");
+                                    console.warn(e);
+                                }
+                            });
+                        },
+                    });
+                });
+            }
         }
     },
     refreshComboInNodes(defs, app) {
@@ -85,5 +115,39 @@ app.registerExtension({
         }
     },
 });
+
+function getWidgetName(dtName) {
+    const map = {
+        preserveOriginalAfterInpaint: "preserve_original",
+        hiresFix: "high_res_fix",
+        sampler: "sampler_name",
+    };
+
+    if (dtName in map) return map[dtName];
+
+    return dtName.replace(/([A-Z])/g, "_$1").toLowerCase();
+}
+
+const samplers = [
+    "DPMPP 2M Karras",
+    "Euler A",
+    "DDIM",
+    "PLMS",
+    "DPMPP SDE Karras",
+    "UniPC",
+    "LCM",
+    "Euler A Substep",
+    "DPMPP SDE Substep",
+    "TCD",
+    "Euler A Trailing",
+    "DPMPP SDE Trailing",
+    "DPMPP 2M AYS",
+    "Euler A AYS",
+    "DPMPP SDE AYS",
+    "DPMPP 2M Trailing",
+    "DDIM Trailing",
+];
+
+const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
 
 /** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

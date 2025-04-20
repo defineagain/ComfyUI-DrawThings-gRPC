@@ -150,13 +150,26 @@ function updateModelWidgets(node, models) {
 
 function getModelOptions(modelInfo, version) {
     function toOptions(modelGroup, disableByVersion = false) {
-        return modelGroup
-            .map((m) => getMenuItem(m, disableByVersion && version && m.version && m.version !== version))
-            .sort((a, b) => {
-                if (a.disabled && !b.disabled) return 1;
-                if (!a.disabled && b.disabled) return -1;
-                return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
-            });
+        return [
+            {
+                content: "None selected",
+                value: {
+                    name: "None selected",
+                    file: "",
+                    version: "",
+                },
+                toString() {
+                    return "None selected";
+                },
+            },
+            ...modelGroup
+                .map((m) => getMenuItem(m, disableByVersion && version && m.version && m.version !== version))
+                .sort((a, b) => {
+                    if (a.disabled && !b.disabled) return 1;
+                    if (!a.disabled && b.disabled) return -1;
+                    return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
+                }),
+        ];
     }
 
     const models = toOptions(modelInfo.models);
@@ -201,7 +214,7 @@ function setValidOption(widget) {
     const values = widget.options?.values;
     const selected = widget?.value;
 
-    if (selected.value?.toString() === "[object Object]") {
+    if (selected?.value?.toString() === "[object Object]") {
         const value = {
             ...selected,
             toString() {
