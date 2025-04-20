@@ -91,7 +91,8 @@ function showWidget(node, widget, show = false, suffix = "") {
 
     widget.linkedWidgets?.forEach((w) => showWidget(node, w, ":" + widget.name, show));
 
-    node.setSize([node.size[0], node.computeSize()[1]]);
+    const minHeight = node.computeSize()[1];
+    if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight]);
     app.canvas.dirty_canvas = true;
 }
 
