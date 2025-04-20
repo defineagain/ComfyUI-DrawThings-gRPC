@@ -25,6 +25,8 @@ app.registerExtension({
                 return original_onMouseDown?.apply(this, arguments);
             };
         }
+        // Some default node colours, available are:
+        // black, blue, brown, cyan, green, pale_blue, purple, red, yellow
         if (node?.comfyClass === "DrawThingsPositive") {
             node.color = LGraphCanvas.node_colors.green.color;
             node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
