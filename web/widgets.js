@@ -61,8 +61,10 @@ const getSetWidgets = [
     "tiled_decoding",
     "tiled_diffusion",
     "tea_cache",
+
+    "control_name",
 ];
-const getSetTypes = ["DrawThingsSampler"];
+const getSetTypes = ["DrawThingsSampler", "DrawThingsControlNet"];
 
 let origProps = {};
 
@@ -182,6 +184,21 @@ function widgetLogic(node, widget) {
             showWidget(node, "tea_cache_start", widget.value);
             showWidget(node, "tea_cache_end", widget.value);
             showWidget(node, "tea_cache_threshold", widget.value);
+            break;
+
+        case "control_name":
+            if (widget.value.value != null) {
+                const modifier = widget.value.value.modifier;
+                const typeWidget = findWidgetByName(node, "control_input_type");
+    
+                const options = typeWidget.options.values;
+                const option = options.find(option => option.toLowerCase() == modifier) 
+                if (option != null) {
+                    typeWidget.value = option;
+                } else {
+                    typeWidget.value = "Custom";
+                }
+            }
             break;
     }
 }
