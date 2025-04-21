@@ -190,7 +190,6 @@ function widgetLogic(node, widget) {
             if (widget.value.value != null) {
                 const modifier = widget.value.value.modifier;
                 const typeWidget = findWidgetByName(node, "control_input_type");
-    
                 const options = typeWidget.options.values;
                 const option = options.find(option => option.toLowerCase() == modifier) 
                 if (option != null) {

@@ -24,16 +24,27 @@ app.registerExtension({
                 console.debug("Click!", node);
                 return original_onMouseDown?.apply(this, arguments);
             };
+
+            const inputPos = node.inputs.find(inputPos => inputPos.name == "positive");
+            inputPos.color_on = app.canvas.default_connection_color_byType["CONDITIONING"];
+            const inputNeg = node.inputs.find(inputNeg => inputNeg.name == "negative");
+            inputNeg.color_on = app.canvas.default_connection_color_byType["CONDITIONING"];
         }
         // Some default node colours, available are:
         // black, blue, brown, cyan, green, pale_blue, purple, red, yellow
         if (node?.comfyClass === "DrawThingsPositive") {
             node.color = LGraphCanvas.node_colors.green.color;
             node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
+            const output = node.outputs.find(output => output.name == "positive");
+            output.color_on = app.canvas.default_connection_color_byType["CONDITIONING"];
+            output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
         }
         if (node?.comfyClass === "DrawThingsNegative") {
             node.color = LGraphCanvas.node_colors.red.color;
             node.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
+            const output = node.outputs.find(output => output.name == "negative");
+            output.color_on = app.canvas.default_connection_color_byType["CONDITIONING"];
+            output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
         }
     },
     async loadedGraphNode(node) {
