@@ -427,7 +427,7 @@ class DrawThingsSampler:
                 # upscaler
                 "steps": ("INT", {"default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process."}),
                 "num_frames": ("INT", {"default": 14, "min": 1, "max": 201, "step": 1}),
-                "cfg": ("FLOAT", {"default": 8.0, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
+                "cfg": ("FLOAT", {"default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
 
                 "speed_up": ("BOOLEAN", {"default": True}),
 
@@ -441,8 +441,8 @@ class DrawThingsSampler:
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
                 "sharpness": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 30.0, "step": 0.1, "round": 0.1}),
-                "mask_blur": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.1}),
-                "mask_blur_outset": ("INT", {"default": 4, "min": -100, "max": 1000, "step": 1}),
+                "mask_blur": ("FLOAT", {"default": 1.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.1}),
+                "mask_blur_outset": ("INT", {"default": 0, "min": -100, "max": 1000, "step": 1}),
                 "preserve_original": ("BOOLEAN", {"default": True}),
                 # face restore
 
@@ -717,7 +717,7 @@ class DrawThingsControlNet:
         }
 
     RETURN_TYPES = ("DT_CNET",)
-    RETURN_NAMES = ("control_net",)
+    RETURN_NAMES = ("CONTROL_NET",)
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
@@ -770,7 +770,7 @@ class DrawThingsLoRA:
         }
 
     RETURN_TYPES = ("DT_LORA",)
-    RETURN_NAMES = ("lora",)
+    RETURN_NAMES = ("LORA",)
     CATEGORY = "DrawThings"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
