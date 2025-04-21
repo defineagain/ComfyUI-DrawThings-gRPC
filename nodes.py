@@ -431,7 +431,7 @@ class DrawThingsSampler:
 
                 "speed_up": ("BOOLEAN", {"default": True}),
 
-                "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPMPP 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPM++ 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
 
                 "res_dpt_shift": ("BOOLEAN", {"default": True}),
 
