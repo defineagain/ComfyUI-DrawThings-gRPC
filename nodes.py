@@ -622,7 +622,7 @@ class DrawThingsRefiner:
         }
 
     RETURN_TYPES = ("DT_REFINER",)
-    RETURN_NAMES = ("refiner",)
+    RETURN_NAMES = ("REFINER",)
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
@@ -647,7 +647,7 @@ class DrawThingsUpscaler:
         }
 
     RETURN_TYPES = ("DT_UPSCALER",)
-    RETURN_NAMES = ("upscaler",)
+    RETURN_NAMES = ("UPSCALER",)
     FUNCTION = "add_to_pipeline"
     CATEGORY = "DrawThings"
 
@@ -668,7 +668,7 @@ class DrawThingsPositive:
         }
 
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("positive",)
+    RETURN_NAMES = ("POSITIVE",)
     FUNCTION = "prompt"
     CATEGORY = "DrawThings"
 
@@ -688,7 +688,7 @@ class DrawThingsNegative:
         }
 
     RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("negative",)
+    RETURN_NAMES = ("NEGATIVE",)
     FUNCTION = "prompt"
     CATEGORY = "DrawThings"
 
