@@ -186,7 +186,7 @@ async def dt_sampler(
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddNumFrames(builder, num_frames)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why, but adding to be sure
+    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
     GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
     GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
@@ -199,14 +199,17 @@ async def dt_sampler(
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-    # zero neg
-    # sep clip
+    # GenerationConfigurationAddZeroNegativePrompt(builder, )
+    # GenerationConfigurationAddSeparateClipL(builder, )
+    # GenerationConfigurationAddClipLText(builder, )
+    # GenerationConfigurationAddSeparateOpenClipG(builder, )
+    # GenerationConfigurationAddOpenClipGText(builder, )
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
     GenerationConfiguration.AddSharpness(builder, sharpness)
     GenerationConfiguration.AddMaskBlur(builder, mask_blur)
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
-    # face restore
+    # GenerationConfiguration.AddFaceRestoration(builder, )
     GenerationConfiguration.AddHiresFix(builder, high_res_fix)
     if high_res_fix is True:
         GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
