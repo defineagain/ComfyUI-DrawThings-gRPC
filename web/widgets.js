@@ -142,19 +142,19 @@ function widgetLogic(node, widget) {
             // NOTE: I know it's not pretty, but this way it accounts for more models/namechanges in the future, to a certain extent ofc...
 
             let isSD3 = false;
-            if (modelName.includes("sd3")) { // leaving room for more
+            if (version.includes("sd3")) { // leaving room for more
                 isSD3 = true;
             }
             let isFlux = false;
-            if (modelName.includes("flux")) { // leaving room for more
+            if (version.includes("flux")) { // leaving room for more
                 isFlux = true;
             }
             let isVideo = false;
             if (
-                modelName.includes("svdI2v") ||
-                modelName.includes("Video") ||
-                modelName.includes("video") ||
-                modelName.includes("wan")
+                version.includes("svdI2v") ||
+                version.includes("Video") ||
+                version.includes("video") ||
+                version.includes("wan")
             ) {
                 isVideo = true;
             }
