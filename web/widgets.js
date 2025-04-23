@@ -1,20 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { setCallback } from "./dynamicInputs.js";
 
-/**
- * A list of versions can be found here:
- * https://github.com/drawthingsai/draw-things-community/blob/6f03f7d4a200ffeb6fdc6022a6ee579e4e534831/Libraries/SwiftDiffusion/Sources/Samplers/Sampler.swift#L4
- * "v1", "v2", "kandinsky2.1", "sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "svd_i2v",
- * "wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b", "sd3", "pixart", "auraflow", "flux1",
- * "sd3_large", "hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "hidream_i1"
- */
-
-// enables tea_cache widget
-const teaCacheVersions = ["wan", "flux1", "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"];
-
-// enables num_frames
-const numFramesVersions = ["svd_i2v", "Video" /* ? */, "wan" /* ? */, "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"];
-
 const allWidgets = [
     "settings",
     "server",
@@ -145,16 +131,46 @@ function widgetLogic(node, widget) {
             const version = selectedModel?.value?.version;
             if (!version) break;
 
-            let isSD3 = version === "sd3";
-            let isFlux = version === "flux1";
+            /**
+             * A list of versions can be found here:
+             * https://github.com/drawthingsai/draw-things-community/blob/6f03f7d4a200ffeb6fdc6022a6ee579e4e534831/Libraries/SwiftDiffusion/Sources/Samplers/Sampler.swift#L4
+             * "v1", "v2", "kandinsky2.1", "sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "svd_i2v",
+             * "wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b", "sd3", "pixart", "auraflow", "flux1",
+             * "sd3_large", "hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "hidream_i1"
+             */
 
-            const supportTeaCache = teaCacheVersions.includes(version);
-            showWidget(node, "tea_cache", supportTeaCache);
+            // NOTE: I know it's not pretty, but this way it accounts for more models/namechanges in the future, to a certain extent ofc...
 
-            const teaCacheEnabled = supportTeaCache && findWidgetByName(node, "tea_cache")?.value;
-            showWidget(node, "tea_cache_start", teaCacheEnabled);
-            showWidget(node, "tea_cache_end", teaCacheEnabled);
-            showWidget(node, "tea_cache_threshold", teaCacheEnabled);
+            let isSD3 = false;
+            if (modelName.includes("sd3")) { // leaving room for more
+                isSD3 = true;
+            }
+            let isFlux = false;
+            if (modelName.includes("flux")) { // leaving room for more
+                isFlux = true;
+            }
+            let isVideo = false;
+            if (
+                modelName.includes("svdI2v") ||
+                modelName.includes("Video") ||
+                modelName.includes("video") ||
+                modelName.includes("wan")
+            ) {
+                isVideo = true;
+            }
+
+            if (isFlux === false && isVideo === false) {
+                showWidget(node, "tea_cache", false);
+                showWidget(node, "tea_cache_start", false);
+                showWidget(node, "tea_cache_end", false);
+                showWidget(node, "tea_cache_threshold", false);
+            } else {
+                showWidget(node, "tea_cache", true);
+                const teaCacheEnabled = findWidgetByName(node, "tea_cache")?.value;
+                showWidget(node, "tea_cache_start", teaCacheEnabled);
+                showWidget(node, "tea_cache_end", teaCacheEnabled);
+                showWidget(node, "tea_cache_threshold", teaCacheEnabled);
+            }
 
             if (isSD3 === false && isFlux === false) {
                 showWidget(node, "res_dpt_shift", false);
@@ -165,7 +181,6 @@ function widgetLogic(node, widget) {
             showWidget(node, "speed_up", isFlux);
 
             // video options
-            const isVideo = numFramesVersions.includes(version);
             showWidget(node, "num_frames", isVideo);
 
             // todo: fps, guiding_frame_noise, motion_scale, start_frame_guidance
