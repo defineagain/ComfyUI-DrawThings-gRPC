@@ -175,6 +175,10 @@ function widgetLogic(node, widget) {
             if (version.includes("svd")) { // leaving room for more
                 isSVD = true;
             }
+            let isWurst = false;
+            if (version.includes("wurst")) { // leaving room for more
+                isWurst = true;
+            }
             let isVideo = false;
             if (
                 version.includes("svd") ||

@@ -199,6 +199,9 @@ async def dt_sampler(
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
+    # GenerationConfigurationAddStage2Steps(builder, ) # wurst
+    # GenerationConfigurationAddStage2Cfg(builder, ) # wurst
+    # GenerationConfigurationAddStage2Shift(builder, ) # wurst
     # GenerationConfigurationAddZeroNegativePrompt(builder, )
     # GenerationConfigurationAddSeparateClipL(builder, )
     # GenerationConfigurationAddClipLText(builder, )
