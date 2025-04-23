@@ -154,7 +154,10 @@ function widgetLogic(node, widget) {
                 isSD3 = true;
             }
             let isFlux = false;
-            if (version.includes("flux")) { // leaving room for more
+            if (
+                version.includes("flux") ||
+                version.includes("hidream")
+            ) {
                 isFlux = true;
             }
             let isSVD = false;
