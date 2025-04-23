@@ -18,6 +18,10 @@ const allWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    "fps",
+    "motion_scale",
+    "guiding_frame_noise",
+    "start_frame_guidance",
     // zero neg
     // sep clip
     "clip_skip",
@@ -44,6 +48,10 @@ const basicWidgets = [
 const advancedWidgets = [
     "seed_mode",
     // "speed_up",
+    "fps",
+    "motion_scale",
+    "guiding_frame_noise",
+    "start_frame_guidance",
     // zero neg
     // sep clip
     "clip_skip",
@@ -149,6 +157,10 @@ function widgetLogic(node, widget) {
             if (version.includes("flux")) { // leaving room for more
                 isFlux = true;
             }
+            let isSVD = false;
+            if (version.includes("svd")) { // leaving room for more
+                isSVD = true;
+            }
             let isVideo = false;
             if (
                 version.includes("svd") ||
@@ -182,13 +194,10 @@ function widgetLogic(node, widget) {
             // video options
             showWidget(node, "num_frames", isVideo);
 
-            // todo: fps, guiding_frame_noise, motion_scale, start_frame_guidance
-            // I guess these options are just for svd?
-            // const isSvd = version === "svd_i2v";
-            // showWidget(node, "fps", isSvd);
-            // showWidget(node, "guiding_frame_noise", isSvd);
-            // showWidget(node, "motion_scale", isSvd);
-            // showWidget(node, "start_frame_guidance", isSvd);
+            showWidget(node, "fps", isSVD);
+            showWidget(node, "motion_scale", isSVD);
+            showWidget(node, "guiding_frame_noise", isSVD);
+            showWidget(node, "start_frame_guidance", isSVD);
 
             break;
 

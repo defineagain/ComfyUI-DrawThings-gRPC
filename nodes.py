@@ -437,6 +437,10 @@ class DrawThingsSampler:
 
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
                 # refiner
+                "fps": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "motion_scale": ("INT", {"default": 127, "min": 0, "max": 255, "step": 1}),
+                "guiding_frame_noise": ("FLOAT", {"default": 0.02, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+                "start_frame_guidance": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 25.0, "step": 0.1, "round": 0.1}),
                 # zero neg
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
