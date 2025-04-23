@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 import { setCallback } from "./dynamicInputs.js";
 
 const teaCacheVersions = ["svd_i2v", "Video", "wan", "flux1", "wan_v2.1_1.3b"];
+const numFramesVersions = ["svd_i2v", "Video", "wan", "wan_v2.1_1.3b"];
 
 const allWidgets = [
     "settings",
@@ -169,7 +170,7 @@ function widgetLogic(node, widget) {
             }
 
             showWidget(node, "speed_up", isFlux);
-            showWidget(node, "num_frames", isVideo);
+            showWidget(node, "num_frames", numFramesVersions.includes(version));
             break;
 
         case "high_res_fix":
