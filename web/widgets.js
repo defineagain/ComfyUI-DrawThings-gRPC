@@ -65,6 +65,7 @@ const advancedWidgets = [
 const getSetWidgets = [
     "settings",
     "model",
+    "res_dpt_shift",
     "high_res_fix",
     "tiled_decoding",
     "tiled_diffusion",
@@ -75,6 +76,16 @@ const getSetWidgets = [
 const getSetTypes = ["DrawThingsSampler", "DrawThingsControlNet"];
 
 let origProps = {};
+
+// From flux-auto-workflow.js
+function calcShift(h, w) {
+    const step1 = (h * w) / 256;
+    const step2 = (1.15 - 0.5) / (4096 - 256);
+    const step3 = (step1 - 256) * step2;
+    const step4 = step3 + 0.5;
+    const result = Math.exp(step4);
+    return Math.round(result * 100) / 100;
+}
 
 function findWidgetByName(node, name) {
     return node.widgets.find((w) => w.name === name);
@@ -201,7 +212,15 @@ function widgetLogic(node, widget) {
             showWidget(node, "motion_scale", isSVD);
             showWidget(node, "guiding_frame_noise", isSVD);
             showWidget(node, "start_frame_guidance", isSVD);
+            break;
 
+        case "res_dpt_shift":
+            if (widget.value == true) {
+                const height = findWidgetByName(node, "height").value;
+                const width = findWidgetByName(node, "width").value;
+                findWidgetByName(node, "shift").value = calcShift(height, width);
+            }
+            findWidgetByName(node, "shift").disabled = widget.value;
             break;
 
         case "high_res_fix":
