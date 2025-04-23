@@ -151,8 +151,7 @@ function widgetLogic(node, widget) {
             }
             let isVideo = false;
             if (
-                version.includes("svdI2v") ||
-                version.includes("Video") ||
+                version.includes("svd") ||
                 version.includes("video") ||
                 version.includes("wan")
             ) {
