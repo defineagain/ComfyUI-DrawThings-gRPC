@@ -188,6 +188,7 @@ async def dt_sampler(
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
     GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
+    # GenerationConfiguration.AddGuidanceEmbed(builder, )
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
     GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
     GenerationConfiguration.AddShift(builder, shift)
@@ -199,14 +200,14 @@ async def dt_sampler(
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-    # GenerationConfigurationAddStage2Steps(builder, ) # wurst
-    # GenerationConfigurationAddStage2Cfg(builder, ) # wurst
-    # GenerationConfigurationAddStage2Shift(builder, ) # wurst
-    # GenerationConfigurationAddZeroNegativePrompt(builder, )
-    # GenerationConfigurationAddSeparateClipL(builder, )
-    # GenerationConfigurationAddClipLText(builder, )
-    # GenerationConfigurationAddSeparateOpenClipG(builder, )
-    # GenerationConfigurationAddOpenClipGText(builder, )
+    # GenerationConfiguration.AddStage2Steps(builder, ) # wurst
+    # GenerationConfiguration.AddStage2Cfg(builder, ) # wurst
+    # GenerationConfiguration.AddStage2Shift(builder, ) # wurst
+    # GenerationConfiguration.AddZeroNegativePrompt(builder, )
+    # GenerationConfiguration.AddSeparateClipL(builder, )
+    # GenerationConfiguration.AddClipLText(builder, )
+    # GenerationConfiguration.AddSeparateOpenClipG(builder, )
+    # GenerationConfiguration.AddOpenClipGText(builder, )
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
     GenerationConfiguration.AddSharpness(builder, sharpness)
     GenerationConfiguration.AddMaskBlur(builder, mask_blur)
@@ -238,6 +239,20 @@ async def dt_sampler(
         GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
 
     # ti embed
+
+    # The rest, don't know where they go or which models use them
+    # GenerationConfiguration.AddClipWeight(builder, )
+    # GenerationConfiguration.AddNegativePromptForImagePrior(builder, )
+    # GenerationConfiguration.AddImagePriorSteps(builder, )
+    # GenerationConfiguration.AddCropTop(builder, )
+    # GenerationConfiguration.AddCropLeft(builder, )
+    # GenerationConfiguration.AddAestheticScore(builder, )
+    # GenerationConfiguration.AddNegativeAestheticScore(builder, )
+    # GenerationConfiguration.AddNegativeOriginalImageHeight(builder, )
+    # GenerationConfiguration.AddNegativeOriginalImageWidth(builder, )
+    # GenerationConfiguration.AddName(builder, )
+    # GenerationConfiguration.AddStochasticSamplingGamma(builder, )
+    # GenerationConfiguration.AddT5TextEncoder(builder, )
 
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls_out is not None:
