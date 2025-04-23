@@ -18,6 +18,7 @@ const allWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    "batch_size",
     "fps",
     "motion_scale",
     "guiding_frame_noise",
@@ -44,6 +45,7 @@ const basicWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    "batch_size"
 ];
 const advancedWidgets = [
     "seed_mode",

@@ -78,6 +78,7 @@ async def dt_sampler(
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
                 fps,
                 motion_scale,
                 guiding_frame_noise,
@@ -197,7 +198,7 @@ async def dt_sampler(
     GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
     GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
     GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
-    GenerationConfiguration.AddBatchSize(builder, 1)
+    GenerationConfiguration.AddBatchSize(builder, batch_size)
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
@@ -467,6 +468,7 @@ class DrawThingsSampler:
                 "res_dpt_shift": ("BOOLEAN", {"default": True}),
 
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
+                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 # refiner
                 "fps": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
                 "motion_scale": ("INT", {"default": 127, "min": 0, "max": 255, "step": 1}),
@@ -506,7 +508,6 @@ class DrawThingsSampler:
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "batch_count": ("INT", {"default": 1, "min": 1, "max": 100, "step": 1}),
-                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
             },
             "optional": {
                 "image": ("IMAGE", ),
@@ -541,6 +542,7 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
                 fps,
                 motion_scale,
                 guiding_frame_noise,
@@ -571,7 +573,6 @@ class DrawThingsSampler:
                 tea_cache_end,
                 tea_cache_threshold,
                 batch_count=1,
-                batch_size=1,
                 scale_factor=1,
                 image=None,
                 mask=None,
@@ -595,6 +596,7 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
                 fps,
                 motion_scale,
                 guiding_frame_noise,
