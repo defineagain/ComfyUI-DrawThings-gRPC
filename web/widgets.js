@@ -1,6 +1,8 @@
 import { app } from "../../scripts/app.js";
 import { setCallback } from "./dynamicInputs.js";
 
+const teaCacheVersions = ["svd_i2v", "Video", "wan", "flux1", "wan_v2.1_1.3b"];
+
 const allWidgets = [
     "settings",
     "server",
@@ -134,23 +136,31 @@ function widgetLogic(node, widget) {
             let isFlux = version === "flux1";
             let isVideo = ["svdI2v", "Video", "wan"].includes(version);
 
-            if (isFlux === false && isVideo === false) {
-                showWidget(node, "tea_cache", false);
-                showWidget(node, "tea_cache_start", false);
-                showWidget(node, "tea_cache_end", false);
-                showWidget(node, "tea_cache_threshold", false);
-            } else {
-                showWidget(node, "tea_cache", true);
-                if (findWidgetByName(node, "tea_cache").value === false) {
-                    showWidget(node, "tea_cache_start", false);
-                    showWidget(node, "tea_cache_end", false);
-                    showWidget(node, "tea_cache_threshold", false);
-                } else {
-                    showWidget(node, "tea_cache_start", true);
-                    showWidget(node, "tea_cache_end", true);
-                    showWidget(node, "tea_cache_threshold", true);
-                }
-            }
+            let supportTeaCache = teaCacheVersions.includes(version);
+            showWidget(node, "tea_cache", supportTeaCache);
+
+            let teaCacheEnabled = supportTeaCache && findWidgetByName(node, "tea_cache")?.value;
+            showWidget(node, "tea_cache_start", teaCacheEnabled);
+            showWidget(node, "tea_cache_end", teaCacheEnabled);
+            showWidget(node, "tea_cache_threshold", teaCacheEnabled);
+
+            // if (isFlux === false && isVideo === false) {
+            //     showWidget(node, "tea_cache", false);
+            //     showWidget(node, "tea_cache_start", false);
+            //     showWidget(node, "tea_cache_end", false);
+            //     showWidget(node, "tea_cache_threshold", false);
+            // } else {
+            //     showWidget(node, "tea_cache", true);
+            //     if (findWidgetByName(node, "tea_cache").value === false) {
+            //         showWidget(node, "tea_cache_start", false);
+            //         showWidget(node, "tea_cache_end", false);
+            //         showWidget(node, "tea_cache_threshold", false);
+            //     } else {
+            //         showWidget(node, "tea_cache_start", true);
+            //         showWidget(node, "tea_cache_end", true);
+            //         showWidget(node, "tea_cache_threshold", true);
+            //     }
+            // }
 
             if (isSD3 === false && isFlux === false) {
                 showWidget(node, "res_dpt_shift", false);
@@ -191,7 +201,7 @@ function widgetLogic(node, widget) {
                 const modifier = widget.value.value.modifier;
                 const typeWidget = findWidgetByName(node, "control_input_type");
                 const options = typeWidget.options.values;
-                const option = options.find(option => option.toLowerCase() == modifier) 
+                const option = options.find((option) => option.toLowerCase() == modifier);
                 if (option != null) {
                     typeWidget.value = option;
                 }
