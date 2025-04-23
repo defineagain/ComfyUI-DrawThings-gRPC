@@ -78,6 +78,10 @@ async def dt_sampler(
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -182,10 +186,15 @@ async def dt_sampler(
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddNumFrames(builder, num_frames)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
+    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why, but adding to be sure
     GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
     GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
     GenerationConfiguration.AddShift(builder, shift)
+    GenerationConfiguration.AddFpsId(builder, fps)
+    GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
+    GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
+    GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
     GenerationConfiguration.AddBatchSize(builder, 1)
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
@@ -510,6 +519,10 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -560,6 +573,10 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,
