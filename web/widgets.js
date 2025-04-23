@@ -13,8 +13,7 @@ import { setCallback } from "./dynamicInputs.js";
 const teaCacheVersions = ["wan", "flux1", "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"];
 
 // enables num_frames
-// todo: enable fps, guiding_frame_noise, motion_scale, start_frame_guidance
-const videoVersions = ["svd_i2v", "Video" /* ? */, "wan" /* ? */, "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"];
+const numFramesVersions = ["svd_i2v", "Video" /* ? */, "wan" /* ? */, "wan_v2.1_1.3b", "wan_v2.1_14b", "hunyuan_video"];
 
 const allWidgets = [
     "settings",
@@ -166,9 +165,16 @@ function widgetLogic(node, widget) {
             showWidget(node, "speed_up", isFlux);
 
             // video options
-            const isVideo = videoVersions.includes(version);
+            const isVideo = numFramesVersions.includes(version);
             showWidget(node, "num_frames", isVideo);
+
             // todo: fps, guiding_frame_noise, motion_scale, start_frame_guidance
+            // I guess these options are just for svd?
+            // const isSvd = version === "svd_i2v";
+            // showWidget(node, "fps", isSvd);
+            // showWidget(node, "guiding_frame_noise", isSvd);
+            // showWidget(node, "motion_scale", isSvd);
+            // showWidget(node, "start_frame_guidance", isSvd);
 
             break;
 
