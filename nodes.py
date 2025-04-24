@@ -78,6 +78,11 @@ async def dt_sampler(
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -148,10 +153,11 @@ async def dt_sampler(
             Control.AddWeight(builder, c["weight"])
             Control.AddGuidanceStart(builder, c["start"])
             Control.AddGuidanceEnd(builder, c["end"])
-            Control.AddNoPrompt(builder, False)
-            Control.AddGlobalAveragePooling(builder, False)
-            Control.AddDownSamplingRate(builder, 0)
-            Control.AddTargetBlocks(builder, 0)
+            # Control.AddNoPrompt(builder, False)
+            # Control.AddGlobalAveragePooling(builder, False)
+            # Control.AddDownSamplingRate(builder, 0)
+            # Control.AddTargetBlocks(builder, 0)
+            # Control.StartTargetBlocksVector(builder, )
             fin_control = Control.End(builder)
             fin_controls.append(fin_control)
 
@@ -182,22 +188,34 @@ async def dt_sampler(
     GenerationConfiguration.AddSteps(builder, steps)
     GenerationConfiguration.AddNumFrames(builder, num_frames)
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
+    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
     GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
+    # GenerationConfiguration.AddGuidanceEmbed(builder, )
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
     GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
     GenerationConfiguration.AddShift(builder, shift)
-    GenerationConfiguration.AddBatchSize(builder, 1)
+    GenerationConfiguration.AddFpsId(builder, fps)
+    GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
+    GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
+    GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
+    GenerationConfiguration.AddBatchSize(builder, batch_size)
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-    # zero neg
-    # sep clip
+    # GenerationConfiguration.AddStage2Steps(builder, ) # wurst
+    # GenerationConfiguration.AddStage2Cfg(builder, ) # wurst
+    # GenerationConfiguration.AddStage2Shift(builder, ) # wurst
+    # GenerationConfiguration.AddZeroNegativePrompt(builder, )
+    # GenerationConfiguration.AddSeparateClipL(builder, )
+    # GenerationConfiguration.AddClipLText(builder, )
+    # GenerationConfiguration.AddSeparateOpenClipG(builder, )
+    # GenerationConfiguration.AddOpenClipGText(builder, )
     GenerationConfiguration.AddClipSkip(builder, clip_skip)
     GenerationConfiguration.AddSharpness(builder, sharpness)
     GenerationConfiguration.AddMaskBlur(builder, mask_blur)
     GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
     GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
-    # face restore
+    # GenerationConfiguration.AddFaceRestoration(builder, )
     GenerationConfiguration.AddHiresFix(builder, high_res_fix)
     if high_res_fix is True:
         GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
@@ -223,6 +241,20 @@ async def dt_sampler(
         GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
 
     # ti embed
+
+    # The rest, don't know where they go or which models use them
+    # GenerationConfiguration.AddClipWeight(builder, )
+    # GenerationConfiguration.AddNegativePromptForImagePrior(builder, )
+    # GenerationConfiguration.AddImagePriorSteps(builder, )
+    # GenerationConfiguration.AddCropTop(builder, )
+    # GenerationConfiguration.AddCropLeft(builder, )
+    # GenerationConfiguration.AddAestheticScore(builder, )
+    # GenerationConfiguration.AddNegativeAestheticScore(builder, )
+    # GenerationConfiguration.AddNegativeOriginalImageHeight(builder, )
+    # GenerationConfiguration.AddNegativeOriginalImageWidth(builder, )
+    # GenerationConfiguration.AddName(builder, )
+    # GenerationConfiguration.AddStochasticSamplingGamma(builder, )
+    # GenerationConfiguration.AddT5TextEncoder(builder, )
 
     GenerationConfiguration.AddBatchCount(builder, batch_count)
     if controls_out is not None:
@@ -436,7 +468,12 @@ class DrawThingsSampler:
                 "res_dpt_shift": ("BOOLEAN", {"default": True}),
 
                 "shift": ("FLOAT", {"default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01}),
+                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 # refiner
+                "fps": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "motion_scale": ("INT", {"default": 127, "min": 0, "max": 255, "step": 1}),
+                "guiding_frame_noise": ("FLOAT", {"default": 0.02, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
+                "start_frame_guidance": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 25.0, "step": 0.1, "round": 0.1}),
                 # zero neg
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
@@ -471,7 +508,6 @@ class DrawThingsSampler:
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "batch_count": ("INT", {"default": 1, "min": 1, "max": 100, "step": 1}),
-                "batch_size": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
             },
             "optional": {
                 "image": ("IMAGE", ),
@@ -506,6 +542,11 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -532,7 +573,6 @@ class DrawThingsSampler:
                 tea_cache_end,
                 tea_cache_threshold,
                 batch_count=1,
-                batch_size=1,
                 scale_factor=1,
                 image=None,
                 mask=None,
@@ -556,6 +596,11 @@ class DrawThingsSampler:
                 sampler_name,
                 res_dpt_shift,
                 shift,
+                batch_size,
+                fps,
+                motion_scale,
+                guiding_frame_noise,
+                start_frame_guidance,
                 clip_skip,
                 sharpness,
                 mask_blur,

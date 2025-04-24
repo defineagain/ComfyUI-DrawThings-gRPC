@@ -18,6 +18,11 @@ const allWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    "batch_size",
+    "fps",
+    "motion_scale",
+    "guiding_frame_noise",
+    "start_frame_guidance",
     // zero neg
     // sep clip
     "clip_skip",
@@ -40,10 +45,15 @@ const basicWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
+    "batch_size"
 ];
 const advancedWidgets = [
     "seed_mode",
     // "speed_up",
+    "fps",
+    "motion_scale",
+    "guiding_frame_noise",
+    "start_frame_guidance",
     // zero neg
     // sep clip
     "clip_skip",
@@ -57,6 +67,7 @@ const advancedWidgets = [
 const getSetWidgets = [
     "settings",
     "model",
+    "res_dpt_shift",
     "high_res_fix",
     "tiled_decoding",
     "tiled_diffusion",
@@ -67,6 +78,16 @@ const getSetWidgets = [
 const getSetTypes = ["DrawThingsSampler", "DrawThingsControlNet"];
 
 let origProps = {};
+
+// From flux-auto-workflow.js
+function calcShift(h, w) {
+    const step1 = (h * w) / 256;
+    const step2 = (1.15 - 0.5) / (4096 - 256);
+    const step3 = (step1 - 256) * step2;
+    const step4 = step3 + 0.5;
+    const result = Math.exp(step4);
+    return Math.round(result * 100) / 100;
+}
 
 function findWidgetByName(node, name) {
     return node.widgets.find((w) => w.name === name);
@@ -125,14 +146,49 @@ function widgetLogic(node, widget) {
                     break;
             }
             break;
+
         case "model":
             const selectedModel = widget.value;
             const version = selectedModel?.value?.version;
             if (!version) break;
 
-            let isSD3 = version === "sd3";
-            let isFlux = version === "flux1";
-            let isVideo = ["svdI2v", "Video", "wan"].includes(version);
+            /**
+             * A list of versions can be found here:
+             * https://github.com/drawthingsai/draw-things-community/blob/6f03f7d4a200ffeb6fdc6022a6ee579e4e534831/Libraries/SwiftDiffusion/Sources/Samplers/Sampler.swift#L4
+             * "v1", "v2", "kandinsky2.1", "sdxl_base_v0.9", "sdxl_refiner_v0.9", "ssd_1b", "svd_i2v",
+             * "wurstchen_v3.0_stage_c", "wurstchen_v3.0_stage_b", "sd3", "pixart", "auraflow", "flux1",
+             * "sd3_large", "hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "hidream_i1"
+             */
+
+            // NOTE: I know it's not pretty, but this way it accounts for more models/namechanges in the future, to a certain extent ofc...
+
+            let isSD3 = false;
+            if (version.includes("sd3")) { // leaving room for more
+                isSD3 = true;
+            }
+            let isFlux = false;
+            if (
+                version.includes("flux") ||
+                version.includes("hidream")
+            ) {
+                isFlux = true;
+            }
+            let isSVD = false;
+            if (version.includes("svd")) { // leaving room for more
+                isSVD = true;
+            }
+            let isWurst = false;
+            if (version.includes("wurst")) { // leaving room for more
+                isWurst = true;
+            }
+            let isVideo = false;
+            if (
+                version.includes("svd") ||
+                version.includes("video") ||
+                version.includes("wan")
+            ) {
+                isVideo = true;
+            }
 
             if (isFlux === false && isVideo === false) {
                 showWidget(node, "tea_cache", false);
@@ -141,15 +197,10 @@ function widgetLogic(node, widget) {
                 showWidget(node, "tea_cache_threshold", false);
             } else {
                 showWidget(node, "tea_cache", true);
-                if (findWidgetByName(node, "tea_cache").value === false) {
-                    showWidget(node, "tea_cache_start", false);
-                    showWidget(node, "tea_cache_end", false);
-                    showWidget(node, "tea_cache_threshold", false);
-                } else {
-                    showWidget(node, "tea_cache_start", true);
-                    showWidget(node, "tea_cache_end", true);
-                    showWidget(node, "tea_cache_threshold", true);
-                }
+                const teaCacheEnabled = findWidgetByName(node, "tea_cache")?.value;
+                showWidget(node, "tea_cache_start", teaCacheEnabled);
+                showWidget(node, "tea_cache_end", teaCacheEnabled);
+                showWidget(node, "tea_cache_threshold", teaCacheEnabled);
             }
 
             if (isSD3 === false && isFlux === false) {
@@ -159,7 +210,23 @@ function widgetLogic(node, widget) {
             }
 
             showWidget(node, "speed_up", isFlux);
+
+            // video options
             showWidget(node, "num_frames", isVideo);
+
+            showWidget(node, "fps", isSVD);
+            showWidget(node, "motion_scale", isSVD);
+            showWidget(node, "guiding_frame_noise", isSVD);
+            showWidget(node, "start_frame_guidance", isSVD);
+            break;
+
+        case "res_dpt_shift":
+            if (widget.value == true) {
+                const height = findWidgetByName(node, "height").value;
+                const width = findWidgetByName(node, "width").value;
+                findWidgetByName(node, "shift").value = calcShift(height, width);
+            }
+            findWidgetByName(node, "shift").disabled = widget.value;
             break;
 
         case "high_res_fix":
@@ -191,7 +258,7 @@ function widgetLogic(node, widget) {
                 const modifier = widget.value.value.modifier;
                 const typeWidget = findWidgetByName(node, "control_input_type");
                 const options = typeWidget.options.values;
-                const option = options.find(option => option.toLowerCase() == modifier) 
+                const option = options.find((option) => option.toLowerCase() == modifier);
                 if (option != null) {
                     typeWidget.value = option;
                 }
