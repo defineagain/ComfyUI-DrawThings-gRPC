@@ -108,6 +108,7 @@ async def dt_sampler(
                 tea_cache_start,
                 tea_cache_end,
                 tea_cache_threshold,
+                tea_cache_max_skip_steps,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -239,6 +240,7 @@ async def dt_sampler(
         GenerationConfiguration.AddTeaCacheStart(builder, tea_cache_start)
         GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache_end)
         GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
+        GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, tea_cache_max_skip_steps)
 
     # ti embed
 
@@ -502,6 +504,7 @@ class DrawThingsSampler:
                 "tea_cache_start": ("INT", {"default": 5, "min": 0, "max": 1000, "step": 1}),
                 "tea_cache_end": ("INT", {"default": 2, "min": 0, "max": 1000, "step": 1}),
                 "tea_cache_threshold": ("FLOAT", {"default": 0.2, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
+                "tea_cache_max_skip_steps": ("INT", {"default": 3, "min": 1, "max": 50, "step": 1}),
 
                 # ti embed
             },
@@ -572,6 +575,7 @@ class DrawThingsSampler:
                 tea_cache_start,
                 tea_cache_end,
                 tea_cache_threshold,
+                tea_cache_max_skip_steps,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -626,6 +630,7 @@ class DrawThingsSampler:
                 tea_cache_start,
                 tea_cache_end,
                 tea_cache_threshold,
+                tea_cache_max_skip_steps,
                 batch_count=batch_count,
                 scale_factor=scale_factor,
                 image=image,

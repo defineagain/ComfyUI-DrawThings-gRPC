@@ -198,12 +198,14 @@ function widgetLogic(node, widget) {
                 showWidget(node, "tea_cache_start", false);
                 showWidget(node, "tea_cache_end", false);
                 showWidget(node, "tea_cache_threshold", false);
+                showWidget(node, "tea_cache_max_skip_steps", false);
             } else {
                 showWidget(node, "tea_cache", true);
                 const teaCacheEnabled = findWidgetByName(node, "tea_cache")?.value;
                 showWidget(node, "tea_cache_start", teaCacheEnabled);
                 showWidget(node, "tea_cache_end", teaCacheEnabled);
                 showWidget(node, "tea_cache_threshold", teaCacheEnabled);
+                showWidget(node, "tea_cache_max_skip_steps", teaCacheEnabled);
             }
 
             if (isSD3 === false && isFlux === false) {

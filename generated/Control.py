@@ -4,15 +4,13 @@
 
 import flatbuffers
 from flatbuffers.compat import import_numpy
-from typing import Any
-from typing import Optional
 np = import_numpy()
 
 class Control(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAs(cls, buf, offset: int = 0):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = Control()
         x.Init(buf, n + offset)
@@ -23,11 +21,11 @@ class Control(object):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
     # Control
-    def Init(self, buf: bytes, pos: int):
+    def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # Control
-    def File(self) -> Optional[str]:
+    def File(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -83,7 +81,7 @@ class Control(object):
         return 0
 
     # Control
-    def TargetBlocks(self, j: int):
+    def TargetBlocks(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             a = self._tab.Vector(o)
@@ -91,14 +89,14 @@ class Control(object):
         return ""
 
     # Control
-    def TargetBlocksLength(self) -> int:
+    def TargetBlocksLength(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
     # Control
-    def TargetBlocksIsNone(self) -> bool:
+    def TargetBlocksIsNone(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(20))
         return o == 0
 
@@ -109,80 +107,80 @@ class Control(object):
             return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
         return 0
 
-def ControlStart(builder: flatbuffers.Builder):
+def ControlStart(builder):
     builder.StartObject(10)
 
-def Start(builder: flatbuffers.Builder):
+def Start(builder):
     ControlStart(builder)
 
-def ControlAddFile(builder: flatbuffers.Builder, file: int):
+def ControlAddFile(builder, file):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(file), 0)
 
-def AddFile(builder: flatbuffers.Builder, file: int):
+def AddFile(builder, file):
     ControlAddFile(builder, file)
 
-def ControlAddWeight(builder: flatbuffers.Builder, weight: float):
+def ControlAddWeight(builder, weight):
     builder.PrependFloat32Slot(1, weight, 1.0)
 
-def AddWeight(builder: flatbuffers.Builder, weight: float):
+def AddWeight(builder, weight):
     ControlAddWeight(builder, weight)
 
-def ControlAddGuidanceStart(builder: flatbuffers.Builder, guidanceStart: float):
+def ControlAddGuidanceStart(builder, guidanceStart):
     builder.PrependFloat32Slot(2, guidanceStart, 0.0)
 
-def AddGuidanceStart(builder: flatbuffers.Builder, guidanceStart: float):
+def AddGuidanceStart(builder, guidanceStart):
     ControlAddGuidanceStart(builder, guidanceStart)
 
-def ControlAddGuidanceEnd(builder: flatbuffers.Builder, guidanceEnd: float):
+def ControlAddGuidanceEnd(builder, guidanceEnd):
     builder.PrependFloat32Slot(3, guidanceEnd, 1.0)
 
-def AddGuidanceEnd(builder: flatbuffers.Builder, guidanceEnd: float):
+def AddGuidanceEnd(builder, guidanceEnd):
     ControlAddGuidanceEnd(builder, guidanceEnd)
 
-def ControlAddNoPrompt(builder: flatbuffers.Builder, noPrompt: bool):
+def ControlAddNoPrompt(builder, noPrompt):
     builder.PrependBoolSlot(4, noPrompt, 0)
 
-def AddNoPrompt(builder: flatbuffers.Builder, noPrompt: bool):
+def AddNoPrompt(builder, noPrompt):
     ControlAddNoPrompt(builder, noPrompt)
 
-def ControlAddGlobalAveragePooling(builder: flatbuffers.Builder, globalAveragePooling: bool):
+def ControlAddGlobalAveragePooling(builder, globalAveragePooling):
     builder.PrependBoolSlot(5, globalAveragePooling, 1)
 
-def AddGlobalAveragePooling(builder: flatbuffers.Builder, globalAveragePooling: bool):
+def AddGlobalAveragePooling(builder, globalAveragePooling):
     ControlAddGlobalAveragePooling(builder, globalAveragePooling)
 
-def ControlAddDownSamplingRate(builder: flatbuffers.Builder, downSamplingRate: float):
+def ControlAddDownSamplingRate(builder, downSamplingRate):
     builder.PrependFloat32Slot(6, downSamplingRate, 1.0)
 
-def AddDownSamplingRate(builder: flatbuffers.Builder, downSamplingRate: float):
+def AddDownSamplingRate(builder, downSamplingRate):
     ControlAddDownSamplingRate(builder, downSamplingRate)
 
-def ControlAddControlMode(builder: flatbuffers.Builder, controlMode: int):
+def ControlAddControlMode(builder, controlMode):
     builder.PrependInt8Slot(7, controlMode, 0)
 
-def AddControlMode(builder: flatbuffers.Builder, controlMode: int):
+def AddControlMode(builder, controlMode):
     ControlAddControlMode(builder, controlMode)
 
-def ControlAddTargetBlocks(builder: flatbuffers.Builder, targetBlocks: int):
+def ControlAddTargetBlocks(builder, targetBlocks):
     builder.PrependUOffsetTRelativeSlot(8, flatbuffers.number_types.UOffsetTFlags.py_type(targetBlocks), 0)
 
-def AddTargetBlocks(builder: flatbuffers.Builder, targetBlocks: int):
+def AddTargetBlocks(builder, targetBlocks):
     ControlAddTargetBlocks(builder, targetBlocks)
 
-def ControlStartTargetBlocksVector(builder, numElems: int) -> int:
+def ControlStartTargetBlocksVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartTargetBlocksVector(builder, numElems: int) -> int:
+def StartTargetBlocksVector(builder, numElems):
     return ControlStartTargetBlocksVector(builder, numElems)
 
-def ControlAddInputOverride(builder: flatbuffers.Builder, inputOverride: int):
+def ControlAddInputOverride(builder, inputOverride):
     builder.PrependInt8Slot(9, inputOverride, 0)
 
-def AddInputOverride(builder: flatbuffers.Builder, inputOverride: int):
+def AddInputOverride(builder, inputOverride):
     ControlAddInputOverride(builder, inputOverride)
 
-def ControlEnd(builder: flatbuffers.Builder) -> int:
+def ControlEnd(builder):
     return builder.EndObject()
 
-def End(builder: flatbuffers.Builder) -> int:
+def End(builder):
     return ControlEnd(builder)
