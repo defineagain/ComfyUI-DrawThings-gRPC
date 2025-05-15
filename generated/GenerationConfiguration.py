@@ -4,17 +4,13 @@
 
 import flatbuffers
 from flatbuffers.compat import import_numpy
-from typing import Any
-from . import Control
-from . import LoRA
-from typing import Optional
 np = import_numpy()
 
 class GenerationConfiguration(object):
     __slots__ = ['_tab']
 
     @classmethod
-    def GetRootAs(cls, buf, offset: int = 0):
+    def GetRootAs(cls, buf, offset=0):
         n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, offset)
         x = GenerationConfiguration()
         x.Init(buf, n + offset)
@@ -25,7 +21,7 @@ class GenerationConfiguration(object):
         """This method is deprecated. Please switch to GetRootAs."""
         return cls.GetRootAs(buf, offset)
     # GenerationConfiguration
-    def Init(self, buf: bytes, pos: int):
+    def Init(self, buf, pos):
         self._tab = flatbuffers.table.Table(buf, pos)
 
     # GenerationConfiguration
@@ -78,7 +74,7 @@ class GenerationConfiguration(object):
         return 0.0
 
     # GenerationConfiguration
-    def Model(self) -> Optional[str]:
+    def Model(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(18))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -134,7 +130,7 @@ class GenerationConfiguration(object):
         return 0.7
 
     # GenerationConfiguration
-    def Upscaler(self) -> Optional[str]:
+    def Upscaler(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(34))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -162,50 +158,52 @@ class GenerationConfiguration(object):
         return 1
 
     # GenerationConfiguration
-    def Controls(self, j: int) -> Optional[Control]:
+    def Controls(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(42))
         if o != 0:
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
+            from Control import Control
             obj = Control()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
 
     # GenerationConfiguration
-    def ControlsLength(self) -> int:
+    def ControlsLength(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(42))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
     # GenerationConfiguration
-    def ControlsIsNone(self) -> bool:
+    def ControlsIsNone(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(42))
         return o == 0
 
     # GenerationConfiguration
-    def Loras(self, j: int) -> Optional[LoRA]:
+    def Loras(self, j):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(44))
         if o != 0:
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
+            from LoRA import LoRA
             obj = LoRA()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
 
     # GenerationConfiguration
-    def LorasLength(self) -> int:
+    def LorasLength(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(44))
         if o != 0:
             return self._tab.VectorLen(o)
         return 0
 
     # GenerationConfiguration
-    def LorasIsNone(self) -> bool:
+    def LorasIsNone(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(44))
         return o == 0
 
@@ -217,7 +215,7 @@ class GenerationConfiguration(object):
         return 0.0
 
     # GenerationConfiguration
-    def FaceRestoration(self) -> Optional[str]:
+    def FaceRestoration(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -245,7 +243,7 @@ class GenerationConfiguration(object):
         return 5
 
     # GenerationConfiguration
-    def RefinerModel(self) -> Optional[str]:
+    def RefinerModel(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(60))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -336,7 +334,7 @@ class GenerationConfiguration(object):
         return 0
 
     # GenerationConfiguration
-    def Name(self) -> Optional[str]:
+    def Name(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(86))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -511,7 +509,7 @@ class GenerationConfiguration(object):
         return False
 
     # GenerationConfiguration
-    def ClipLText(self) -> Optional[str]:
+    def ClipLText(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(136))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -525,7 +523,7 @@ class GenerationConfiguration(object):
         return False
 
     # GenerationConfiguration
-    def OpenClipGText(self) -> Optional[str]:
+    def OpenClipGText(self):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(140))
         if o != 0:
             return self._tab.String(o + self._tab.Pos)
@@ -580,470 +578,509 @@ class GenerationConfiguration(object):
             return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
         return False
 
-def GenerationConfigurationStart(builder: flatbuffers.Builder):
-    builder.StartObject(76)
+    # GenerationConfiguration
+    def SeparateT5(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(156))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
 
-def Start(builder: flatbuffers.Builder):
+    # GenerationConfiguration
+    def T5Text(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(158))
+        if o != 0:
+            return self._tab.String(o + self._tab.Pos)
+        return None
+
+    # GenerationConfiguration
+    def TeaCacheMaxSkipSteps(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(160))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 3
+
+def GenerationConfigurationStart(builder):
+    builder.StartObject(79)
+
+def Start(builder):
     GenerationConfigurationStart(builder)
 
-def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int):
+def GenerationConfigurationAddId(builder, id):
     builder.PrependInt64Slot(0, id, 0)
 
-def AddId(builder: flatbuffers.Builder, id: int):
+def AddId(builder, id):
     GenerationConfigurationAddId(builder, id)
 
-def GenerationConfigurationAddStartWidth(builder: flatbuffers.Builder, startWidth: int):
+def GenerationConfigurationAddStartWidth(builder, startWidth):
     builder.PrependUint16Slot(1, startWidth, 0)
 
-def AddStartWidth(builder: flatbuffers.Builder, startWidth: int):
+def AddStartWidth(builder, startWidth):
     GenerationConfigurationAddStartWidth(builder, startWidth)
 
-def GenerationConfigurationAddStartHeight(builder: flatbuffers.Builder, startHeight: int):
+def GenerationConfigurationAddStartHeight(builder, startHeight):
     builder.PrependUint16Slot(2, startHeight, 0)
 
-def AddStartHeight(builder: flatbuffers.Builder, startHeight: int):
+def AddStartHeight(builder, startHeight):
     GenerationConfigurationAddStartHeight(builder, startHeight)
 
-def GenerationConfigurationAddSeed(builder: flatbuffers.Builder, seed: int):
+def GenerationConfigurationAddSeed(builder, seed):
     builder.PrependUint32Slot(3, seed, 0)
 
-def AddSeed(builder: flatbuffers.Builder, seed: int):
+def AddSeed(builder, seed):
     GenerationConfigurationAddSeed(builder, seed)
 
-def GenerationConfigurationAddSteps(builder: flatbuffers.Builder, steps: int):
+def GenerationConfigurationAddSteps(builder, steps):
     builder.PrependUint32Slot(4, steps, 0)
 
-def AddSteps(builder: flatbuffers.Builder, steps: int):
+def AddSteps(builder, steps):
     GenerationConfigurationAddSteps(builder, steps)
 
-def GenerationConfigurationAddGuidanceScale(builder: flatbuffers.Builder, guidanceScale: float):
+def GenerationConfigurationAddGuidanceScale(builder, guidanceScale):
     builder.PrependFloat32Slot(5, guidanceScale, 0.0)
 
-def AddGuidanceScale(builder: flatbuffers.Builder, guidanceScale: float):
+def AddGuidanceScale(builder, guidanceScale):
     GenerationConfigurationAddGuidanceScale(builder, guidanceScale)
 
-def GenerationConfigurationAddStrength(builder: flatbuffers.Builder, strength: float):
+def GenerationConfigurationAddStrength(builder, strength):
     builder.PrependFloat32Slot(6, strength, 0.0)
 
-def AddStrength(builder: flatbuffers.Builder, strength: float):
+def AddStrength(builder, strength):
     GenerationConfigurationAddStrength(builder, strength)
 
-def GenerationConfigurationAddModel(builder: flatbuffers.Builder, model: int):
+def GenerationConfigurationAddModel(builder, model):
     builder.PrependUOffsetTRelativeSlot(7, flatbuffers.number_types.UOffsetTFlags.py_type(model), 0)
 
-def AddModel(builder: flatbuffers.Builder, model: int):
+def AddModel(builder, model):
     GenerationConfigurationAddModel(builder, model)
 
-def GenerationConfigurationAddSampler(builder: flatbuffers.Builder, sampler: int):
+def GenerationConfigurationAddSampler(builder, sampler):
     builder.PrependInt8Slot(8, sampler, 0)
 
-def AddSampler(builder: flatbuffers.Builder, sampler: int):
+def AddSampler(builder, sampler):
     GenerationConfigurationAddSampler(builder, sampler)
 
-def GenerationConfigurationAddBatchCount(builder: flatbuffers.Builder, batchCount: int):
+def GenerationConfigurationAddBatchCount(builder, batchCount):
     builder.PrependUint32Slot(9, batchCount, 1)
 
-def AddBatchCount(builder: flatbuffers.Builder, batchCount: int):
+def AddBatchCount(builder, batchCount):
     GenerationConfigurationAddBatchCount(builder, batchCount)
 
-def GenerationConfigurationAddBatchSize(builder: flatbuffers.Builder, batchSize: int):
+def GenerationConfigurationAddBatchSize(builder, batchSize):
     builder.PrependUint32Slot(10, batchSize, 1)
 
-def AddBatchSize(builder: flatbuffers.Builder, batchSize: int):
+def AddBatchSize(builder, batchSize):
     GenerationConfigurationAddBatchSize(builder, batchSize)
 
-def GenerationConfigurationAddHiresFix(builder: flatbuffers.Builder, hiresFix: bool):
+def GenerationConfigurationAddHiresFix(builder, hiresFix):
     builder.PrependBoolSlot(11, hiresFix, 0)
 
-def AddHiresFix(builder: flatbuffers.Builder, hiresFix: bool):
+def AddHiresFix(builder, hiresFix):
     GenerationConfigurationAddHiresFix(builder, hiresFix)
 
-def GenerationConfigurationAddHiresFixStartWidth(builder: flatbuffers.Builder, hiresFixStartWidth: int):
+def GenerationConfigurationAddHiresFixStartWidth(builder, hiresFixStartWidth):
     builder.PrependUint16Slot(12, hiresFixStartWidth, 0)
 
-def AddHiresFixStartWidth(builder: flatbuffers.Builder, hiresFixStartWidth: int):
+def AddHiresFixStartWidth(builder, hiresFixStartWidth):
     GenerationConfigurationAddHiresFixStartWidth(builder, hiresFixStartWidth)
 
-def GenerationConfigurationAddHiresFixStartHeight(builder: flatbuffers.Builder, hiresFixStartHeight: int):
+def GenerationConfigurationAddHiresFixStartHeight(builder, hiresFixStartHeight):
     builder.PrependUint16Slot(13, hiresFixStartHeight, 0)
 
-def AddHiresFixStartHeight(builder: flatbuffers.Builder, hiresFixStartHeight: int):
+def AddHiresFixStartHeight(builder, hiresFixStartHeight):
     GenerationConfigurationAddHiresFixStartHeight(builder, hiresFixStartHeight)
 
-def GenerationConfigurationAddHiresFixStrength(builder: flatbuffers.Builder, hiresFixStrength: float):
+def GenerationConfigurationAddHiresFixStrength(builder, hiresFixStrength):
     builder.PrependFloat32Slot(14, hiresFixStrength, 0.7)
 
-def AddHiresFixStrength(builder: flatbuffers.Builder, hiresFixStrength: float):
+def AddHiresFixStrength(builder, hiresFixStrength):
     GenerationConfigurationAddHiresFixStrength(builder, hiresFixStrength)
 
-def GenerationConfigurationAddUpscaler(builder: flatbuffers.Builder, upscaler: int):
+def GenerationConfigurationAddUpscaler(builder, upscaler):
     builder.PrependUOffsetTRelativeSlot(15, flatbuffers.number_types.UOffsetTFlags.py_type(upscaler), 0)
 
-def AddUpscaler(builder: flatbuffers.Builder, upscaler: int):
+def AddUpscaler(builder, upscaler):
     GenerationConfigurationAddUpscaler(builder, upscaler)
 
-def GenerationConfigurationAddImageGuidanceScale(builder: flatbuffers.Builder, imageGuidanceScale: float):
+def GenerationConfigurationAddImageGuidanceScale(builder, imageGuidanceScale):
     builder.PrependFloat32Slot(16, imageGuidanceScale, 1.5)
 
-def AddImageGuidanceScale(builder: flatbuffers.Builder, imageGuidanceScale: float):
+def AddImageGuidanceScale(builder, imageGuidanceScale):
     GenerationConfigurationAddImageGuidanceScale(builder, imageGuidanceScale)
 
-def GenerationConfigurationAddSeedMode(builder: flatbuffers.Builder, seedMode: int):
+def GenerationConfigurationAddSeedMode(builder, seedMode):
     builder.PrependInt8Slot(17, seedMode, 0)
 
-def AddSeedMode(builder: flatbuffers.Builder, seedMode: int):
+def AddSeedMode(builder, seedMode):
     GenerationConfigurationAddSeedMode(builder, seedMode)
 
-def GenerationConfigurationAddClipSkip(builder: flatbuffers.Builder, clipSkip: int):
+def GenerationConfigurationAddClipSkip(builder, clipSkip):
     builder.PrependUint32Slot(18, clipSkip, 1)
 
-def AddClipSkip(builder: flatbuffers.Builder, clipSkip: int):
+def AddClipSkip(builder, clipSkip):
     GenerationConfigurationAddClipSkip(builder, clipSkip)
 
-def GenerationConfigurationAddControls(builder: flatbuffers.Builder, controls: int):
+def GenerationConfigurationAddControls(builder, controls):
     builder.PrependUOffsetTRelativeSlot(19, flatbuffers.number_types.UOffsetTFlags.py_type(controls), 0)
 
-def AddControls(builder: flatbuffers.Builder, controls: int):
+def AddControls(builder, controls):
     GenerationConfigurationAddControls(builder, controls)
 
-def GenerationConfigurationStartControlsVector(builder, numElems: int) -> int:
+def GenerationConfigurationStartControlsVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartControlsVector(builder, numElems: int) -> int:
+def StartControlsVector(builder, numElems):
     return GenerationConfigurationStartControlsVector(builder, numElems)
 
-def GenerationConfigurationAddLoras(builder: flatbuffers.Builder, loras: int):
+def GenerationConfigurationAddLoras(builder, loras):
     builder.PrependUOffsetTRelativeSlot(20, flatbuffers.number_types.UOffsetTFlags.py_type(loras), 0)
 
-def AddLoras(builder: flatbuffers.Builder, loras: int):
+def AddLoras(builder, loras):
     GenerationConfigurationAddLoras(builder, loras)
 
-def GenerationConfigurationStartLorasVector(builder, numElems: int) -> int:
+def GenerationConfigurationStartLorasVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartLorasVector(builder, numElems: int) -> int:
+def StartLorasVector(builder, numElems):
     return GenerationConfigurationStartLorasVector(builder, numElems)
 
-def GenerationConfigurationAddMaskBlur(builder: flatbuffers.Builder, maskBlur: float):
+def GenerationConfigurationAddMaskBlur(builder, maskBlur):
     builder.PrependFloat32Slot(21, maskBlur, 0.0)
 
-def AddMaskBlur(builder: flatbuffers.Builder, maskBlur: float):
+def AddMaskBlur(builder, maskBlur):
     GenerationConfigurationAddMaskBlur(builder, maskBlur)
 
-def GenerationConfigurationAddFaceRestoration(builder: flatbuffers.Builder, faceRestoration: int):
+def GenerationConfigurationAddFaceRestoration(builder, faceRestoration):
     builder.PrependUOffsetTRelativeSlot(22, flatbuffers.number_types.UOffsetTFlags.py_type(faceRestoration), 0)
 
-def AddFaceRestoration(builder: flatbuffers.Builder, faceRestoration: int):
+def AddFaceRestoration(builder, faceRestoration):
     GenerationConfigurationAddFaceRestoration(builder, faceRestoration)
 
-def GenerationConfigurationAddClipWeight(builder: flatbuffers.Builder, clipWeight: float):
+def GenerationConfigurationAddClipWeight(builder, clipWeight):
     builder.PrependFloat32Slot(25, clipWeight, 1.0)
 
-def AddClipWeight(builder: flatbuffers.Builder, clipWeight: float):
+def AddClipWeight(builder, clipWeight):
     GenerationConfigurationAddClipWeight(builder, clipWeight)
 
-def GenerationConfigurationAddNegativePromptForImagePrior(builder: flatbuffers.Builder, negativePromptForImagePrior: bool):
+def GenerationConfigurationAddNegativePromptForImagePrior(builder, negativePromptForImagePrior):
     builder.PrependBoolSlot(26, negativePromptForImagePrior, 1)
 
-def AddNegativePromptForImagePrior(builder: flatbuffers.Builder, negativePromptForImagePrior: bool):
+def AddNegativePromptForImagePrior(builder, negativePromptForImagePrior):
     GenerationConfigurationAddNegativePromptForImagePrior(builder, negativePromptForImagePrior)
 
-def GenerationConfigurationAddImagePriorSteps(builder: flatbuffers.Builder, imagePriorSteps: int):
+def GenerationConfigurationAddImagePriorSteps(builder, imagePriorSteps):
     builder.PrependUint32Slot(27, imagePriorSteps, 5)
 
-def AddImagePriorSteps(builder: flatbuffers.Builder, imagePriorSteps: int):
+def AddImagePriorSteps(builder, imagePriorSteps):
     GenerationConfigurationAddImagePriorSteps(builder, imagePriorSteps)
 
-def GenerationConfigurationAddRefinerModel(builder: flatbuffers.Builder, refinerModel: int):
+def GenerationConfigurationAddRefinerModel(builder, refinerModel):
     builder.PrependUOffsetTRelativeSlot(28, flatbuffers.number_types.UOffsetTFlags.py_type(refinerModel), 0)
 
-def AddRefinerModel(builder: flatbuffers.Builder, refinerModel: int):
+def AddRefinerModel(builder, refinerModel):
     GenerationConfigurationAddRefinerModel(builder, refinerModel)
 
-def GenerationConfigurationAddOriginalImageHeight(builder: flatbuffers.Builder, originalImageHeight: int):
+def GenerationConfigurationAddOriginalImageHeight(builder, originalImageHeight):
     builder.PrependUint32Slot(29, originalImageHeight, 0)
 
-def AddOriginalImageHeight(builder: flatbuffers.Builder, originalImageHeight: int):
+def AddOriginalImageHeight(builder, originalImageHeight):
     GenerationConfigurationAddOriginalImageHeight(builder, originalImageHeight)
 
-def GenerationConfigurationAddOriginalImageWidth(builder: flatbuffers.Builder, originalImageWidth: int):
+def GenerationConfigurationAddOriginalImageWidth(builder, originalImageWidth):
     builder.PrependUint32Slot(30, originalImageWidth, 0)
 
-def AddOriginalImageWidth(builder: flatbuffers.Builder, originalImageWidth: int):
+def AddOriginalImageWidth(builder, originalImageWidth):
     GenerationConfigurationAddOriginalImageWidth(builder, originalImageWidth)
 
-def GenerationConfigurationAddCropTop(builder: flatbuffers.Builder, cropTop: int):
+def GenerationConfigurationAddCropTop(builder, cropTop):
     builder.PrependInt32Slot(31, cropTop, 0)
 
-def AddCropTop(builder: flatbuffers.Builder, cropTop: int):
+def AddCropTop(builder, cropTop):
     GenerationConfigurationAddCropTop(builder, cropTop)
 
-def GenerationConfigurationAddCropLeft(builder: flatbuffers.Builder, cropLeft: int):
+def GenerationConfigurationAddCropLeft(builder, cropLeft):
     builder.PrependInt32Slot(32, cropLeft, 0)
 
-def AddCropLeft(builder: flatbuffers.Builder, cropLeft: int):
+def AddCropLeft(builder, cropLeft):
     GenerationConfigurationAddCropLeft(builder, cropLeft)
 
-def GenerationConfigurationAddTargetImageHeight(builder: flatbuffers.Builder, targetImageHeight: int):
+def GenerationConfigurationAddTargetImageHeight(builder, targetImageHeight):
     builder.PrependUint32Slot(33, targetImageHeight, 0)
 
-def AddTargetImageHeight(builder: flatbuffers.Builder, targetImageHeight: int):
+def AddTargetImageHeight(builder, targetImageHeight):
     GenerationConfigurationAddTargetImageHeight(builder, targetImageHeight)
 
-def GenerationConfigurationAddTargetImageWidth(builder: flatbuffers.Builder, targetImageWidth: int):
+def GenerationConfigurationAddTargetImageWidth(builder, targetImageWidth):
     builder.PrependUint32Slot(34, targetImageWidth, 0)
 
-def AddTargetImageWidth(builder: flatbuffers.Builder, targetImageWidth: int):
+def AddTargetImageWidth(builder, targetImageWidth):
     GenerationConfigurationAddTargetImageWidth(builder, targetImageWidth)
 
-def GenerationConfigurationAddAestheticScore(builder: flatbuffers.Builder, aestheticScore: float):
+def GenerationConfigurationAddAestheticScore(builder, aestheticScore):
     builder.PrependFloat32Slot(35, aestheticScore, 6.0)
 
-def AddAestheticScore(builder: flatbuffers.Builder, aestheticScore: float):
+def AddAestheticScore(builder, aestheticScore):
     GenerationConfigurationAddAestheticScore(builder, aestheticScore)
 
-def GenerationConfigurationAddNegativeAestheticScore(builder: flatbuffers.Builder, negativeAestheticScore: float):
+def GenerationConfigurationAddNegativeAestheticScore(builder, negativeAestheticScore):
     builder.PrependFloat32Slot(36, negativeAestheticScore, 2.5)
 
-def AddNegativeAestheticScore(builder: flatbuffers.Builder, negativeAestheticScore: float):
+def AddNegativeAestheticScore(builder, negativeAestheticScore):
     GenerationConfigurationAddNegativeAestheticScore(builder, negativeAestheticScore)
 
-def GenerationConfigurationAddZeroNegativePrompt(builder: flatbuffers.Builder, zeroNegativePrompt: bool):
+def GenerationConfigurationAddZeroNegativePrompt(builder, zeroNegativePrompt):
     builder.PrependBoolSlot(37, zeroNegativePrompt, 0)
 
-def AddZeroNegativePrompt(builder: flatbuffers.Builder, zeroNegativePrompt: bool):
+def AddZeroNegativePrompt(builder, zeroNegativePrompt):
     GenerationConfigurationAddZeroNegativePrompt(builder, zeroNegativePrompt)
 
-def GenerationConfigurationAddRefinerStart(builder: flatbuffers.Builder, refinerStart: float):
+def GenerationConfigurationAddRefinerStart(builder, refinerStart):
     builder.PrependFloat32Slot(38, refinerStart, 0.7)
 
-def AddRefinerStart(builder: flatbuffers.Builder, refinerStart: float):
+def AddRefinerStart(builder, refinerStart):
     GenerationConfigurationAddRefinerStart(builder, refinerStart)
 
-def GenerationConfigurationAddNegativeOriginalImageHeight(builder: flatbuffers.Builder, negativeOriginalImageHeight: int):
+def GenerationConfigurationAddNegativeOriginalImageHeight(builder, negativeOriginalImageHeight):
     builder.PrependUint32Slot(39, negativeOriginalImageHeight, 0)
 
-def AddNegativeOriginalImageHeight(builder: flatbuffers.Builder, negativeOriginalImageHeight: int):
+def AddNegativeOriginalImageHeight(builder, negativeOriginalImageHeight):
     GenerationConfigurationAddNegativeOriginalImageHeight(builder, negativeOriginalImageHeight)
 
-def GenerationConfigurationAddNegativeOriginalImageWidth(builder: flatbuffers.Builder, negativeOriginalImageWidth: int):
+def GenerationConfigurationAddNegativeOriginalImageWidth(builder, negativeOriginalImageWidth):
     builder.PrependUint32Slot(40, negativeOriginalImageWidth, 0)
 
-def AddNegativeOriginalImageWidth(builder: flatbuffers.Builder, negativeOriginalImageWidth: int):
+def AddNegativeOriginalImageWidth(builder, negativeOriginalImageWidth):
     GenerationConfigurationAddNegativeOriginalImageWidth(builder, negativeOriginalImageWidth)
 
-def GenerationConfigurationAddName(builder: flatbuffers.Builder, name: int):
+def GenerationConfigurationAddName(builder, name):
     builder.PrependUOffsetTRelativeSlot(41, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 
-def AddName(builder: flatbuffers.Builder, name: int):
+def AddName(builder, name):
     GenerationConfigurationAddName(builder, name)
 
-def GenerationConfigurationAddFpsId(builder: flatbuffers.Builder, fpsId: int):
+def GenerationConfigurationAddFpsId(builder, fpsId):
     builder.PrependUint32Slot(42, fpsId, 5)
 
-def AddFpsId(builder: flatbuffers.Builder, fpsId: int):
+def AddFpsId(builder, fpsId):
     GenerationConfigurationAddFpsId(builder, fpsId)
 
-def GenerationConfigurationAddMotionBucketId(builder: flatbuffers.Builder, motionBucketId: int):
+def GenerationConfigurationAddMotionBucketId(builder, motionBucketId):
     builder.PrependUint32Slot(43, motionBucketId, 127)
 
-def AddMotionBucketId(builder: flatbuffers.Builder, motionBucketId: int):
+def AddMotionBucketId(builder, motionBucketId):
     GenerationConfigurationAddMotionBucketId(builder, motionBucketId)
 
-def GenerationConfigurationAddCondAug(builder: flatbuffers.Builder, condAug: float):
+def GenerationConfigurationAddCondAug(builder, condAug):
     builder.PrependFloat32Slot(44, condAug, 0.02)
 
-def AddCondAug(builder: flatbuffers.Builder, condAug: float):
+def AddCondAug(builder, condAug):
     GenerationConfigurationAddCondAug(builder, condAug)
 
-def GenerationConfigurationAddStartFrameCfg(builder: flatbuffers.Builder, startFrameCfg: float):
+def GenerationConfigurationAddStartFrameCfg(builder, startFrameCfg):
     builder.PrependFloat32Slot(45, startFrameCfg, 1.0)
 
-def AddStartFrameCfg(builder: flatbuffers.Builder, startFrameCfg: float):
+def AddStartFrameCfg(builder, startFrameCfg):
     GenerationConfigurationAddStartFrameCfg(builder, startFrameCfg)
 
-def GenerationConfigurationAddNumFrames(builder: flatbuffers.Builder, numFrames: int):
+def GenerationConfigurationAddNumFrames(builder, numFrames):
     builder.PrependUint32Slot(46, numFrames, 14)
 
-def AddNumFrames(builder: flatbuffers.Builder, numFrames: int):
+def AddNumFrames(builder, numFrames):
     GenerationConfigurationAddNumFrames(builder, numFrames)
 
-def GenerationConfigurationAddMaskBlurOutset(builder: flatbuffers.Builder, maskBlurOutset: int):
+def GenerationConfigurationAddMaskBlurOutset(builder, maskBlurOutset):
     builder.PrependInt32Slot(47, maskBlurOutset, 0)
 
-def AddMaskBlurOutset(builder: flatbuffers.Builder, maskBlurOutset: int):
+def AddMaskBlurOutset(builder, maskBlurOutset):
     GenerationConfigurationAddMaskBlurOutset(builder, maskBlurOutset)
 
-def GenerationConfigurationAddSharpness(builder: flatbuffers.Builder, sharpness: float):
+def GenerationConfigurationAddSharpness(builder, sharpness):
     builder.PrependFloat32Slot(48, sharpness, 0.0)
 
-def AddSharpness(builder: flatbuffers.Builder, sharpness: float):
+def AddSharpness(builder, sharpness):
     GenerationConfigurationAddSharpness(builder, sharpness)
 
-def GenerationConfigurationAddShift(builder: flatbuffers.Builder, shift: float):
+def GenerationConfigurationAddShift(builder, shift):
     builder.PrependFloat32Slot(49, shift, 1.0)
 
-def AddShift(builder: flatbuffers.Builder, shift: float):
+def AddShift(builder, shift):
     GenerationConfigurationAddShift(builder, shift)
 
-def GenerationConfigurationAddStage2Steps(builder: flatbuffers.Builder, stage2Steps: int):
+def GenerationConfigurationAddStage2Steps(builder, stage2Steps):
     builder.PrependUint32Slot(50, stage2Steps, 10)
 
-def AddStage2Steps(builder: flatbuffers.Builder, stage2Steps: int):
+def AddStage2Steps(builder, stage2Steps):
     GenerationConfigurationAddStage2Steps(builder, stage2Steps)
 
-def GenerationConfigurationAddStage2Cfg(builder: flatbuffers.Builder, stage2Cfg: float):
+def GenerationConfigurationAddStage2Cfg(builder, stage2Cfg):
     builder.PrependFloat32Slot(51, stage2Cfg, 1.0)
 
-def AddStage2Cfg(builder: flatbuffers.Builder, stage2Cfg: float):
+def AddStage2Cfg(builder, stage2Cfg):
     GenerationConfigurationAddStage2Cfg(builder, stage2Cfg)
 
-def GenerationConfigurationAddStage2Shift(builder: flatbuffers.Builder, stage2Shift: float):
+def GenerationConfigurationAddStage2Shift(builder, stage2Shift):
     builder.PrependFloat32Slot(52, stage2Shift, 1.0)
 
-def AddStage2Shift(builder: flatbuffers.Builder, stage2Shift: float):
+def AddStage2Shift(builder, stage2Shift):
     GenerationConfigurationAddStage2Shift(builder, stage2Shift)
 
-def GenerationConfigurationAddTiledDecoding(builder: flatbuffers.Builder, tiledDecoding: bool):
+def GenerationConfigurationAddTiledDecoding(builder, tiledDecoding):
     builder.PrependBoolSlot(53, tiledDecoding, 0)
 
-def AddTiledDecoding(builder: flatbuffers.Builder, tiledDecoding: bool):
+def AddTiledDecoding(builder, tiledDecoding):
     GenerationConfigurationAddTiledDecoding(builder, tiledDecoding)
 
-def GenerationConfigurationAddDecodingTileWidth(builder: flatbuffers.Builder, decodingTileWidth: int):
+def GenerationConfigurationAddDecodingTileWidth(builder, decodingTileWidth):
     builder.PrependUint16Slot(54, decodingTileWidth, 10)
 
-def AddDecodingTileWidth(builder: flatbuffers.Builder, decodingTileWidth: int):
+def AddDecodingTileWidth(builder, decodingTileWidth):
     GenerationConfigurationAddDecodingTileWidth(builder, decodingTileWidth)
 
-def GenerationConfigurationAddDecodingTileHeight(builder: flatbuffers.Builder, decodingTileHeight: int):
+def GenerationConfigurationAddDecodingTileHeight(builder, decodingTileHeight):
     builder.PrependUint16Slot(55, decodingTileHeight, 10)
 
-def AddDecodingTileHeight(builder: flatbuffers.Builder, decodingTileHeight: int):
+def AddDecodingTileHeight(builder, decodingTileHeight):
     GenerationConfigurationAddDecodingTileHeight(builder, decodingTileHeight)
 
-def GenerationConfigurationAddDecodingTileOverlap(builder: flatbuffers.Builder, decodingTileOverlap: int):
+def GenerationConfigurationAddDecodingTileOverlap(builder, decodingTileOverlap):
     builder.PrependUint16Slot(56, decodingTileOverlap, 2)
 
-def AddDecodingTileOverlap(builder: flatbuffers.Builder, decodingTileOverlap: int):
+def AddDecodingTileOverlap(builder, decodingTileOverlap):
     GenerationConfigurationAddDecodingTileOverlap(builder, decodingTileOverlap)
 
-def GenerationConfigurationAddStochasticSamplingGamma(builder: flatbuffers.Builder, stochasticSamplingGamma: float):
+def GenerationConfigurationAddStochasticSamplingGamma(builder, stochasticSamplingGamma):
     builder.PrependFloat32Slot(57, stochasticSamplingGamma, 0.3)
 
-def AddStochasticSamplingGamma(builder: flatbuffers.Builder, stochasticSamplingGamma: float):
+def AddStochasticSamplingGamma(builder, stochasticSamplingGamma):
     GenerationConfigurationAddStochasticSamplingGamma(builder, stochasticSamplingGamma)
 
-def GenerationConfigurationAddPreserveOriginalAfterInpaint(builder: flatbuffers.Builder, preserveOriginalAfterInpaint: bool):
+def GenerationConfigurationAddPreserveOriginalAfterInpaint(builder, preserveOriginalAfterInpaint):
     builder.PrependBoolSlot(58, preserveOriginalAfterInpaint, 1)
 
-def AddPreserveOriginalAfterInpaint(builder: flatbuffers.Builder, preserveOriginalAfterInpaint: bool):
+def AddPreserveOriginalAfterInpaint(builder, preserveOriginalAfterInpaint):
     GenerationConfigurationAddPreserveOriginalAfterInpaint(builder, preserveOriginalAfterInpaint)
 
-def GenerationConfigurationAddTiledDiffusion(builder: flatbuffers.Builder, tiledDiffusion: bool):
+def GenerationConfigurationAddTiledDiffusion(builder, tiledDiffusion):
     builder.PrependBoolSlot(59, tiledDiffusion, 0)
 
-def AddTiledDiffusion(builder: flatbuffers.Builder, tiledDiffusion: bool):
+def AddTiledDiffusion(builder, tiledDiffusion):
     GenerationConfigurationAddTiledDiffusion(builder, tiledDiffusion)
 
-def GenerationConfigurationAddDiffusionTileWidth(builder: flatbuffers.Builder, diffusionTileWidth: int):
+def GenerationConfigurationAddDiffusionTileWidth(builder, diffusionTileWidth):
     builder.PrependUint16Slot(60, diffusionTileWidth, 16)
 
-def AddDiffusionTileWidth(builder: flatbuffers.Builder, diffusionTileWidth: int):
+def AddDiffusionTileWidth(builder, diffusionTileWidth):
     GenerationConfigurationAddDiffusionTileWidth(builder, diffusionTileWidth)
 
-def GenerationConfigurationAddDiffusionTileHeight(builder: flatbuffers.Builder, diffusionTileHeight: int):
+def GenerationConfigurationAddDiffusionTileHeight(builder, diffusionTileHeight):
     builder.PrependUint16Slot(61, diffusionTileHeight, 16)
 
-def AddDiffusionTileHeight(builder: flatbuffers.Builder, diffusionTileHeight: int):
+def AddDiffusionTileHeight(builder, diffusionTileHeight):
     GenerationConfigurationAddDiffusionTileHeight(builder, diffusionTileHeight)
 
-def GenerationConfigurationAddDiffusionTileOverlap(builder: flatbuffers.Builder, diffusionTileOverlap: int):
+def GenerationConfigurationAddDiffusionTileOverlap(builder, diffusionTileOverlap):
     builder.PrependUint16Slot(62, diffusionTileOverlap, 2)
 
-def AddDiffusionTileOverlap(builder: flatbuffers.Builder, diffusionTileOverlap: int):
+def AddDiffusionTileOverlap(builder, diffusionTileOverlap):
     GenerationConfigurationAddDiffusionTileOverlap(builder, diffusionTileOverlap)
 
-def GenerationConfigurationAddUpscalerScaleFactor(builder: flatbuffers.Builder, upscalerScaleFactor: int):
+def GenerationConfigurationAddUpscalerScaleFactor(builder, upscalerScaleFactor):
     builder.PrependUint8Slot(63, upscalerScaleFactor, 0)
 
-def AddUpscalerScaleFactor(builder: flatbuffers.Builder, upscalerScaleFactor: int):
+def AddUpscalerScaleFactor(builder, upscalerScaleFactor):
     GenerationConfigurationAddUpscalerScaleFactor(builder, upscalerScaleFactor)
 
-def GenerationConfigurationAddT5TextEncoder(builder: flatbuffers.Builder, t5TextEncoder: bool):
+def GenerationConfigurationAddT5TextEncoder(builder, t5TextEncoder):
     builder.PrependBoolSlot(64, t5TextEncoder, 1)
 
-def AddT5TextEncoder(builder: flatbuffers.Builder, t5TextEncoder: bool):
+def AddT5TextEncoder(builder, t5TextEncoder):
     GenerationConfigurationAddT5TextEncoder(builder, t5TextEncoder)
 
-def GenerationConfigurationAddSeparateClipL(builder: flatbuffers.Builder, separateClipL: bool):
+def GenerationConfigurationAddSeparateClipL(builder, separateClipL):
     builder.PrependBoolSlot(65, separateClipL, 0)
 
-def AddSeparateClipL(builder: flatbuffers.Builder, separateClipL: bool):
+def AddSeparateClipL(builder, separateClipL):
     GenerationConfigurationAddSeparateClipL(builder, separateClipL)
 
-def GenerationConfigurationAddClipLText(builder: flatbuffers.Builder, clipLText: int):
+def GenerationConfigurationAddClipLText(builder, clipLText):
     builder.PrependUOffsetTRelativeSlot(66, flatbuffers.number_types.UOffsetTFlags.py_type(clipLText), 0)
 
-def AddClipLText(builder: flatbuffers.Builder, clipLText: int):
+def AddClipLText(builder, clipLText):
     GenerationConfigurationAddClipLText(builder, clipLText)
 
-def GenerationConfigurationAddSeparateOpenClipG(builder: flatbuffers.Builder, separateOpenClipG: bool):
+def GenerationConfigurationAddSeparateOpenClipG(builder, separateOpenClipG):
     builder.PrependBoolSlot(67, separateOpenClipG, 0)
 
-def AddSeparateOpenClipG(builder: flatbuffers.Builder, separateOpenClipG: bool):
+def AddSeparateOpenClipG(builder, separateOpenClipG):
     GenerationConfigurationAddSeparateOpenClipG(builder, separateOpenClipG)
 
-def GenerationConfigurationAddOpenClipGText(builder: flatbuffers.Builder, openClipGText: int):
+def GenerationConfigurationAddOpenClipGText(builder, openClipGText):
     builder.PrependUOffsetTRelativeSlot(68, flatbuffers.number_types.UOffsetTFlags.py_type(openClipGText), 0)
 
-def AddOpenClipGText(builder: flatbuffers.Builder, openClipGText: int):
+def AddOpenClipGText(builder, openClipGText):
     GenerationConfigurationAddOpenClipGText(builder, openClipGText)
 
-def GenerationConfigurationAddSpeedUpWithGuidanceEmbed(builder: flatbuffers.Builder, speedUpWithGuidanceEmbed: bool):
+def GenerationConfigurationAddSpeedUpWithGuidanceEmbed(builder, speedUpWithGuidanceEmbed):
     builder.PrependBoolSlot(69, speedUpWithGuidanceEmbed, 1)
 
-def AddSpeedUpWithGuidanceEmbed(builder: flatbuffers.Builder, speedUpWithGuidanceEmbed: bool):
+def AddSpeedUpWithGuidanceEmbed(builder, speedUpWithGuidanceEmbed):
     GenerationConfigurationAddSpeedUpWithGuidanceEmbed(builder, speedUpWithGuidanceEmbed)
 
-def GenerationConfigurationAddGuidanceEmbed(builder: flatbuffers.Builder, guidanceEmbed: float):
+def GenerationConfigurationAddGuidanceEmbed(builder, guidanceEmbed):
     builder.PrependFloat32Slot(70, guidanceEmbed, 3.5)
 
-def AddGuidanceEmbed(builder: flatbuffers.Builder, guidanceEmbed: float):
+def AddGuidanceEmbed(builder, guidanceEmbed):
     GenerationConfigurationAddGuidanceEmbed(builder, guidanceEmbed)
 
-def GenerationConfigurationAddResolutionDependentShift(builder: flatbuffers.Builder, resolutionDependentShift: bool):
+def GenerationConfigurationAddResolutionDependentShift(builder, resolutionDependentShift):
     builder.PrependBoolSlot(71, resolutionDependentShift, 1)
 
-def AddResolutionDependentShift(builder: flatbuffers.Builder, resolutionDependentShift: bool):
+def AddResolutionDependentShift(builder, resolutionDependentShift):
     GenerationConfigurationAddResolutionDependentShift(builder, resolutionDependentShift)
 
-def GenerationConfigurationAddTeaCacheStart(builder: flatbuffers.Builder, teaCacheStart: int):
+def GenerationConfigurationAddTeaCacheStart(builder, teaCacheStart):
     builder.PrependInt32Slot(72, teaCacheStart, 5)
 
-def AddTeaCacheStart(builder: flatbuffers.Builder, teaCacheStart: int):
+def AddTeaCacheStart(builder, teaCacheStart):
     GenerationConfigurationAddTeaCacheStart(builder, teaCacheStart)
 
-def GenerationConfigurationAddTeaCacheEnd(builder: flatbuffers.Builder, teaCacheEnd: int):
+def GenerationConfigurationAddTeaCacheEnd(builder, teaCacheEnd):
     builder.PrependInt32Slot(73, teaCacheEnd, -1)
 
-def AddTeaCacheEnd(builder: flatbuffers.Builder, teaCacheEnd: int):
+def AddTeaCacheEnd(builder, teaCacheEnd):
     GenerationConfigurationAddTeaCacheEnd(builder, teaCacheEnd)
 
-def GenerationConfigurationAddTeaCacheThreshold(builder: flatbuffers.Builder, teaCacheThreshold: float):
+def GenerationConfigurationAddTeaCacheThreshold(builder, teaCacheThreshold):
     builder.PrependFloat32Slot(74, teaCacheThreshold, 0.06)
 
-def AddTeaCacheThreshold(builder: flatbuffers.Builder, teaCacheThreshold: float):
+def AddTeaCacheThreshold(builder, teaCacheThreshold):
     GenerationConfigurationAddTeaCacheThreshold(builder, teaCacheThreshold)
 
-def GenerationConfigurationAddTeaCache(builder: flatbuffers.Builder, teaCache: bool):
+def GenerationConfigurationAddTeaCache(builder, teaCache):
     builder.PrependBoolSlot(75, teaCache, 0)
 
-def AddTeaCache(builder: flatbuffers.Builder, teaCache: bool):
+def AddTeaCache(builder, teaCache):
     GenerationConfigurationAddTeaCache(builder, teaCache)
 
-def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> int:
+def GenerationConfigurationAddSeparateT5(builder, separateT5):
+    builder.PrependBoolSlot(76, separateT5, 0)
+
+def AddSeparateT5(builder, separateT5):
+    GenerationConfigurationAddSeparateT5(builder, separateT5)
+
+def GenerationConfigurationAddT5Text(builder, t5Text):
+    builder.PrependUOffsetTRelativeSlot(77, flatbuffers.number_types.UOffsetTFlags.py_type(t5Text), 0)
+
+def AddT5Text(builder, t5Text):
+    GenerationConfigurationAddT5Text(builder, t5Text)
+
+def GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps):
+    builder.PrependInt32Slot(78, teaCacheMaxSkipSteps, 3)
+
+def AddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps):
+    GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps)
+
+def GenerationConfigurationEnd(builder):
     return builder.EndObject()
 
-def End(builder: flatbuffers.Builder) -> int:
+def End(builder):
     return GenerationConfigurationEnd(builder)

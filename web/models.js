@@ -10,6 +10,7 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
         "(None selected)",
         /** @type WidgetCallback<IWidget<any, any>> */
         (value, graph, node) => {
+            if (node.saveSelectedModels && value.value?.version !== "fail") node.saveSelectedModels();
             updateNodeModels(node);
         },
         {
@@ -48,20 +49,24 @@ const modelInfoRequests = new Map();
 const modelInfoStoreKey = (server, port) => `${server}:${port}`;
 
 // yes this is kind of hacky :)
-const failedConnectionOptions = ["No connection. Check server and try again", "Click to retry"].map((c) => ({
+const failedConnectionOptions = ["Couldn't connect to server", "Check server and click to retry"].map((c, i) => ({
     name: c,
     version: "fail",
+    order: i + 1,
 }));
-const notConnectedOptions = ["Not connected", "Connect to a sampler node to load models"].map((c) => ({
-    name: c,
-    version: "fail",
-}));
+const notConnectedOptions = ["Not connected to sampler node", "Connect to a sampler node to list available models"].map(
+    (c) => ({
+        name: c,
+        version: "fail",
+    })
+);
 
 const failedConnectionInfo = {
     models: failedConnectionOptions,
     controlNets: notConnectedOptions,
     loras: notConnectedOptions,
     upscalers: notConnectedOptions,
+    isNotConnected: true,
 };
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo);
@@ -139,7 +144,7 @@ function updateModelWidgets(node, models) {
         const type = widget.options.modelType;
 
         widget.options.values = models[type];
-        setValidOption(widget);
+        setValidOption(widget, node, models.isNotConnected);
     }
 }
 
@@ -160,6 +165,7 @@ function getModelOptions(modelInfo, version) {
             ...modelGroup
                 .map((m) => getMenuItem(m, disableByVersion && version && m.version && m.version !== version))
                 .sort((a, b) => {
+                    if (a.value?.version === "fail" && b.value?.version === "fail") return 0;
                     if (a.disabled && !b.disabled) return 1;
                     if (!a.disabled && b.disabled) return -1;
                     return a.content.toUpperCase().localeCompare(b.content.toUpperCase());
@@ -171,14 +177,15 @@ function getModelOptions(modelInfo, version) {
     const controlNets = toOptions(modelInfo.controlNets, true);
     const loras = toOptions(modelInfo.loras, true);
     const upscalers = modelInfo.upscalers.map((m) => `${m.name}`).sort();
+    const isNotConnected = modelInfo.isNotConnected;
 
-    return { models, controlNets, loras, upscalers };
+    return { models, controlNets, loras, upscalers, isNotConnected };
 }
 
 function getMenuItem(model, disabled) {
     return {
         value: model,
-        content: model.version ? `${model.name} (${model.version})` : model.name,
+        content: model.version && model.version !== "fail" ? `${model.name} (${model.version})` : model.name,
         toString() {
             return model.name;
         },
@@ -204,7 +211,7 @@ const versionNames = {
     flux1: "Flux",
 };
 
-function setValidOption(widget) {
+function setValidOption(widget, node, isNotConnected) {
     if (!widget || widget.type !== "combo") return;
     const values = widget.options?.values;
     const selected = widget?.value;
@@ -219,11 +226,29 @@ function setValidOption(widget) {
         widget.value = value;
     }
 
-    // to avoid clearing a selected model, only changing value if a 'failure' option
-    // is selected
-    const option = failedConnectionOptions.find((o) => o.name === selected);
-    if (option) {
+    // const option = failedConnectionOptions.find((o) => o.name === selected);
+    // if (option) {
+    //     widget.value = values[0];
+    // }
+
+    if (!isNotConnected && selected?.value?.version === "fail") {
+        // server is no connected, so switch from a 'fail' option to the last selected model, or none
+        const lastSelected = node?.lastSelectedModel[widget.name];
+        if (lastSelected) {
+            const option = values.find((o) => o.content === lastSelected.content);
+            if (option) widget.value = option;
+            return;
+        }
+
         widget.value = values[0];
+    }
+    // debugger;
+    if (isNotConnected) {
+        // unless "none selected", always select couldn't connect to server
+        if (selected?.value?.content !== "None selected") {
+            const option = values.find((o) => o.content === "Couldn't connect to server");
+            if (option) widget.value = option;
+        }
     }
 }
 

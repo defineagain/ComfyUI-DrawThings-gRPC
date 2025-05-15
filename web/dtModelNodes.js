@@ -35,7 +35,8 @@ const dtModelNodeProto = {
     saveSelectedModels() {
         const modelWidgets = this.widgets.filter((w) => w.options?.modelType);
         const selections = modelWidgets.reduce((acc, w) => {
-            acc[w.name] = w.value;
+            if (w.value?.value?.version !== "fail") acc[w.name] = w.value;
+            else acc[w.name] = this._lastSelectedModel?.[w.name];
             return acc;
         }, {});
 
@@ -53,6 +54,12 @@ const dtModelNodeProto = {
         },
         enumerable: true,
     },
+    onSerialize(serialised) {
+        serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel));
+    },
+    onConfigure(serialised) {
+        this._lastSelectedModel = serialised._lastSelectedModel;
+    }
 };
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -91,6 +98,7 @@ const dtExtraNodeProto = {
     },
 };
 
+
 /** @param {{prototype: any}} base, @param {Record<string, Function | PropertyDescriptor} update */
 function updateProto(base, update) {
     const proto = base.prototype;
@@ -99,8 +107,12 @@ function updateProto(base, update) {
             const original = proto[key];
             proto[key] = function () {
                 const r = original.apply(this, arguments);
-                update[key].apply(this, arguments);
-                return r;
+                try {
+                    update[key].apply(this, arguments);
+                }
+                finally {
+                    return r
+                }
             };
         } else if (typeof update[key] === "object") {
             Object.defineProperty(proto, key, update[key]);

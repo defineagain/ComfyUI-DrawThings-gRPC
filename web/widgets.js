@@ -1,5 +1,4 @@
 import { app } from "../../scripts/app.js";
-import { setCallback } from "./dynamicInputs.js";
 
 const allWidgets = [
     "settings",
@@ -45,7 +44,7 @@ const basicWidgets = [
     "sampler_name",
     // "res_dpt_shift",
     "shift",
-    "batch_size"
+    "batch_size",
 ];
 const advancedWidgets = [
     "seed_mode",
@@ -116,6 +115,10 @@ function showWidget(node, widget, show = false, suffix = "") {
 
     const minHeight = node.computeSize()[1];
     if (minHeight > node.size[1]) node.setSize([node.size[0], minHeight]);
+
+    if (app.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
+        node.setSize([node.size[0], minHeight]);
+
     app.canvas.dirty_canvas = true;
 }
 
@@ -195,12 +198,14 @@ function widgetLogic(node, widget) {
                 showWidget(node, "tea_cache_start", false);
                 showWidget(node, "tea_cache_end", false);
                 showWidget(node, "tea_cache_threshold", false);
+                showWidget(node, "tea_cache_max_skip_steps", false);
             } else {
                 showWidget(node, "tea_cache", true);
                 const teaCacheEnabled = findWidgetByName(node, "tea_cache")?.value;
                 showWidget(node, "tea_cache_start", teaCacheEnabled);
                 showWidget(node, "tea_cache_end", teaCacheEnabled);
                 showWidget(node, "tea_cache_threshold", teaCacheEnabled);
+                showWidget(node, "tea_cache_max_skip_steps", teaCacheEnabled);
             }
 
             if (isSD3 === false && isFlux === false) {
@@ -310,4 +315,22 @@ app.registerExtension({
             }
         }
     },
+    settings: [
+        {
+            id: "drawthings.node.keep_shrunk",
+            type: "boolean",
+            name: "Keep node shrunk",
+            default: false,
+            category: ["DrawThings", "Nodes", "Keep node shrunk"],
+            onChange: (newVal, oldVal) => {
+                if (oldVal === false && newVal === true) {
+                    app.graph.nodes
+                        .filter((n) => n.type === "DrawThingsSampler")
+                        .forEach((n) => {
+                            setTimeout(() => showWidget(n, "server", true), 10);
+                        });
+                }
+            },
+        },
+    ],
 });

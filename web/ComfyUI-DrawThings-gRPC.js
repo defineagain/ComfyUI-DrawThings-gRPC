@@ -63,31 +63,46 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeType.comfyClass === "DrawThingsSampler") {
             setCallback(nodeType.prototype, "getExtraMenuOptions", function (canvas, options) {
-                options.push({
-                    content: "Paste Draw Things config",
-                    callback: () => {
-                        navigator.clipboard.readText().then((text) => {
-                            try {
-                                for (const [k, v] of Object.entries(JSON.parse(text))) {
-                                    const name = getWidgetName(k);
-                                    const w = this.widgets.find((w) => w.name === name);
-                                    if (w) {
-                                        if (k === "sampler") w.value = samplers[v];
-                                        else if (name === "model") {
-                                            const model = w.options.values.find((val) => val?.value?.file === v);
-                                            if (model) w.value = model;
-                                            else w.value = w.options.values[0];
-                                        } else if (name === "seed_mode") w.value = seedModes[v];
-                                        else w.value = v;
+                const keepNodeShrunk = app.extensionManager.setting.get("drawthings.node.keep_shrunk");
+                options.push(
+                    null,
+                    {
+                        content: "Paste Draw Things config",
+                        callback: () => {
+                            navigator.clipboard.readText().then((text) => {
+                                try {
+                                    for (const [k, v] of Object.entries(JSON.parse(text))) {
+                                        const name = getWidgetName(k);
+                                        const w = this.widgets.find((w) => w.name === name);
+                                        if (w) {
+                                            if (k === "sampler") w.value = samplers[v];
+                                            else if (name === "model") {
+                                                const model = w.options.values.find((val) => val?.value?.file === v);
+                                                if (model) w.value = model;
+                                                else w.value = w.options.values[0];
+                                            } else if (name === "seed_mode") w.value = seedModes[v];
+                                            else w.value = v;
+                                        }
                                     }
+                                } catch (e) {
+                                    alert("Failed to parse Draw Things config from clipboard");
+                                    console.warn(e);
                                 }
-                            } catch (e) {
-                                alert("Failed to parse Draw Things config from clipboard");
-                                console.warn(e);
-                            }
-                        });
+                            });
+                        },
                     },
-                });
+                    {
+                        content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
+                        callback: async () => {
+                            try {
+                                await app.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
+                            } catch (error) {
+                                console.error(`Error changing setting: ${error}`);
+                            }
+                        },
+                    },
+                    null
+                );
             });
         }
     },

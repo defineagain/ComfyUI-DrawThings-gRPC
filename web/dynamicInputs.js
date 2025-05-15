@@ -4,7 +4,6 @@ app.registerExtension({
     name: "ComfyUI-Dynamic-Inputs",
     beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeType.comfyClass === "DrawThingsLoRA") {
-            console.log("a");
             // update inputs when a new node is added
             setCallback(nodeType.prototype, "onAdded", function (graph) {
                 updateInputs(this);
