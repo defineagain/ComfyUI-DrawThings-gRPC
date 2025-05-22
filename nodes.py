@@ -75,6 +75,7 @@ async def dt_sampler(
                 cfg,
                 strength,
                 speed_up,
+                guidance_embed,
                 sampler_name,
                 res_dpt_shift,
                 shift,
@@ -191,7 +192,7 @@ async def dt_sampler(
     GenerationConfiguration.AddGuidanceScale(builder, cfg)
     GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
     GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
-    # GenerationConfiguration.AddGuidanceEmbed(builder, )
+    GenerationConfiguration.AddGuidanceEmbed(builder, guidance_embed)
     GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
     GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
     GenerationConfiguration.AddShift(builder, shift)
@@ -464,6 +465,7 @@ class DrawThingsSampler:
                 "cfg": ("FLOAT", {"default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."}),
 
                 "speed_up": ("BOOLEAN", {"default": True}),
+                "guidance_embed": ("FLOAT", {"default": 4.5, "min": 0, "max": 50, "step": 0.1}),
 
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPM++ 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
 
@@ -542,6 +544,7 @@ class DrawThingsSampler:
                 cfg,
                 strength,
                 speed_up,
+                guidance_embed,
                 sampler_name,
                 res_dpt_shift,
                 shift,
@@ -597,6 +600,7 @@ class DrawThingsSampler:
                 cfg,
                 strength,
                 speed_up,
+                guidance_embed,
                 sampler_name,
                 res_dpt_shift,
                 shift,

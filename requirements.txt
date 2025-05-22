@@ -3,5 +3,5 @@ pillow
 torch
 torchvision
 grpcio>=1.71.0
-flatbuffers
+flatbuffers>=25.2.10
 protobuf
