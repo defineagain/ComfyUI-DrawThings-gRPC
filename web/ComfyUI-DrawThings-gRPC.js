@@ -36,13 +36,13 @@ app.registerExtension({
         if (node?.comfyClass === "DrawThingsPositive") {
             node.color = LGraphCanvas.node_colors.green.color;
             node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
-            const output = node.outputs.find((output) => output.name == "positive");
+            const output = node.outputs.find(output => output.name == "POSITIVE");
             output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
         }
         if (node?.comfyClass === "DrawThingsNegative") {
             node.color = LGraphCanvas.node_colors.red.color;
             node.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
-            const output = node.outputs.find((output) => output.name == "negative");
+            const output = node.outputs.find(output => output.name == "NEGATIVE");
             output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
         }
     },

@@ -129,7 +129,7 @@ def decode_preview(preview, version):
             bytes_array[i * 4 + 3] = 255
         image = Image.frombytes('RGBA', (image_width, image_height), bytes_array)
 
-    if version[:4] == 'flux':
+    if version.startswith('flux') or version.startswith('hiDream'):
         bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
         for i in range(image_height * image_width):
             v = fp16[i * 16:i * 16 + 16]

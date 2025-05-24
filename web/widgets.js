@@ -48,7 +48,8 @@ const basicWidgets = [
 ];
 const advancedWidgets = [
     "seed_mode",
-    // "speed_up",
+    "speed_up",
+    "guidance_embed",
     "fps",
     "motion_scale",
     "guiding_frame_noise",
@@ -71,6 +72,7 @@ const getSetWidgets = [
     "tiled_decoding",
     "tiled_diffusion",
     "tea_cache",
+    "speed_up",
 
     "control_name",
 ];
@@ -215,6 +217,7 @@ function widgetLogic(node, widget) {
             }
 
             showWidget(node, "speed_up", isFlux);
+            showWidget(node, "guidance_embed", isFlux);
 
             // video options
             showWidget(node, "num_frames", isVideo);
@@ -232,6 +235,10 @@ function widgetLogic(node, widget) {
                 findWidgetByName(node, "shift").value = calcShift(height, width);
             }
             findWidgetByName(node, "shift").disabled = widget.value;
+            break;
+
+        case "speed_up":
+            findWidgetByName(node, "guidance_embed").disabled = widget.value;
             break;
 
         case "high_res_fix":
