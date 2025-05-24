@@ -284,21 +284,14 @@ function getSetters(node) {
     if (node.widgets) {
         for (const w of node.widgets) {
             if (getSetWidgets.includes(w.name)) {
-                widgetLogic(node, w);
-                let widgetValue = w.value;
+                const originalCallback = w.callback
+                w.callback = function (value, graph, node) {
+                    const r = originalCallback?.apply(this, [value, graph, node]);
+                    widgetLogic(node, w)
+                    return r
+                }
 
-                // Define getters and setters for widget values
-                Object.defineProperty(w, "value", {
-                    get() {
-                        return widgetValue;
-                    },
-                    set(newVal) {
-                        if (newVal !== widgetValue) {
-                            widgetValue = newVal;
-                            widgetLogic(node, w);
-                        }
-                    },
-                });
+                widgetLogic(node, w)
             }
         }
     }
