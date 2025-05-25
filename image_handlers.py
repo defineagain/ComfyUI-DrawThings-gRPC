@@ -288,7 +288,7 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, image_tensor: torch.Tens
         CCV_TENSOR_FORMAT_NCHW,
         CCV_8U,
         0,
-        height, width, 0, 0
+        width, height, 0, 0
     )
 
     for y in range(height):
