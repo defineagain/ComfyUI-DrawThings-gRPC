@@ -275,7 +275,7 @@ async def dt_sampler(
     if image is not None:
         img2img = convert_image_for_request(image)
         if mask is not None:
-            maskimg = convert_mask_for_request(mask, image)
+            maskimg = convert_mask_for_request(mask, width, height)
 
     override = imageService_pb2.MetadataOverride()
     # models_override = [{
