@@ -55,7 +55,10 @@ const dtModelNodeProto = {
         enumerable: true,
     },
     onSerialize(serialised) {
-        serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel));
+        try {
+            serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel))
+        }
+        catch (e) { }
     },
     onConfigure(serialised) {
         this._lastSelectedModel = serialised._lastSelectedModel;
