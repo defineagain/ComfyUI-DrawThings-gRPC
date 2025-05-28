@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "DrawThings-gRPC"
-version = "0.0.4"
+version = "0.0.7"
 description = "Connect to a Draw Things gRPC server"
 authors = [
-  {name = "Jokimbe"}
+  {name = "Jokimbe"},
+  {name = "kcjerrell"},
 ]
 readme = "README.md"
 license = {text = "GNU General Public License v3"}

@@ -61,7 +61,10 @@ const advancedWidgets = [
     "mask_blur",
     "mask_blur_outset",
     "preserve_original",
+    "separate_clip_l",
+    "separate_open_clip_g",
     // ti embed
+
 ];
 
 const getSetWidgets = [
@@ -73,6 +76,8 @@ const getSetWidgets = [
     "tiled_diffusion",
     "tea_cache",
     "speed_up",
+    "separate_clip_l",
+    "separate_open_clip_g",
 
     "control_name",
 ];
@@ -219,6 +224,12 @@ function widgetLogic(node, widget) {
             showWidget(node, "speed_up", isFlux);
             showWidget(node, "guidance_embed", isFlux);
 
+            // separate clip texts
+            showWidget(node, "separate_clip_l", isFlux || isSD3)
+            showWidget(node, "clip_l_text", isFlux || isSD3)
+            showWidget(node, "separate_open_clip_g", isSD3)
+            showWidget(node, "open_clip_g_text", isSD3)
+
             // video options
             showWidget(node, "num_frames", isVideo);
 
@@ -265,6 +276,14 @@ function widgetLogic(node, widget) {
             showWidget(node, "tea_cache_threshold", widget.value);
             break;
 
+        case "separate_clip_l":
+            showWidget(node, "clip_l_text", widget.value);
+            break;
+
+        case "separate_open_clip_g":
+            showWidget(node, "open_clip_g_text", widget.value);
+            break;
+
         case "control_name":
             if (widget.value.value != null) {
                 const modifier = widget.value.value.modifier;
@@ -284,21 +303,14 @@ function getSetters(node) {
     if (node.widgets) {
         for (const w of node.widgets) {
             if (getSetWidgets.includes(w.name)) {
-                widgetLogic(node, w);
-                let widgetValue = w.value;
+                const originalCallback = w.callback
+                w.callback = function (value, graph, node) {
+                    const r = originalCallback?.apply(this, [value, graph, node]);
+                    widgetLogic(node, w)
+                    return r
+                }
 
-                // Define getters and setters for widget values
-                Object.defineProperty(w, "value", {
-                    get() {
-                        return widgetValue;
-                    },
-                    set(newVal) {
-                        if (newVal !== widgetValue) {
-                            widgetValue = newVal;
-                            widgetLogic(node, w);
-                        }
-                    },
-                });
+                widgetLogic(node, w)
             }
         }
     }

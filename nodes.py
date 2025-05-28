@@ -110,6 +110,12 @@ async def dt_sampler(
                 tea_cache_end,
                 tea_cache_threshold,
                 tea_cache_max_skip_steps,
+
+                separate_clip_l: bool,
+                clip_l_text: str,
+                separate_open_clip_g : bool,
+                open_clip_g_text: str,
+
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -118,7 +124,7 @@ async def dt_sampler(
                 lora: LoraStack=None,
                 refiner=None,
                 upscaler=None,
-                ) -> None:
+            ) -> None:
     print(positive, negative)
     builder = flatbuffers.Builder(0)
 
@@ -175,6 +181,10 @@ async def dt_sampler(
         upscaler_model = builder.CreateString(upscaler["upscaler_model"])
     if refiner is not None:
         refiner_model = builder.CreateString(refiner["refiner_model"])
+
+    clip_l_text_buf = builder.CreateString(clip_l_text or "") if separate_clip_l else None
+    open_clip_g_text_buf = builder.CreateString(open_clip_g_text or "") if separate_open_clip_g else None
+
     GenerationConfiguration.Start(builder)
     GenerationConfiguration.AddModel(builder, model_name)
     GenerationConfiguration.AddStrength(builder, strength)
@@ -243,6 +253,14 @@ async def dt_sampler(
         GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
         GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, tea_cache_max_skip_steps)
 
+    if separate_clip_l:
+        GenerationConfiguration.GenerationConfigurationAddSeparateClipL(builder, True)
+        GenerationConfiguration.GenerationConfigurationAddClipLText(builder, clip_l_text_buf)
+
+    if separate_open_clip_g:
+        GenerationConfiguration.GenerationConfigurationAddSeparateOpenClipG(builder, True)
+        GenerationConfiguration.GenerationConfigurationAddOpenClipGText(builder, open_clip_g_text_buf)
+
     # ti embed
 
     # The rest, don't know where they go or which models use them
@@ -275,7 +293,7 @@ async def dt_sampler(
     if image is not None:
         img2img = convert_image_for_request(image)
         if mask is not None:
-            maskimg = convert_mask_for_request(mask, image)
+            maskimg = convert_mask_for_request(mask, width, height)
 
     override = imageService_pb2.MetadataOverride()
     # models_override = [{
@@ -508,6 +526,11 @@ class DrawThingsSampler:
                 "tea_cache_threshold": ("FLOAT", {"default": 0.2, "min": 0, "max": 1, "step": 0.01, "round": 0.01}),
                 "tea_cache_max_skip_steps": ("INT", {"default": 3, "min": 1, "max": 50, "step": 1}),
 
+                "separate_clip_l": ("BOOLEAN", {"default": False}),
+                "clip_l_text": ("STRING", {"forceInput": False }),
+                "separate_open_clip_g": ("BOOLEAN", {"default": False}),
+                "open_clip_g_text": ("STRING", {"forceInput": False } ),
+
                 # ti embed
             },
             "hidden": {
@@ -579,6 +602,10 @@ class DrawThingsSampler:
                 tea_cache_end,
                 tea_cache_threshold,
                 tea_cache_max_skip_steps,
+                separate_clip_l,
+                clip_l_text,
+                separate_open_clip_g,
+                open_clip_g_text,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
@@ -635,6 +662,10 @@ class DrawThingsSampler:
                 tea_cache_end,
                 tea_cache_threshold,
                 tea_cache_max_skip_steps,
+                separate_clip_l,
+                clip_l_text,
+                separate_open_clip_g,
+                open_clip_g_text,
                 batch_count=batch_count,
                 scale_factor=scale_factor,
                 image=image,
