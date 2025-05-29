@@ -188,7 +188,7 @@ async def dt_sampler(
     GenerationConfiguration.Start(builder)
     GenerationConfiguration.AddModel(builder, model_name)
     GenerationConfiguration.AddStrength(builder, strength)
-    GenerationConfiguration.AddSeed(builder, seed)
+    GenerationConfiguration.AddSeed(builder, seed % 4294967295)
     GenerationConfiguration.AddSeedMode(builder, DrawThingsLists.seed_mode.index(seed_mode))
     GenerationConfiguration.AddStartWidth(builder, start_width)
     GenerationConfiguration.AddStartHeight(builder, start_height)
