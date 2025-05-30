@@ -1,3 +1,4 @@
+/** @import { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph' */
 import { app } from "../../scripts/app.js";
 
 const allWidgets = [
@@ -103,15 +104,48 @@ function doesInputWithNameExist(node, name) {
     return node.inputs ? node.inputs.some((input) => input.name === name) : false;
 }
 
-function showWidget(node, widget, show = false, suffix = "") {
-    widget = findWidgetByName(node, widget);
-    if (!widget || !doesInputWithNameExist(node, widget.name)) return;
+/**
+ * Adds _isHidden property to an input slot and changes the pos property to return
+ * the "collapsed position" if the slot is hidden
+ * @param {INodeInputSlot?} input
+ */
+function updateInput(input) {
+    if (!input) return;
+    if (input._isHidden === undefined) {
+        input._isHidden = false
+        input._origPos = input.pos;
+
+        Object.defineProperty(input, "pos", {
+            get() {
+                if (input._isHidden) {
+                    return this.collapsedPos
+                } else {
+                    return input._origPos
+                }
+            },
+            set(value) {
+                input._origPos = value
+            }
+        })
+    }
+}
+
+/** @param node {LGraphNode} */
+function showWidget(node, widgetName, show = false, suffix = "") {
+    const widget = findWidgetByName(node, widgetName);
+    if (!widget) return;
     if (!origProps[widget.name]) {
         origProps[widget.name] = {
             origType: widget.type,
             origComputeSize: widget.computeSize,
             origComputedHeight: widget.computedHeight,
         };
+    }
+
+    const input = node.getSlotFromWidget(widget)
+    if (input) {
+        updateInput(input)
+        input._isHidden = !show
     }
 
     widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
@@ -126,7 +160,7 @@ function showWidget(node, widget, show = false, suffix = "") {
     if (app.extensionManager.setting.get("drawthings.node.keep_shrunk") && minHeight < node.size[1])
         node.setSize([node.size[0], minHeight]);
 
-    app.canvas.dirty_canvas = true;
+    setTimeout(() =>app.canvas.setDirty(true, true), 10)
 }
 
 function widgetLogic(node, widget) {
