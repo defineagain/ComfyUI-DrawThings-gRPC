@@ -26,10 +26,11 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
  * @param {string} server
  * @param {number | string} port
  */
-export async function getFiles(server, port) {
+export async function getFiles(server, port, useTls) {
     const body = new FormData();
     body.append("server", server);
     body.append("port", port);
+    body.append("use_tls", useTls);
 
     const api = window.comfyAPI.api.api;
 
@@ -84,6 +85,7 @@ export async function updateNodeModels(node, updateDisconnected = false) {
     // get the server and port
     const server = root.widgets.find((w) => w.name === "server")?.value;
     const port = root.widgets.find((w) => w.name === "port")?.value;
+    const useTls = root.widgets.find((w) => w.name === "use_tls")?.value;
 
     const key = modelInfoStoreKey(server, port);
 
@@ -95,7 +97,7 @@ export async function updateNodeModels(node, updateDisconnected = false) {
     else if (server && port) {
         const promise = new Promise((resolve) => {
             console.debug("checking DT server", key, " (", fetches++, ")");
-            getFiles(server, port).then(async (response) => {
+            getFiles(server, port, useTls).then(async (response) => {
                 if (!response.ok) {
                     modelInfoStore.set(key, failedConnectionInfo);
                 } else {

@@ -3,8 +3,8 @@
 __author__ = """Jokimbe"""
 __version__ = "0.0.16"
 
-from .nodes import NODE_CLASS_MAPPINGS
-from .nodes import NODE_DISPLAY_NAME_MAPPINGS
+from .src.nodes import NODE_CLASS_MAPPINGS
+from .src.nodes import NODE_DISPLAY_NAME_MAPPINGS
 
 WEB_DIRECTORY = "./web"
 
