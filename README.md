@@ -3,9 +3,9 @@
 Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries) and let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself.
 
 > [!NOTE]
-> Previews might look wrong for some models, however this does not have any influence over the final image.
-> TLS is now enabled by default - you no longer need to disable the setting in Draw Things
-> If you are getting an error after updating, you may have to right click the sampler node and select "Fix node (recreate)"
+> - If you are getting an error after updating, you may have to right click the sampler node and select "Fix node (recreate)"
+> - TLS is now enabled by default - you no longer need to disable the setting in Draw Things
+> - Previews might look wrong for some models, however this does not have any influence over the final image.
 
 ## Draw Things gRPC server
 
