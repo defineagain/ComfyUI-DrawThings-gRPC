@@ -74,7 +74,6 @@ let fetches = 0;
 let updaates = 0;
 /** @param node {LGraphNode} */
 export async function updateNodeModels(node, updateDisconnected = false) {
-    console.log(`updateNodeModels ${++updaates}`);
     // find the sampler node
     let root = findRoot(node);
     if (!root) {

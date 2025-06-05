@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { setCallback } from "./dynamicInputs.js";
 import { updateNodeModels } from "./models.js";
+import { updateProto } from "./util.js";
 
 const dtModelNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"];
 const dtServerNodeTypes = ["DrawThingsSampler"];
@@ -53,13 +54,10 @@ const dtModelNodeProto = {
         enumerable: true,
     },
     onSerialize(serialised) {
-        try {
-            serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel))
-        }
-        catch (e) { }
+        serialised._lastSelectedModel = JSON.parse(JSON.stringify(this._lastSelectedModel ?? {}))
     },
     onConfigure(serialised) {
-        this._lastSelectedModel = serialised._lastSelectedModel;
+        this._lastSelectedModel = serialised._lastSelectedModel || {};
     }
 };
 
@@ -98,25 +96,3 @@ const dtExtraNodeProto = {
         if (isConnected) updateNodeModels(this);
     },
 };
-
-
-/** @param {{prototype: any}} base, @param {Record<string, Function | PropertyDescriptor} update */
-function updateProto(base, update) {
-    const proto = base.prototype;
-    for (const key in update) {
-        if (typeof update[key] === "function" && proto[key] !== undefined) {
-            const original = proto[key];
-            proto[key] = function () {
-                const r = original.apply(this, arguments);
-                try {
-                    update[key].apply(this, arguments);
-                }
-                finally {
-                    return r
-                }
-            };
-        } else if (typeof update[key] === "object") {
-            Object.defineProperty(proto, key, update[key]);
-        } else proto[key] = update[key];
-    }
-}
