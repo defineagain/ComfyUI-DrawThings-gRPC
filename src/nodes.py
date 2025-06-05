@@ -23,8 +23,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "co
 from server import PromptServer
 from aiohttp import web
 
-def get_files(server, port) -> ModelsInfo:
-    with grpc.insecure_channel(f"{server}:{port}") as channel:
+try:
+    with open('./custom_nodes/ComfyUI-DrawThings-gRPC/resources/root_ca.crt', 'rb') as cert:
+        credentials = grpc.ssl_channel_credentials(cert.read())
+except:
+    credentials = None
+
+def get_channel(server, port, use_tls):
+    if use_tls and credentials is not None:
+        return grpc.secure_channel(f"{server}:{port}", credentials)
+    return grpc.insecure_channel(f"{server}:{port}")
+
+def get_aio_channel(server, port, use_tls):
+    if use_tls and credentials is not None:
+        return grpc.aio.secure_channel(f"{server}:{port}", credentials)
+    return grpc.aio.insecure_channel(f"{server}:{port}")
+
+def get_files(server, port, use_tls) -> ModelsInfo:
+    with get_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         response = stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
         response_json = json.loads(MessageToJson(response))
@@ -56,9 +72,13 @@ async def handle_files_info_request(request):
         post = await request.post()
         server = post.get('server')
         port = post.get('port')
+        use_tls = post.get('use_tls')
+
+        print(server, port, use_tls)
+
         if server is None or port is None:
             return web.json_response({"error": "Missing server or port parameter"}, status=400)
-        all_files = get_files(server, port)
+        all_files = get_files(server, port, use_tls)
         return web.json_response(all_files)
     except Exception as e:
         print(e)
@@ -67,6 +87,7 @@ async def handle_files_info_request(request):
 async def dt_sampler(
                 server,
                 port,
+                use_tls,
                 model: ModelInfo,
                 seed,
                 seed_mode,
@@ -347,7 +368,7 @@ async def dt_sampler(
 
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
 
-    async with grpc.aio.insecure_channel(f"{server}:{port}", options) as channel:
+    async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
             image = img2img,                      # Image data as sha256 content.
@@ -470,6 +491,7 @@ class DrawThingsSampler:
                 "settings": (["Basic", "Advanced", "All"], {"default": "Basic"}),
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
+                "use_tls": ("BOOLEAN", {"default": True}),
                 "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
 
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
@@ -559,6 +581,7 @@ class DrawThingsSampler:
                 settings,
                 server,
                 port,
+                use_tls,
                 model,
                 seed,
                 seed_mode,
@@ -619,6 +642,7 @@ class DrawThingsSampler:
         return asyncio.run(dt_sampler(
                 server,
                 port,
+                use_tls,
                 model["value"],
                 seed,
                 seed_mode,

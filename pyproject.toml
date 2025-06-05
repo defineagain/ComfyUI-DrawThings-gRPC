@@ -1,6 +1,6 @@
 [project]
 name = "drawthings-grpc"
-version = "0.0.16"
+version = "0.0.17"
 description = "Connect to any Draw Things gRPCServerCLI and let ComfyUI generate and provide DT with images for ControlNet without needing to set them in DT itself."
 authors = [
   {name = "Jokimbe"},
@@ -26,7 +26,7 @@ dev = [
     "mypy",  # linting
     "pre-commit", # runs linting on commit
     "pytest",  # testing
-    "ruff",  # linting
+    "ruff",  # linting,
 ]
 
 [project.urls]
@@ -39,3 +39,10 @@ PublisherId = "jokimbe"
 DisplayName = "ComfyUI-DrawThings-gRPC"
 Icon = ""
 includes = []
+
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = [
+    "tests",
+]
