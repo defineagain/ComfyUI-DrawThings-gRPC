@@ -35,9 +35,10 @@ def get_channel(server, port, use_tls):
     return grpc.insecure_channel(f"{server}:{port}")
 
 def get_aio_channel(server, port, use_tls):
+    options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
     if use_tls and credentials is not None:
-        return grpc.aio.secure_channel(f"{server}:{port}", credentials)
-    return grpc.aio.insecure_channel(f"{server}:{port}")
+        return grpc.aio.secure_channel(f"{server}:{port}", credentials, options=options)
+    return grpc.aio.insecure_channel(f"{server}:{port}", options=options)
 
 def get_files(server, port, use_tls) -> ModelsInfo:
     with get_channel(server, port, use_tls) as channel:
@@ -365,8 +366,6 @@ async def dt_sampler(
                 hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
                 hnt.tensors.append(taw)
                 hints.append(hnt)
-
-    options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
 
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
