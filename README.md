@@ -4,11 +4,12 @@ Connect to any Draw Things [gRPCServerCLI](https://github.com/drawthingsai/draw-
 
 > [!NOTE]
 > Previews might look wrong for some models, however this does not have any influence over the final image.
+> TLS is now enabled by default - you no longer need to disable the setting in Draw Things
+> If you are getting an error after updating, you may have to right click the sampler node and select "Fix node (recreate)"
 
 ## Draw Things gRPC server
 
 Run your server with the following options:
-    --no-tls
     --no-response-compression
     --model-browser
 
