@@ -28,9 +28,6 @@ app.registerExtension({
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
 const dtModelNodeProto = {
-    onAdded() {
-        console.log("hey it was added");
-    },
     saveSelectedModels() {
         const modelWidgets = this.widgets.filter((w) => w.options?.modelType);
         const selections = modelWidgets.reduce((acc, w) => {
