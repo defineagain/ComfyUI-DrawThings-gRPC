@@ -5,7 +5,6 @@
  * @param {K} callbackName
  * @param {T[K]} callback
  */
-
 export function setCallback(target, callbackName, callback) {
     const originalCallback = target[callbackName]
     target[callbackName] = function (...args) {
@@ -43,4 +42,28 @@ export function updateProto(base, update) {
             Object.defineProperty(proto, key, update[key]);
         } else proto[key] = update[key];
     }
+}
+
+
+/**
+ * Converts a DrawThings config property name to a ComfyUI property name.
+ *
+ * This function maps specific DrawThings names to corresponding widget names
+ * using a predefined map. If a name is not found in the map, it converts
+ * camelCase names to snake_case by inserting underscores before uppercase
+ * letters and converting all characters to lowercase.
+ *
+ * @param {string} dtName - The DrawThings name to convert.
+ * @returns {string} The corresponding widget name.
+ */
+export function getWidgetName(dtName) {
+    const map = {
+        preserveOriginalAfterInpaint: "preserve_original",
+        hiresFix: "high_res_fix",
+        sampler: "sampler_name",
+    };
+
+    if (dtName in map) return map[dtName];
+
+    return dtName.replace(/([A-Z])/g, "_$1").toLowerCase();
 }

@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { DtModelTypeHandler, updateNodeModels } from "./models.js";
 import { setCallback } from "./dynamicInputs.js";
+import { updateProto, getWidgetName } from "./util.js";
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"];
@@ -12,120 +13,99 @@ app.registerExtension({
             DT_MODEL: DtModelTypeHandler,
         };
     },
-    async nodeCreated(node) {
-        if (node?.comfyClass === "DrawThingsSampler") {
-            const original_onMouseDown = node.onMouseDown;
-            node.onMouseDown = function (e, pos, canvas) {
-                console.debug("Click!", node);
-                return original_onMouseDown?.apply(this, arguments);
-            };
-
-            const inputPos = node.inputs.find((inputPos) => inputPos.name == "positive");
-            const inputNeg = node.inputs.find((inputNeg) => inputNeg.name == "negative");
-            inputPos.color_on =
-                inputPos.color_off =
-                inputNeg.color_on =
-                inputNeg.color_off =
-                    app.canvas.default_connection_color_byType["CONDITIONING"];
-            app.canvas.default_connection_color_byType["DT_LORA"] = app.canvas.default_connection_color_byType["MODEL"];
-            app.canvas.default_connection_color_byType["DT_CNET"] =
-                app.canvas.default_connection_color_byType["CONTROL_NET"];
-        }
-        // Some default node colours, available are:
-        // black, blue, brown, cyan, green, pale_blue, purple, red, yellow
-        if (node?.comfyClass === "DrawThingsPositive") {
-            node.color = LGraphCanvas.node_colors.green.color;
-            node.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
-            const output = node.outputs.find(output => output.name == "POSITIVE");
-            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
-        }
-        if (node?.comfyClass === "DrawThingsNegative") {
-            node.color = LGraphCanvas.node_colors.red.color;
-            node.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
-            const output = node.outputs.find(output => output.name == "NEGATIVE");
-            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
-        }
-    },
-    async loadedGraphNode(node) {
-        for (const widget of node.widgets.filter((w) => w.options?.modelType)) {
-            if (widget.value?.toString() === "[object Object]") {
-                const value = {
-                    ...widget.value,
-                    toString() {
-                        return this.value.name;
-                    },
-                };
-                widget.setValue(value);
-            }
-        }
-    },
 
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeType.comfyClass === "DrawThingsSampler") {
-            setCallback(nodeType.prototype, "getExtraMenuOptions", function (canvas, options) {
-                const keepNodeShrunk = app.extensionManager.setting.get("drawthings.node.keep_shrunk");
-                options.push(
-                    null,
-                    {
-                        content: "Paste Draw Things config",
-                        callback: () => {
-                            navigator.clipboard.readText().then((text) => {
-                                try {
-                                    for (const [k, v] of Object.entries(JSON.parse(text))) {
-                                        const name = getWidgetName(k);
-                                        const w = this.widgets.find((w) => w.name === name);
-                                        if (w) {
-                                            if (k === "sampler") w.value = samplers[v];
-                                            else if (name === "model") {
-                                                const model = w.options.values.find((val) => val?.value?.file === v);
-                                                if (model) w.value = model;
-                                                else w.value = w.options.values[0];
-                                            } else if (name === "seed_mode") w.value = seedModes[v];
-                                            else w.value = v;
-                                        }
-                                    }
-                                } catch (e) {
-                                    alert("Failed to parse Draw Things config from clipboard");
-                                    console.warn(e);
-                                }
-                            });
-                        },
-                    },
-                    {
-                        content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
-                        callback: async () => {
-                            try {
-                                await app.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
-                            } catch (error) {
-                                console.error(`Error changing setting: ${error}`);
-                            }
-                        },
-                    },
-                    null
-                );
-            });
+            updateProto(nodeType, samplerProto);
         }
-    },
-    refreshComboInNodes(defs, app) {
-        for (const type of DrawThingsNodeTypes) {
-            for (const node of app.graph.findNodesByType(type)) {
-                if (node.widgets.some((w) => w.options.values === "DT_MODEL")) updateNodeModels(node, true);
-            }
+        if (nodeType.comfyClass === "DrawThingsPositive" || nodeType.comfyClass === "DrawThingsNegative") {
+            updateProto(nodeType, promptProto);
         }
     },
 });
 
-function getWidgetName(dtName) {
-    const map = {
-        preserveOriginalAfterInpaint: "preserve_original",
-        hiresFix: "high_res_fix",
-        sampler: "sampler_name",
-    };
+/** @type {import("@comfyorg/litegraph").LGraphNode} */
+const samplerProto = {
+    async onNodeCreated() {
+        const inputPos = this.inputs.find((inputPos) => inputPos.name == "positive");
+        const inputNeg = this.inputs.find((inputNeg) => inputNeg.name == "negative");
+        inputPos.color_on =
+            inputPos.color_off =
+            inputNeg.color_on =
+            inputNeg.color_off =
+                app.canvas.default_connection_color_byType["CONDITIONING"];
+        app.canvas.default_connection_color_byType["DT_LORA"] = app.canvas.default_connection_color_byType["MODEL"];
+        app.canvas.default_connection_color_byType["DT_CNET"] =
+            app.canvas.default_connection_color_byType["CONTROL_NET"];
+    },
 
-    if (dtName in map) return map[dtName];
+    onMouseDown(e, pos, canvas) {
+        // this exists for easier debugging in devtools
+        console.debug("Click!", this);
+    },
 
-    return dtName.replace(/([A-Z])/g, "_$1").toLowerCase();
-}
+    getExtraMenuOptions(canvas, options) {
+        const keepNodeShrunk = app.extensionManager.setting.get("drawthings.node.keep_shrunk");
+        options.push(
+            null,
+            {
+                content: "Paste Draw Things config",
+                callback: () => {
+                    navigator.clipboard.readText().then((text) => {
+                        try {
+                            for (const [k, v] of Object.entries(JSON.parse(text))) {
+                                const name = getWidgetName(k);
+                                const w = this.widgets.find((w) => w.name === name);
+                                if (w) {
+                                    if (k === "sampler") w.value = samplers[v];
+                                    else if (name === "model") {
+                                        const model = w.options.values.find((val) => val?.value?.file === v);
+                                        if (model) w.value = model;
+                                        else w.value = w.options.values[0];
+                                    } else if (name === "seed_mode") w.value = seedModes[v];
+                                    else w.value = v;
+                                }
+                            }
+                        } catch (e) {
+                            alert("Failed to parse Draw Things config from clipboard");
+                            console.warn(e);
+                        }
+                    });
+                },
+            },
+            {
+                content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
+                callback: async () => {
+                    try {
+                        await app.extensionManager.setting.set("drawthings.node.keep_shrunk", !keepNodeShrunk);
+                    } catch (error) {
+                        console.error(`Error changing setting: ${error}`);
+                    }
+                },
+            },
+            null
+        );
+    },
+};
+
+const promptProto = {
+    async onNodeCreated() {
+        // Some default node colours, available are:
+        // black, blue, brown, cyan, green, pale_blue, purple, red, yellow
+        if (this?.comfyClass === "DrawThingsPositive") {
+            this.color = LGraphCanvas.node_colors.green.color;
+            this.bgcolor = LGraphCanvas.node_colors.green.bgcolor;
+            const output = this.outputs.find((output) => output.name == "POSITIVE");
+            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
+        }
+        if (this?.comfyClass === "DrawThingsNegative") {
+            this.color = LGraphCanvas.node_colors.red.color;
+            this.bgcolor = LGraphCanvas.node_colors.red.bgcolor;
+            const output = this.outputs.find((output) => output.name == "NEGATIVE");
+            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"];
+        }
+    },
+};
 
 const samplers = [
     "DPM++ 2M Karras",
