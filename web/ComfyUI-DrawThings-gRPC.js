@@ -1,6 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { DtModelTypeHandler, updateNodeModels } from "./models.js";
-import { setCallback } from "./dynamicInputs.js";
+import { DtModelTypeHandler } from "./models.js";
 import { updateProto, getWidgetName } from "./util.js";
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
@@ -73,6 +72,26 @@ const samplerProto = {
                     });
                 },
             },
+            // {
+            //     content: "Copy Draw Things config",
+            //     callback: () => {
+            //         const config = {};
+            //         for (const w of this.widgets) {
+            //             if (["settings", "server", "port", "use_tls"].includes(w.name)) continue;
+
+            //             if (w.name === "model") {
+            //                 config[w.name] = w.value?.value?.file;
+            //                 continue;
+            //             }
+
+            //             const propertyName = getDTPropertyName(w.name)
+            //             config[propertyName ?? w.name] = w.value;
+            //         }
+            //         config.loras = []
+            //         config.control = []
+            //         navigator.clipboard.writeText(JSON.stringify(config));
+            //     },
+            // },
             {
                 content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
                 callback: async () => {

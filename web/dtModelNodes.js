@@ -74,8 +74,6 @@ const dtServerNodeProto = {
 
         const portWidget = this.widgets.find((w) => w.name === "port");
         if (portWidget) setCallback(portWidget, "callback", () => updateNodeModels(this));
-
-        console.log("added with " + serverWidget.value);
     },
 
     onConfigure() {
