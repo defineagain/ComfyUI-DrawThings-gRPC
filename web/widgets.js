@@ -36,7 +36,9 @@ const advancedWidgets = [
     "mask_blur_outset",
     "preserve_original",
     "separate_clip_l",
+    "clip_l_text",
     "separate_open_clip_g",
+    "open_clip_g_text",
     "high_res_fix",
     "high_res_fix_start_width",
     "high_res_fix_start_height",
@@ -56,8 +58,6 @@ const advancedWidgets = [
     "tea_cache_end",
     "tea_cache_threshold",
     "tea_cache_max_skip_steps",
-    "clip_l_text",
-    "open_clip_g_text",
 ];
 
 let origProps = {};
