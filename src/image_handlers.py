@@ -85,8 +85,6 @@ def decode_preview(preview, version):
 
     fp16 = np.frombuffer(preview, dtype=np.float16, offset=offset)
 
-    print(f'version: {version}')
-
     image = None
     if version in ['v1', 'v2', 'svdI2v']:
         bytes_array = np.zeros((image_height, image_width, channels), dtype=np.uint8)
@@ -108,9 +106,9 @@ def decode_preview(preview, version):
             g = (-0.0175 * v0 + 0.0633 * v1 + 0.0927 * v2 + 0.0339 * v3 + 0.0272 * v4 + 0.1104 * v5 + 0.0306 * v6 + 0.1038 * v7 + 0.0020 * v8 + 0.0130 * v9 + 0.0988 * v10 + 0.0524 * v11 + 0.0456 * v12 - 0.0030 * v13 - 0.0465 * v14 - 0.1463 * v15 + 0.2135) * 127.5 + 127.5
             b = (0.0749 * v0 + 0.0954 * v1 + 0.0458 * v2 + 0.0902 * v3 - 0.0496 * v4 + 0.0309 * v5 + 0.0427 * v6 + 0.1358 * v7 + 0.0669 * v8 - 0.0268 * v9 + 0.0951 * v10 - 0.0542 * v11 + 0.0895 * v12 - 0.0810 * v13 - 0.0293 * v14 - 0.1189 * v15 + 0.1925) * 127.5 + 127.5
 
-            bytes_array[i * 4] = max(min(int(r), 255), 0)
-            bytes_array[i * 4 + 1] = max(min(int(g), 255), 0)
-            bytes_array[i * 4 + 2] = max(min(int(b), 255), 0)
+            bytes_array[i * 4] = clamp(r)
+            bytes_array[i * 4 + 1] = clamp(g)
+            bytes_array[i * 4 + 2] = clamp(b)
             bytes_array[i * 4 + 3] = 255
         image = Image.frombytes('RGBA', (image_width, image_height), bytes(bytes_array))
 
@@ -122,9 +120,9 @@ def decode_preview(preview, version):
             g = 53.237 * v0 - 1.4623 * v1 + 12.991 * v2 - 28.043 * v3 + 127.46
             b = 58.182 * v0 + 4.3734 * v1 - 3.3735 * v2 - 26.722 * v3 + 114.5
 
-            bytes_array[i * 4] = max(min(int(r), 255), 0)
-            bytes_array[i * 4 + 1] = max(min(int(g), 255), 0)
-            bytes_array[i * 4 + 2] = max(min(int(b), 255), 0)
+            bytes_array[i * 4] = clamp(r)
+            bytes_array[i * 4 + 1] = clamp(g)
+            bytes_array[i * 4 + 2] = clamp(b)
             bytes_array[i * 4 + 3] = 255
         image = Image.frombytes('RGBA', (image_width, image_height), bytes_array)
 
@@ -145,9 +143,9 @@ def decode_preview(preview, version):
                     0.1180 * v[8] - 0.0421 * v[9] + 0.0011 * v[10] - 0.0036 * v[11] +
                     0.0749 * v[12] - 0.1103 * v[13] - 0.0499 * v[14] - 0.0778 * v[15] - 0.0851) * 127.5 + 127.5
 
-            bytes_array[i * 4] = min(max(int(r) if np.isfinite(r) else 0, 0), 255)
-            bytes_array[i * 4 + 1] = min(max(int(g) if np.isfinite(g) else 0, 0), 255)
-            bytes_array[i * 4 + 2] = min(max(int(b) if np.isfinite(b) else 0, 0), 255)
+            bytes_array[i * 4] = clamp(r)
+            bytes_array[i * 4 + 1] = clamp(g)
+            bytes_array[i * 4 + 2] = clamp(b)
             bytes_array[i * 4 + 3] = 255
         image = Image.fromarray(bytes_array.reshape((image_height, image_width, 4)), 'RGBA')
 
@@ -185,9 +183,9 @@ def decode_preview(preview, version):
                     - 0.0669 * v6 - 0.0400 * v7 - 0.0894 * v8 - 0.0375 * v9 + 0.0962 * v10 + 0.0407
                     * v11 - 0.1355 * v12 - 0.0821 * v13 - 0.0727 * v14 - 0.1703 * v15 - 0.0761) * 127.5 + 127.5
 
-            bytes_array[i*4] = max(0, min(255, int(r)))
-            bytes_array[i*4+1] = max(0, min(255, int(g)))
-            bytes_array[i*4+2] = max(0, min(255, int(b)))
+            bytes_array[i*4] = clamp(r)
+            bytes_array[i*4+1] = clamp(g)
+            bytes_array[i*4+2] = clamp(b)
             bytes_array[i*4+3] = 255
         image = Image.frombytes('RGBA', (image_width, image_height), bytes_array)
 
@@ -196,9 +194,9 @@ def decode_preview(preview, version):
         if channels == 3:
             for i in range(image_height * image_width):
                 r, g, b = fp16[i * 3], fp16[i * 3 + 1], fp16[i * 3 + 2]
-                bytes_array[i * 4] = max(min(int(r * 255), 255), 0)
-                bytes_array[i * 4 + 1] = max(min(int(g * 255), 255), 0)
-                bytes_array[i * 4 + 2] = max(min(int(b * 255), 255), 0)
+                bytes_array[i * 4] = clamp(r)
+                bytes_array[i * 4 + 1] = clamp(g)
+                bytes_array[i * 4 + 2] = clamp(b)
                 bytes_array[i * 4 + 3] = 255
         else:
             for i in range(image_height * image_width):
@@ -207,9 +205,9 @@ def decode_preview(preview, version):
                 g = max(min(int(21.07 * v0 - 4.3022 * v1 - 11.258 * v2 - 18.8 * v3 + 131.53), 255), 0)
                 b = max(min(int(7.8454 * v0 - 2.3713 * v1 - 0.45565 * v2 - 41.648 * v3 + 120.76), 255), 0)
 
-                bytes_array[i * 4] = r
-                bytes_array[i * 4 + 1] = g
-                bytes_array[i * 4 + 2] = b
+                bytes_array[i * 4] = clamp(r)
+                bytes_array[i * 4 + 1] = clamp(g)
+                bytes_array[i * 4 + 2] = clamp(b)
                 bytes_array[i * 4 + 3] = 255
         image = Image.frombytes('RGBA', (image_width, image_height), bytes_array)
 

@@ -11,9 +11,16 @@ class DeviceType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     PHONE: _ClassVar[DeviceType]
     TABLET: _ClassVar[DeviceType]
     LAPTOP: _ClassVar[DeviceType]
+
+class ChunkState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    LAST_CHUNK: _ClassVar[ChunkState]
+    MORE_CHUNKS: _ClassVar[ChunkState]
 PHONE: DeviceType
 TABLET: DeviceType
 LAPTOP: DeviceType
+LAST_CHUNK: ChunkState
+MORE_CHUNKS: ChunkState
 
 class EchoRequest(_message.Message):
     __slots__ = ("name", "sharedSecret")
@@ -70,7 +77,7 @@ class MetadataOverride(_message.Message):
     def __init__(self, models: _Optional[bytes] = ..., loras: _Optional[bytes] = ..., controlNets: _Optional[bytes] = ..., textualInversions: _Optional[bytes] = ..., upscalers: _Optional[bytes] = ...) -> None: ...
 
 class ImageGenerationRequest(_message.Message):
-    __slots__ = ("image", "scaleFactor", "mask", "hints", "prompt", "negativePrompt", "configuration", "override", "keywords", "user", "device", "contents", "sharedSecret")
+    __slots__ = ("image", "scaleFactor", "mask", "hints", "prompt", "negativePrompt", "configuration", "override", "keywords", "user", "device", "contents", "sharedSecret", "chunked")
     IMAGE_FIELD_NUMBER: _ClassVar[int]
     SCALEFACTOR_FIELD_NUMBER: _ClassVar[int]
     MASK_FIELD_NUMBER: _ClassVar[int]
@@ -84,6 +91,7 @@ class ImageGenerationRequest(_message.Message):
     DEVICE_FIELD_NUMBER: _ClassVar[int]
     CONTENTS_FIELD_NUMBER: _ClassVar[int]
     SHAREDSECRET_FIELD_NUMBER: _ClassVar[int]
+    CHUNKED_FIELD_NUMBER: _ClassVar[int]
     image: bytes
     scaleFactor: int
     mask: bytes
@@ -97,7 +105,8 @@ class ImageGenerationRequest(_message.Message):
     device: DeviceType
     contents: _containers.RepeatedScalarFieldContainer[bytes]
     sharedSecret: str
-    def __init__(self, image: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., mask: _Optional[bytes] = ..., hints: _Optional[_Iterable[_Union[HintProto, _Mapping]]] = ..., prompt: _Optional[str] = ..., negativePrompt: _Optional[str] = ..., configuration: _Optional[bytes] = ..., override: _Optional[_Union[MetadataOverride, _Mapping]] = ..., keywords: _Optional[_Iterable[str]] = ..., user: _Optional[str] = ..., device: _Optional[_Union[DeviceType, str]] = ..., contents: _Optional[_Iterable[bytes]] = ..., sharedSecret: _Optional[str] = ...) -> None: ...
+    chunked: bool
+    def __init__(self, image: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., mask: _Optional[bytes] = ..., hints: _Optional[_Iterable[_Union[HintProto, _Mapping]]] = ..., prompt: _Optional[str] = ..., negativePrompt: _Optional[str] = ..., configuration: _Optional[bytes] = ..., override: _Optional[_Union[MetadataOverride, _Mapping]] = ..., keywords: _Optional[_Iterable[str]] = ..., user: _Optional[str] = ..., device: _Optional[_Union[DeviceType, str]] = ..., contents: _Optional[_Iterable[bytes]] = ..., sharedSecret: _Optional[str] = ..., chunked: bool = ...) -> None: ...
 
 class HintProto(_message.Message):
     __slots__ = ("hintType", "tensors")
@@ -168,8 +177,22 @@ class ImageGenerationSignpostProto(_message.Message):
     imageUpscaled: ImageGenerationSignpostProto.ImageUpscaled
     def __init__(self, textEncoded: _Optional[_Union[ImageGenerationSignpostProto.TextEncoded, _Mapping]] = ..., imageEncoded: _Optional[_Union[ImageGenerationSignpostProto.ImageEncoded, _Mapping]] = ..., sampling: _Optional[_Union[ImageGenerationSignpostProto.Sampling, _Mapping]] = ..., imageDecoded: _Optional[_Union[ImageGenerationSignpostProto.ImageDecoded, _Mapping]] = ..., secondPassImageEncoded: _Optional[_Union[ImageGenerationSignpostProto.SecondPassImageEncoded, _Mapping]] = ..., secondPassSampling: _Optional[_Union[ImageGenerationSignpostProto.SecondPassSampling, _Mapping]] = ..., secondPassImageDecoded: _Optional[_Union[ImageGenerationSignpostProto.SecondPassImageDecoded, _Mapping]] = ..., faceRestored: _Optional[_Union[ImageGenerationSignpostProto.FaceRestored, _Mapping]] = ..., imageUpscaled: _Optional[_Union[ImageGenerationSignpostProto.ImageUpscaled, _Mapping]] = ...) -> None: ...
 
+class RemoteDownloadResponse(_message.Message):
+    __slots__ = ("bytesReceived", "bytesExpected", "item", "itemsExpected", "tag")
+    BYTESRECEIVED_FIELD_NUMBER: _ClassVar[int]
+    BYTESEXPECTED_FIELD_NUMBER: _ClassVar[int]
+    ITEM_FIELD_NUMBER: _ClassVar[int]
+    ITEMSEXPECTED_FIELD_NUMBER: _ClassVar[int]
+    TAG_FIELD_NUMBER: _ClassVar[int]
+    bytesReceived: int
+    bytesExpected: int
+    item: int
+    itemsExpected: int
+    tag: str
+    def __init__(self, bytesReceived: _Optional[int] = ..., bytesExpected: _Optional[int] = ..., item: _Optional[int] = ..., itemsExpected: _Optional[int] = ..., tag: _Optional[str] = ...) -> None: ...
+
 class ImageGenerationResponse(_message.Message):
-    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags", "downloadSize")
+    __slots__ = ("generatedImages", "currentSignpost", "signposts", "previewImage", "scaleFactor", "tags", "downloadSize", "chunkState", "remoteDownload")
     GENERATEDIMAGES_FIELD_NUMBER: _ClassVar[int]
     CURRENTSIGNPOST_FIELD_NUMBER: _ClassVar[int]
     SIGNPOSTS_FIELD_NUMBER: _ClassVar[int]
@@ -177,6 +200,8 @@ class ImageGenerationResponse(_message.Message):
     SCALEFACTOR_FIELD_NUMBER: _ClassVar[int]
     TAGS_FIELD_NUMBER: _ClassVar[int]
     DOWNLOADSIZE_FIELD_NUMBER: _ClassVar[int]
+    CHUNKSTATE_FIELD_NUMBER: _ClassVar[int]
+    REMOTEDOWNLOAD_FIELD_NUMBER: _ClassVar[int]
     generatedImages: _containers.RepeatedScalarFieldContainer[bytes]
     currentSignpost: ImageGenerationSignpostProto
     signposts: _containers.RepeatedCompositeFieldContainer[ImageGenerationSignpostProto]
@@ -184,7 +209,9 @@ class ImageGenerationResponse(_message.Message):
     scaleFactor: int
     tags: _containers.RepeatedScalarFieldContainer[str]
     downloadSize: int
-    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ..., downloadSize: _Optional[int] = ...) -> None: ...
+    chunkState: ChunkState
+    remoteDownload: RemoteDownloadResponse
+    def __init__(self, generatedImages: _Optional[_Iterable[bytes]] = ..., currentSignpost: _Optional[_Union[ImageGenerationSignpostProto, _Mapping]] = ..., signposts: _Optional[_Iterable[_Union[ImageGenerationSignpostProto, _Mapping]]] = ..., previewImage: _Optional[bytes] = ..., scaleFactor: _Optional[int] = ..., tags: _Optional[_Iterable[str]] = ..., downloadSize: _Optional[int] = ..., chunkState: _Optional[_Union[ChunkState, str]] = ..., remoteDownload: _Optional[_Union[RemoteDownloadResponse, _Mapping]] = ...) -> None: ...
 
 class FileChunk(_message.Message):
     __slots__ = ("content", "filename", "offset")

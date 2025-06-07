@@ -75,8 +75,6 @@ async def handle_files_info_request(request):
         port = post.get('port')
         use_tls = post.get('use_tls')
 
-        print(server, port, use_tls)
-
         if server is None or port is None:
             return web.json_response({"error": "Missing server or port parameter"}, status=400)
         all_files = get_files(server, port, use_tls)
@@ -147,14 +145,12 @@ async def dt_sampler(
                 refiner=None,
                 upscaler=None,
             ) -> None:
-    print(positive, negative)
     builder = flatbuffers.Builder(0)
 
     loras_out = None
     if lora is not None and len(lora):
         fin_loras = []
         for l in lora:
-            print(l)
             lora_model = l['model']
             lora_file = builder.CreateString(lora_model['file'])
             LoRA.Start(builder)
@@ -172,7 +168,7 @@ async def dt_sampler(
     if control_net is not None and len(control_net):
         fin_controls = []
         for c in control_net:
-            print(f'{c["input_type"]}')
+            # print(f'{c["input_type"]}')
             cnet_model = c['model']
             control_name = builder.CreateString(cnet_model["file"])
             Control.Start(builder)
@@ -352,7 +348,6 @@ async def dt_sampler(
                 hints.append(hnt)
 
     if lora is not None:
-        print(lora)
         # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
             if 'control_image' in lora_cfg:
@@ -382,6 +377,9 @@ async def dt_sampler(
             device = "LAPTOP",                    # The type of the device uses.
             contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
         ))
+
+        response_images = []
+
         while True:
             response = await generate_stream.read()
             if response == grpc.aio.EOF:
@@ -400,26 +398,28 @@ async def dt_sampler(
                 prepare_callback(current_step, steps, x0)
 
             if generated_images:
-                images = []
-                for img_data in response.generatedImages:
-                    # Convert the image data to a Pillow Image object
-                    result = convert_response_image(img_data)
-                    if result is not None:
-                        data = result['data']
-                        width = result['width']
-                        height = result['height']
-                        channels = result['channels']
-                        mode = "RGB"
-                        if channels >= 4:
-                            mode = "RGBA"
-                        img = Image.frombytes(mode, (width, height), data)
-                        # print(f"size: {img.size}, mode: {img.mode}")
-                        image_np = np.array(img)
-                        # Convert to float32 tensor and normalize
-                        tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
-                        images.append(tensor_image)
+                response_images.extend(generated_images)
 
-                return (torch.stack(images),)
+        images = []
+        for img_data in response_images:
+            # Convert the image data to a Pillow Image object
+            result = convert_response_image(img_data)
+            if result is not None:
+                data = result['data']
+                width = result['width']
+                height = result['height']
+                channels = result['channels']
+                mode = "RGB"
+                if channels >= 4:
+                    mode = "RGBA"
+                img = Image.frombytes(mode, (width, height), data)
+                # print(f"size: {img.size}, mode: {img.mode}")
+                image_np = np.array(img)
+                # Convert to float32 tensor and normalize
+                tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
+                images.append(tensor_image)
+
+        return (torch.stack(images),)
 
 class DrawThingsLists:
     dtserver = "localhost"
