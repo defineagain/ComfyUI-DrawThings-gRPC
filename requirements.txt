@@ -4,4 +4,4 @@ torch
 torchvision
 grpcio>=1.71.0
 flatbuffers>=25.2.10
-protobuf
+protobuf>=5.29.0
