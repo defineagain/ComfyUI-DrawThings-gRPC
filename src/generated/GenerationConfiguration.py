@@ -164,7 +164,6 @@ class GenerationConfiguration(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from Control import Control
             obj = Control()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -189,7 +188,6 @@ class GenerationConfiguration(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from LoRA import LoRA
             obj = LoRA()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -599,8 +597,22 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
         return 3
 
+    # GenerationConfiguration
+    def CausalInferenceEnabled(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(162))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
+    # GenerationConfiguration
+    def CausalInference(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(164))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 3
+
 def GenerationConfigurationStart(builder):
-    builder.StartObject(79)
+    builder.StartObject(81)
 
 def Start(builder):
     GenerationConfigurationStart(builder)
@@ -1079,8 +1091,351 @@ def GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps
 def AddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps):
     GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps)
 
+def GenerationConfigurationAddCausalInferenceEnabled(builder, causalInferenceEnabled):
+    builder.PrependBoolSlot(79, causalInferenceEnabled, 0)
+
+def AddCausalInferenceEnabled(builder, causalInferenceEnabled):
+    GenerationConfigurationAddCausalInferenceEnabled(builder, causalInferenceEnabled)
+
+def GenerationConfigurationAddCausalInference(builder, causalInference):
+    builder.PrependInt32Slot(80, causalInference, 3)
+
+def AddCausalInference(builder, causalInference):
+    GenerationConfigurationAddCausalInference(builder, causalInference)
+
 def GenerationConfigurationEnd(builder):
     return builder.EndObject()
 
 def End(builder):
     return GenerationConfigurationEnd(builder)
+
+try:
+    from typing import List
+except:
+    pass
+
+class GenerationConfigurationT(object):
+
+    # GenerationConfigurationT
+    def __init__(self):
+        self.id = 0  # type: int
+        self.startWidth = 0  # type: int
+        self.startHeight = 0  # type: int
+        self.seed = 0  # type: int
+        self.steps = 0  # type: int
+        self.guidanceScale = 0.0  # type: float
+        self.strength = 0.0  # type: float
+        self.model = None  # type: str
+        self.sampler = 0  # type: int
+        self.batchCount = 1  # type: int
+        self.batchSize = 1  # type: int
+        self.hiresFix = False  # type: bool
+        self.hiresFixStartWidth = 0  # type: int
+        self.hiresFixStartHeight = 0  # type: int
+        self.hiresFixStrength = 0.7  # type: float
+        self.upscaler = None  # type: str
+        self.imageGuidanceScale = 1.5  # type: float
+        self.seedMode = 0  # type: int
+        self.clipSkip = 1  # type: int
+        self.controls = None  # type: List[ControlT]
+        self.loras = None  # type: List[LoRAT]
+        self.maskBlur = 0.0  # type: float
+        self.faceRestoration = None  # type: str
+        self.clipWeight = 1.0  # type: float
+        self.negativePromptForImagePrior = True  # type: bool
+        self.imagePriorSteps = 5  # type: int
+        self.refinerModel = None  # type: str
+        self.originalImageHeight = 0  # type: int
+        self.originalImageWidth = 0  # type: int
+        self.cropTop = 0  # type: int
+        self.cropLeft = 0  # type: int
+        self.targetImageHeight = 0  # type: int
+        self.targetImageWidth = 0  # type: int
+        self.aestheticScore = 6.0  # type: float
+        self.negativeAestheticScore = 2.5  # type: float
+        self.zeroNegativePrompt = False  # type: bool
+        self.refinerStart = 0.7  # type: float
+        self.negativeOriginalImageHeight = 0  # type: int
+        self.negativeOriginalImageWidth = 0  # type: int
+        self.name = None  # type: str
+        self.fpsId = 5  # type: int
+        self.motionBucketId = 127  # type: int
+        self.condAug = 0.02  # type: float
+        self.startFrameCfg = 1.0  # type: float
+        self.numFrames = 14  # type: int
+        self.maskBlurOutset = 0  # type: int
+        self.sharpness = 0.0  # type: float
+        self.shift = 1.0  # type: float
+        self.stage2Steps = 10  # type: int
+        self.stage2Cfg = 1.0  # type: float
+        self.stage2Shift = 1.0  # type: float
+        self.tiledDecoding = False  # type: bool
+        self.decodingTileWidth = 10  # type: int
+        self.decodingTileHeight = 10  # type: int
+        self.decodingTileOverlap = 2  # type: int
+        self.stochasticSamplingGamma = 0.3  # type: float
+        self.preserveOriginalAfterInpaint = True  # type: bool
+        self.tiledDiffusion = False  # type: bool
+        self.diffusionTileWidth = 16  # type: int
+        self.diffusionTileHeight = 16  # type: int
+        self.diffusionTileOverlap = 2  # type: int
+        self.upscalerScaleFactor = 0  # type: int
+        self.t5TextEncoder = True  # type: bool
+        self.separateClipL = False  # type: bool
+        self.clipLText = None  # type: str
+        self.separateOpenClipG = False  # type: bool
+        self.openClipGText = None  # type: str
+        self.speedUpWithGuidanceEmbed = True  # type: bool
+        self.guidanceEmbed = 3.5  # type: float
+        self.resolutionDependentShift = True  # type: bool
+        self.teaCacheStart = 5  # type: int
+        self.teaCacheEnd = -1  # type: int
+        self.teaCacheThreshold = 0.06  # type: float
+        self.teaCache = False  # type: bool
+        self.separateT5 = False  # type: bool
+        self.t5Text = None  # type: str
+        self.teaCacheMaxSkipSteps = 3  # type: int
+        self.causalInferenceEnabled = False  # type: bool
+        self.causalInference = 3  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        generationConfiguration = GenerationConfiguration()
+        generationConfiguration.Init(buf, pos)
+        return cls.InitFromObj(generationConfiguration)
+
+    @classmethod
+    def InitFromPackedBuf(cls, buf, pos=0):
+        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, pos)
+        return cls.InitFromBuf(buf, pos+n)
+
+    @classmethod
+    def InitFromObj(cls, generationConfiguration):
+        x = GenerationConfigurationT()
+        x._UnPack(generationConfiguration)
+        return x
+
+    # GenerationConfigurationT
+    def _UnPack(self, generationConfiguration):
+        if generationConfiguration is None:
+            return
+        self.id = generationConfiguration.Id()
+        self.startWidth = generationConfiguration.StartWidth()
+        self.startHeight = generationConfiguration.StartHeight()
+        self.seed = generationConfiguration.Seed()
+        self.steps = generationConfiguration.Steps()
+        self.guidanceScale = generationConfiguration.GuidanceScale()
+        self.strength = generationConfiguration.Strength()
+        self.model = generationConfiguration.Model()
+        self.sampler = generationConfiguration.Sampler()
+        self.batchCount = generationConfiguration.BatchCount()
+        self.batchSize = generationConfiguration.BatchSize()
+        self.hiresFix = generationConfiguration.HiresFix()
+        self.hiresFixStartWidth = generationConfiguration.HiresFixStartWidth()
+        self.hiresFixStartHeight = generationConfiguration.HiresFixStartHeight()
+        self.hiresFixStrength = generationConfiguration.HiresFixStrength()
+        self.upscaler = generationConfiguration.Upscaler()
+        self.imageGuidanceScale = generationConfiguration.ImageGuidanceScale()
+        self.seedMode = generationConfiguration.SeedMode()
+        self.clipSkip = generationConfiguration.ClipSkip()
+        if not generationConfiguration.ControlsIsNone():
+            self.controls = []
+            for i in range(generationConfiguration.ControlsLength()):
+                if generationConfiguration.Controls(i) is None:
+                    self.controls.append(None)
+                else:
+                    control_ = ControlT.InitFromObj(generationConfiguration.Controls(i))
+                    self.controls.append(control_)
+        if not generationConfiguration.LorasIsNone():
+            self.loras = []
+            for i in range(generationConfiguration.LorasLength()):
+                if generationConfiguration.Loras(i) is None:
+                    self.loras.append(None)
+                else:
+                    loRA_ = LoRAT.InitFromObj(generationConfiguration.Loras(i))
+                    self.loras.append(loRA_)
+        self.maskBlur = generationConfiguration.MaskBlur()
+        self.faceRestoration = generationConfiguration.FaceRestoration()
+        self.clipWeight = generationConfiguration.ClipWeight()
+        self.negativePromptForImagePrior = generationConfiguration.NegativePromptForImagePrior()
+        self.imagePriorSteps = generationConfiguration.ImagePriorSteps()
+        self.refinerModel = generationConfiguration.RefinerModel()
+        self.originalImageHeight = generationConfiguration.OriginalImageHeight()
+        self.originalImageWidth = generationConfiguration.OriginalImageWidth()
+        self.cropTop = generationConfiguration.CropTop()
+        self.cropLeft = generationConfiguration.CropLeft()
+        self.targetImageHeight = generationConfiguration.TargetImageHeight()
+        self.targetImageWidth = generationConfiguration.TargetImageWidth()
+        self.aestheticScore = generationConfiguration.AestheticScore()
+        self.negativeAestheticScore = generationConfiguration.NegativeAestheticScore()
+        self.zeroNegativePrompt = generationConfiguration.ZeroNegativePrompt()
+        self.refinerStart = generationConfiguration.RefinerStart()
+        self.negativeOriginalImageHeight = generationConfiguration.NegativeOriginalImageHeight()
+        self.negativeOriginalImageWidth = generationConfiguration.NegativeOriginalImageWidth()
+        self.name = generationConfiguration.Name()
+        self.fpsId = generationConfiguration.FpsId()
+        self.motionBucketId = generationConfiguration.MotionBucketId()
+        self.condAug = generationConfiguration.CondAug()
+        self.startFrameCfg = generationConfiguration.StartFrameCfg()
+        self.numFrames = generationConfiguration.NumFrames()
+        self.maskBlurOutset = generationConfiguration.MaskBlurOutset()
+        self.sharpness = generationConfiguration.Sharpness()
+        self.shift = generationConfiguration.Shift()
+        self.stage2Steps = generationConfiguration.Stage2Steps()
+        self.stage2Cfg = generationConfiguration.Stage2Cfg()
+        self.stage2Shift = generationConfiguration.Stage2Shift()
+        self.tiledDecoding = generationConfiguration.TiledDecoding()
+        self.decodingTileWidth = generationConfiguration.DecodingTileWidth()
+        self.decodingTileHeight = generationConfiguration.DecodingTileHeight()
+        self.decodingTileOverlap = generationConfiguration.DecodingTileOverlap()
+        self.stochasticSamplingGamma = generationConfiguration.StochasticSamplingGamma()
+        self.preserveOriginalAfterInpaint = generationConfiguration.PreserveOriginalAfterInpaint()
+        self.tiledDiffusion = generationConfiguration.TiledDiffusion()
+        self.diffusionTileWidth = generationConfiguration.DiffusionTileWidth()
+        self.diffusionTileHeight = generationConfiguration.DiffusionTileHeight()
+        self.diffusionTileOverlap = generationConfiguration.DiffusionTileOverlap()
+        self.upscalerScaleFactor = generationConfiguration.UpscalerScaleFactor()
+        self.t5TextEncoder = generationConfiguration.T5TextEncoder()
+        self.separateClipL = generationConfiguration.SeparateClipL()
+        self.clipLText = generationConfiguration.ClipLText()
+        self.separateOpenClipG = generationConfiguration.SeparateOpenClipG()
+        self.openClipGText = generationConfiguration.OpenClipGText()
+        self.speedUpWithGuidanceEmbed = generationConfiguration.SpeedUpWithGuidanceEmbed()
+        self.guidanceEmbed = generationConfiguration.GuidanceEmbed()
+        self.resolutionDependentShift = generationConfiguration.ResolutionDependentShift()
+        self.teaCacheStart = generationConfiguration.TeaCacheStart()
+        self.teaCacheEnd = generationConfiguration.TeaCacheEnd()
+        self.teaCacheThreshold = generationConfiguration.TeaCacheThreshold()
+        self.teaCache = generationConfiguration.TeaCache()
+        self.separateT5 = generationConfiguration.SeparateT5()
+        self.t5Text = generationConfiguration.T5Text()
+        self.teaCacheMaxSkipSteps = generationConfiguration.TeaCacheMaxSkipSteps()
+        self.causalInferenceEnabled = generationConfiguration.CausalInferenceEnabled()
+        self.causalInference = generationConfiguration.CausalInference()
+
+    # GenerationConfigurationT
+    def Pack(self, builder):
+        if self.model is not None:
+            model = builder.CreateString(self.model)
+        if self.upscaler is not None:
+            upscaler = builder.CreateString(self.upscaler)
+        if self.controls is not None:
+            controlslist = []
+            for i in range(len(self.controls)):
+                controlslist.append(self.controls[i].Pack(builder))
+            GenerationConfigurationStartControlsVector(builder, len(self.controls))
+            for i in reversed(range(len(self.controls))):
+                builder.PrependUOffsetTRelative(controlslist[i])
+            controls = builder.EndVector()
+        if self.loras is not None:
+            loraslist = []
+            for i in range(len(self.loras)):
+                loraslist.append(self.loras[i].Pack(builder))
+            GenerationConfigurationStartLorasVector(builder, len(self.loras))
+            for i in reversed(range(len(self.loras))):
+                builder.PrependUOffsetTRelative(loraslist[i])
+            loras = builder.EndVector()
+        if self.faceRestoration is not None:
+            faceRestoration = builder.CreateString(self.faceRestoration)
+        if self.refinerModel is not None:
+            refinerModel = builder.CreateString(self.refinerModel)
+        if self.name is not None:
+            name = builder.CreateString(self.name)
+        if self.clipLText is not None:
+            clipLText = builder.CreateString(self.clipLText)
+        if self.openClipGText is not None:
+            openClipGText = builder.CreateString(self.openClipGText)
+        if self.t5Text is not None:
+            t5Text = builder.CreateString(self.t5Text)
+        GenerationConfigurationStart(builder)
+        GenerationConfigurationAddId(builder, self.id)
+        GenerationConfigurationAddStartWidth(builder, self.startWidth)
+        GenerationConfigurationAddStartHeight(builder, self.startHeight)
+        GenerationConfigurationAddSeed(builder, self.seed)
+        GenerationConfigurationAddSteps(builder, self.steps)
+        GenerationConfigurationAddGuidanceScale(builder, self.guidanceScale)
+        GenerationConfigurationAddStrength(builder, self.strength)
+        if self.model is not None:
+            GenerationConfigurationAddModel(builder, model)
+        GenerationConfigurationAddSampler(builder, self.sampler)
+        GenerationConfigurationAddBatchCount(builder, self.batchCount)
+        GenerationConfigurationAddBatchSize(builder, self.batchSize)
+        GenerationConfigurationAddHiresFix(builder, self.hiresFix)
+        GenerationConfigurationAddHiresFixStartWidth(builder, self.hiresFixStartWidth)
+        GenerationConfigurationAddHiresFixStartHeight(builder, self.hiresFixStartHeight)
+        GenerationConfigurationAddHiresFixStrength(builder, self.hiresFixStrength)
+        if self.upscaler is not None:
+            GenerationConfigurationAddUpscaler(builder, upscaler)
+        GenerationConfigurationAddImageGuidanceScale(builder, self.imageGuidanceScale)
+        GenerationConfigurationAddSeedMode(builder, self.seedMode)
+        GenerationConfigurationAddClipSkip(builder, self.clipSkip)
+        if self.controls is not None:
+            GenerationConfigurationAddControls(builder, controls)
+        if self.loras is not None:
+            GenerationConfigurationAddLoras(builder, loras)
+        GenerationConfigurationAddMaskBlur(builder, self.maskBlur)
+        if self.faceRestoration is not None:
+            GenerationConfigurationAddFaceRestoration(builder, faceRestoration)
+        GenerationConfigurationAddClipWeight(builder, self.clipWeight)
+        GenerationConfigurationAddNegativePromptForImagePrior(builder, self.negativePromptForImagePrior)
+        GenerationConfigurationAddImagePriorSteps(builder, self.imagePriorSteps)
+        if self.refinerModel is not None:
+            GenerationConfigurationAddRefinerModel(builder, refinerModel)
+        GenerationConfigurationAddOriginalImageHeight(builder, self.originalImageHeight)
+        GenerationConfigurationAddOriginalImageWidth(builder, self.originalImageWidth)
+        GenerationConfigurationAddCropTop(builder, self.cropTop)
+        GenerationConfigurationAddCropLeft(builder, self.cropLeft)
+        GenerationConfigurationAddTargetImageHeight(builder, self.targetImageHeight)
+        GenerationConfigurationAddTargetImageWidth(builder, self.targetImageWidth)
+        GenerationConfigurationAddAestheticScore(builder, self.aestheticScore)
+        GenerationConfigurationAddNegativeAestheticScore(builder, self.negativeAestheticScore)
+        GenerationConfigurationAddZeroNegativePrompt(builder, self.zeroNegativePrompt)
+        GenerationConfigurationAddRefinerStart(builder, self.refinerStart)
+        GenerationConfigurationAddNegativeOriginalImageHeight(builder, self.negativeOriginalImageHeight)
+        GenerationConfigurationAddNegativeOriginalImageWidth(builder, self.negativeOriginalImageWidth)
+        if self.name is not None:
+            GenerationConfigurationAddName(builder, name)
+        GenerationConfigurationAddFpsId(builder, self.fpsId)
+        GenerationConfigurationAddMotionBucketId(builder, self.motionBucketId)
+        GenerationConfigurationAddCondAug(builder, self.condAug)
+        GenerationConfigurationAddStartFrameCfg(builder, self.startFrameCfg)
+        GenerationConfigurationAddNumFrames(builder, self.numFrames)
+        GenerationConfigurationAddMaskBlurOutset(builder, self.maskBlurOutset)
+        GenerationConfigurationAddSharpness(builder, self.sharpness)
+        GenerationConfigurationAddShift(builder, self.shift)
+        GenerationConfigurationAddStage2Steps(builder, self.stage2Steps)
+        GenerationConfigurationAddStage2Cfg(builder, self.stage2Cfg)
+        GenerationConfigurationAddStage2Shift(builder, self.stage2Shift)
+        GenerationConfigurationAddTiledDecoding(builder, self.tiledDecoding)
+        GenerationConfigurationAddDecodingTileWidth(builder, self.decodingTileWidth)
+        GenerationConfigurationAddDecodingTileHeight(builder, self.decodingTileHeight)
+        GenerationConfigurationAddDecodingTileOverlap(builder, self.decodingTileOverlap)
+        GenerationConfigurationAddStochasticSamplingGamma(builder, self.stochasticSamplingGamma)
+        GenerationConfigurationAddPreserveOriginalAfterInpaint(builder, self.preserveOriginalAfterInpaint)
+        GenerationConfigurationAddTiledDiffusion(builder, self.tiledDiffusion)
+        GenerationConfigurationAddDiffusionTileWidth(builder, self.diffusionTileWidth)
+        GenerationConfigurationAddDiffusionTileHeight(builder, self.diffusionTileHeight)
+        GenerationConfigurationAddDiffusionTileOverlap(builder, self.diffusionTileOverlap)
+        GenerationConfigurationAddUpscalerScaleFactor(builder, self.upscalerScaleFactor)
+        GenerationConfigurationAddT5TextEncoder(builder, self.t5TextEncoder)
+        GenerationConfigurationAddSeparateClipL(builder, self.separateClipL)
+        if self.clipLText is not None:
+            GenerationConfigurationAddClipLText(builder, clipLText)
+        GenerationConfigurationAddSeparateOpenClipG(builder, self.separateOpenClipG)
+        if self.openClipGText is not None:
+            GenerationConfigurationAddOpenClipGText(builder, openClipGText)
+        GenerationConfigurationAddSpeedUpWithGuidanceEmbed(builder, self.speedUpWithGuidanceEmbed)
+        GenerationConfigurationAddGuidanceEmbed(builder, self.guidanceEmbed)
+        GenerationConfigurationAddResolutionDependentShift(builder, self.resolutionDependentShift)
+        GenerationConfigurationAddTeaCacheStart(builder, self.teaCacheStart)
+        GenerationConfigurationAddTeaCacheEnd(builder, self.teaCacheEnd)
+        GenerationConfigurationAddTeaCacheThreshold(builder, self.teaCacheThreshold)
+        GenerationConfigurationAddTeaCache(builder, self.teaCache)
+        GenerationConfigurationAddSeparateT5(builder, self.separateT5)
+        if self.t5Text is not None:
+            GenerationConfigurationAddT5Text(builder, t5Text)
+        GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, self.teaCacheMaxSkipSteps)
+        GenerationConfigurationAddCausalInferenceEnabled(builder, self.causalInferenceEnabled)
+        GenerationConfigurationAddCausalInference(builder, self.causalInference)
+        generationConfiguration = GenerationConfigurationEnd(builder)
+        return generationConfiguration

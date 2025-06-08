@@ -18,12 +18,6 @@ app.registerExtension({
             }
         }
     },
-
-    loadedGraphNode: (node) => {
-        if (dtModelNodeTypes.includes(node?.comfyClass)) {
-            node?.saveSelectedModels();
-        }
-    },
 });
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -55,7 +49,20 @@ const dtModelNodeProto = {
     },
     onConfigure(serialised) {
         this._lastSelectedModel = serialised._lastSelectedModel || {};
-    }
+
+        for (const widget of this.widgets.filter((w) => w.options?.modelType)) {
+            if (widget.value?.toString() === "[object Object]") {
+                const value = {
+                    ...widget.value,
+                    toString() {
+                        return this.value.name;
+                    },
+                };
+                widget.setValue(value);
+            }
+        }
+    },
+
 };
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -67,8 +74,6 @@ const dtServerNodeProto = {
 
         const portWidget = this.widgets.find((w) => w.name === "port");
         if (portWidget) setCallback(portWidget, "callback", () => updateNodeModels(this));
-
-        console.log("added with " + serverWidget.value);
     },
 
     onConfigure() {

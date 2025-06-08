@@ -198,7 +198,6 @@ function getMenuItem(model, disabled) {
         // slot?: IFoundSlot;
         // callback(this: ContextMenuDivElement<TValue>, value?: TCallbackValue, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu<TValue>, extra?: TExtra) {
         callback(...args) {
-            console.log(args);
             return false;
         },
     };
