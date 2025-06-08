@@ -24,11 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "co
 from server import PromptServer
 from aiohttp import web
 
-try:
-    with open('./custom_nodes/ComfyUI-DrawThings-gRPC/resources/root_ca.crt', 'rb') as cert:
-        credentials = grpc.ssl_channel_credentials(cert.read())
-except:
-    credentials = None
+from .credentials import credentials
 
 def get_channel(server, port, use_tls):
     if use_tls and credentials is not None:
