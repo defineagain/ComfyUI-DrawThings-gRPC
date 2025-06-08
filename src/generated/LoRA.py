@@ -61,3 +61,46 @@ def LoRAEnd(builder):
 
 def End(builder):
     return LoRAEnd(builder)
+
+
+class LoRAT(object):
+
+    # LoRAT
+    def __init__(self):
+        self.file = None  # type: str
+        self.weight = 0.6  # type: float
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        loRa = LoRA()
+        loRa.Init(buf, pos)
+        return cls.InitFromObj(loRa)
+
+    @classmethod
+    def InitFromPackedBuf(cls, buf, pos=0):
+        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, pos)
+        return cls.InitFromBuf(buf, pos+n)
+
+    @classmethod
+    def InitFromObj(cls, loRa):
+        x = LoRAT()
+        x._UnPack(loRa)
+        return x
+
+    # LoRAT
+    def _UnPack(self, loRa):
+        if loRa is None:
+            return
+        self.file = loRa.File()
+        self.weight = loRa.Weight()
+
+    # LoRAT
+    def Pack(self, builder):
+        if self.file is not None:
+            file = builder.CreateString(self.file)
+        LoRAStart(builder)
+        if self.file is not None:
+            LoRAAddFile(builder, file)
+        LoRAAddWeight(builder, self.weight)
+        loRa = LoRAEnd(builder)
+        return loRa

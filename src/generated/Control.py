@@ -184,3 +184,86 @@ def ControlEnd(builder):
 
 def End(builder):
     return ControlEnd(builder)
+
+try:
+    from typing import List
+except:
+    pass
+
+class ControlT(object):
+
+    # ControlT
+    def __init__(self):
+        self.file = None  # type: str
+        self.weight = 1.0  # type: float
+        self.guidanceStart = 0.0  # type: float
+        self.guidanceEnd = 1.0  # type: float
+        self.noPrompt = False  # type: bool
+        self.globalAveragePooling = True  # type: bool
+        self.downSamplingRate = 1.0  # type: float
+        self.controlMode = 0  # type: int
+        self.targetBlocks = None  # type: List[str]
+        self.inputOverride = 0  # type: int
+
+    @classmethod
+    def InitFromBuf(cls, buf, pos):
+        control = Control()
+        control.Init(buf, pos)
+        return cls.InitFromObj(control)
+
+    @classmethod
+    def InitFromPackedBuf(cls, buf, pos=0):
+        n = flatbuffers.encode.Get(flatbuffers.packer.uoffset, buf, pos)
+        return cls.InitFromBuf(buf, pos+n)
+
+    @classmethod
+    def InitFromObj(cls, control):
+        x = ControlT()
+        x._UnPack(control)
+        return x
+
+    # ControlT
+    def _UnPack(self, control):
+        if control is None:
+            return
+        self.file = control.File()
+        self.weight = control.Weight()
+        self.guidanceStart = control.GuidanceStart()
+        self.guidanceEnd = control.GuidanceEnd()
+        self.noPrompt = control.NoPrompt()
+        self.globalAveragePooling = control.GlobalAveragePooling()
+        self.downSamplingRate = control.DownSamplingRate()
+        self.controlMode = control.ControlMode()
+        if not control.TargetBlocksIsNone():
+            self.targetBlocks = []
+            for i in range(control.TargetBlocksLength()):
+                self.targetBlocks.append(control.TargetBlocks(i))
+        self.inputOverride = control.InputOverride()
+
+    # ControlT
+    def Pack(self, builder):
+        if self.file is not None:
+            file = builder.CreateString(self.file)
+        if self.targetBlocks is not None:
+            targetBlockslist = []
+            for i in range(len(self.targetBlocks)):
+                targetBlockslist.append(builder.CreateString(self.targetBlocks[i]))
+            ControlStartTargetBlocksVector(builder, len(self.targetBlocks))
+            for i in reversed(range(len(self.targetBlocks))):
+                builder.PrependUOffsetTRelative(targetBlockslist[i])
+            targetBlocks = builder.EndVector()
+        ControlStart(builder)
+        if self.file is not None:
+            ControlAddFile(builder, file)
+        ControlAddWeight(builder, self.weight)
+        ControlAddGuidanceStart(builder, self.guidanceStart)
+        ControlAddGuidanceEnd(builder, self.guidanceEnd)
+        ControlAddNoPrompt(builder, self.noPrompt)
+        ControlAddGlobalAveragePooling(builder, self.globalAveragePooling)
+        ControlAddDownSamplingRate(builder, self.downSamplingRate)
+        ControlAddControlMode(builder, self.controlMode)
+        if self.targetBlocks is not None:
+            ControlAddTargetBlocks(builder, targetBlocks)
+        ControlAddInputOverride(builder, self.inputOverride)
+        control = ControlEnd(builder)
+        return control
