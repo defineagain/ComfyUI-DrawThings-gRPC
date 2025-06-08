@@ -11,10 +11,11 @@ import grpc
 import flatbuffers
 import json
 from google.protobuf.json_format import MessageToJson
+
 from .generated import imageService_pb2, imageService_pb2_grpc
-from .generated import Control
-from .generated import LoRA
-from .generated import GenerationConfiguration
+from .generated import Control, GenerationConfiguration, LoRA
+
+
 from .data_types import *
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 

@@ -164,7 +164,6 @@ class GenerationConfiguration(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from Control import Control
             obj = Control()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -189,7 +188,6 @@ class GenerationConfiguration(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from LoRA import LoRA
             obj = LoRA()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -599,8 +597,22 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
         return 3
 
+    # GenerationConfiguration
+    def CausalInferenceEnabled(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(162))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
+    # GenerationConfiguration
+    def CausalInference(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(164))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 3
+
 def GenerationConfigurationStart(builder):
-    builder.StartObject(79)
+    builder.StartObject(81)
 
 def Start(builder):
     GenerationConfigurationStart(builder)
@@ -1078,6 +1090,18 @@ def GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps
 
 def AddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps):
     GenerationConfigurationAddTeaCacheMaxSkipSteps(builder, teaCacheMaxSkipSteps)
+
+def GenerationConfigurationAddCausalInferenceEnabled(builder, causalInferenceEnabled):
+    builder.PrependBoolSlot(79, causalInferenceEnabled, 0)
+
+def AddCausalInferenceEnabled(builder, causalInferenceEnabled):
+    GenerationConfigurationAddCausalInferenceEnabled(builder, causalInferenceEnabled)
+
+def GenerationConfigurationAddCausalInference(builder, causalInference):
+    builder.PrependInt32Slot(80, causalInference, 3)
+
+def AddCausalInference(builder, causalInference):
+    GenerationConfigurationAddCausalInference(builder, causalInference)
 
 def GenerationConfigurationEnd(builder):
     return builder.EndObject()
