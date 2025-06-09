@@ -28,6 +28,7 @@ const advancedWidgets = [
     "motion_scale",
     "guiding_frame_noise",
     "start_frame_guidance",
+    "causal_inference",
     // zero neg
     // sep clip
     "clip_skip",
@@ -81,19 +82,23 @@ function doesInputWithNameExist(node, name) {
 }
 
 /**
- * Adds _isHidden property to an input slot and changes the pos property to return
- * the "collapsed position" if the slot is hidden
+ * this replace the .pos property on input slots with a getter that returns its
+ * normal position only if its associated widget is not hidden. if its widget is
+ * hidden, it returns the collapsedPos instead
  * @param {INodeInputSlot?} input
+ * @param {LGraphNode} node
  */
-function updateInput(input) {
-    if (!input) return;
-    if (input._isHidden === undefined) {
-        input._isHidden = false;
+function updateInput(input, node) {
+    if (!input || !input.widget || !node) return;
+    if (input._origPos === undefined) {
         input._origPos = input.pos;
+        // input._isHidden = false;
+
+        const widget = node.getWidgetFromSlot(input)
 
         Object.defineProperty(input, "pos", {
             get() {
-                if (input._isHidden) {
+                if (widget?.type?.startsWith("hidden")) {
                     return this.collapsedPos;
                 } else {
                     return input._origPos;
@@ -120,12 +125,6 @@ function showWidget(node, widgetName, show = false, suffix = "") {
 
     const isVisible = !widget.type.startsWith("hidden");
     if (isVisible === show) return;
-
-    const input = node.getSlotFromWidget(widget);
-    if (input) {
-        updateInput(input);
-        input._isHidden = !show;
-    }
 
     widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
     widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
@@ -216,15 +215,11 @@ function updateSamplerWidgets(node) {
         const isSvd = ["svd_i2v"].includes(version);
         showWidgets(node, isSvd, "fps", "motion_scale", "guiding_frame_noise", "start_frame_guidance");
 
-        // case "res_dpt_shift":
-        //     if (widget.value == true) {
-        //         const height = findWidgetByName(node, "height").value;
-        //         const width = findWidgetByName(node, "width").value;
-        //         findWidgetByName(node, "shift").value = calcShift(height, width);
-        //     }
-        //     findWidgetByName(node, "shift").disabled = widget.value;
-        //     break;
+        // causal_inference (just for wan I think)
+        const causalInferenceAvailable = ["wan_v2.1_1.3b", "wan_v2.1_14b"].includes(version);
+        showWidget(node, "causal_inference", causalInferenceAvailable);
 
+        // high res fix
         const hiResFixEnabled = findWidgetByName(node, "high_res_fix")?.value;
         showWidgets(
             node,
@@ -234,9 +229,11 @@ function updateSamplerWidgets(node) {
             "high_res_fix_strength"
         );
 
+        // tiled decoding
         const tiledDecodingEnabled = findWidgetByName(node, "tiled_decoding")?.value;
         showWidgets(node, tiledDecodingEnabled, "decoding_tile_width", "decoding_tile_height", "decoding_tile_overlap");
 
+        // tiled diffusion
         const tiledDiffusionEnabled = findWidgetByName(node, "tiled_diffusion")?.value;
         showWidgets(
             node,
@@ -287,6 +284,9 @@ const samplerWidgetsProto = {
     },
     onConfigure(data) {
         updateSamplerWidgets(this);
+    },
+    onInputAdded(input) {
+        if (input.widget) updateInput(input, this)
     },
     onWidgetChanged(name, value, old_Value, widget) {
         updateSamplerWidgets(this, widget);
