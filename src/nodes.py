@@ -101,6 +101,7 @@ async def dt_sampler(
                 motion_scale,
                 guiding_frame_noise,
                 start_frame_guidance,
+                causal_inference: int,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -225,6 +226,9 @@ async def dt_sampler(
     GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
     GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
     GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
+    if causal_inference:
+        GenerationConfiguration.AddCausalInferenceEnabled(builder, True)
+        GenerationConfiguration.AddCausalInference(builder, causal_inference)
     GenerationConfiguration.AddBatchSize(builder, batch_size)
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
@@ -514,6 +518,8 @@ class DrawThingsSampler:
                 "motion_scale": ("INT", {"default": 127, "min": 0, "max": 255, "step": 1}),
                 "guiding_frame_noise": ("FLOAT", {"default": 0.02, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
                 "start_frame_guidance": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 25.0, "step": 0.1, "round": 0.1}),
+                "causal_inference": ("INT", {"default": 0, "min": 0, "max": 129, "step": 1, "tooltip": "Set to 0 to disable causal inference"}),
+
                 # zero neg
                 # sep clip
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
@@ -595,6 +601,7 @@ class DrawThingsSampler:
                 motion_scale,
                 guiding_frame_noise,
                 start_frame_guidance,
+                causal_inference,
                 clip_skip,
                 sharpness,
                 mask_blur,
@@ -656,6 +663,7 @@ class DrawThingsSampler:
                 motion_scale,
                 guiding_frame_noise,
                 start_frame_guidance,
+                causal_inference,
                 clip_skip,
                 sharpness,
                 mask_blur,

@@ -28,6 +28,7 @@ const advancedWidgets = [
     "motion_scale",
     "guiding_frame_noise",
     "start_frame_guidance",
+    "causal_inference",
     // zero neg
     // sep clip
     "clip_skip",
@@ -213,6 +214,10 @@ function updateSamplerWidgets(node) {
         // svd
         const isSvd = ["svd_i2v"].includes(version);
         showWidgets(node, isSvd, "fps", "motion_scale", "guiding_frame_noise", "start_frame_guidance");
+
+        // causal_inference (just for wan I think)
+        const causalInferenceAvailable = ["wan_v2.1_1.3b", "wan_v2.1_14b"].includes(version);
+        showWidget(node, "causal_inference", causalInferenceAvailable);
 
         // high res fix
         const hiResFixEnabled = findWidgetByName(node, "high_res_fix")?.value;
