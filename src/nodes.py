@@ -391,12 +391,15 @@ async def dt_sampler(
             generated_images = response.generatedImages
 
             if current_step:
-                x0 = None
-                if preview_image:
-                    model_version = model["version"]
-                    if model_version:
-                        x0 = decode_preview(preview_image, model_version)
-                prepare_callback(current_step, steps, x0)
+                try:
+                    x0 = None
+                    if preview_image:
+                        model_version = model["version"]
+                        if model_version:
+                            x0 = decode_preview(preview_image, model_version)
+                    prepare_callback(current_step, steps, x0)
+                except Exception as e:
+                    print('DrawThings-gRPC had an error decoding the preview image:', e)
 
             if generated_images:
                 response_images.extend(generated_images)
