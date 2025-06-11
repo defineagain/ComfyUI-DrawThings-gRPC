@@ -127,13 +127,17 @@ export async function updateNodeModels(node, updateDisconnected = false) {
 
         updateModelWidgets(dtNode, modelInfo);
 
-        const inputs = dtNode.inputs.filter((i) => i.type.startsWith("DT_"));
+        const inputs = dtNode.inputs.filter(isDtModelInput);
         for (const input of inputs) {
             const slot = dtNode.findInputSlot(input.name);
             const inputNode = dtNode.getInputNode(slot);
             updateInputs(inputNode);
         }
     }
+}
+
+function isDtModelInput(input) {
+    return typeof input?.type === 'string' && input.type.startsWith("DT_");
 }
 
 /** @param node {LGraphNode}; @param models {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} */
