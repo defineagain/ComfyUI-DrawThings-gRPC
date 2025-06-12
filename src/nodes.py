@@ -495,8 +495,8 @@ class DrawThingsSampler:
                 "server": ("STRING", {"multiline": False, "default": DrawThingsLists.dtserver, "tooltip": "The IP address of the Draw Things gRPC Server."}),
                 "port": ("STRING", {"multiline": False, "default": DrawThingsLists.dtport, "tooltip": "The port that the Draw Things gRPC Server is listening on."}),
                 "use_tls": ("BOOLEAN", {"default": True}),
-                "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
 
+                "model": ("DT_MODEL", {"model_type": "models", "tooltip": "The model used for denoising the input latent."}),
                 "strength": ("FLOAT", {"default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)."}),
                 "seed": ("INT", {"default": 0, "min": -1, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise."}),
                 "seed_mode": (DrawThingsLists.seed_mode, {"default": "ScaleAlike"}),
@@ -511,6 +511,7 @@ class DrawThingsSampler:
                 "guidance_embed": ("FLOAT", {"default": 4.5, "min": 0, "max": 50, "step": 0.1}),
 
                 "sampler_name": (DrawThingsLists.sampler_list, {"default": "DPM++ 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."}),
+                # stochastic_sampling_gamma
 
                 "res_dpt_shift": ("BOOLEAN", {"default": True}),
 
@@ -523,14 +524,13 @@ class DrawThingsSampler:
                 "start_frame_guidance": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 25.0, "step": 0.1, "round": 0.1}),
                 "causal_inference": ("INT", {"default": 0, "min": 0, "max": 129, "step": 1, "tooltip": "Set to 0 to disable causal inference"}),
 
-                # zero neg
-                # sep clip
+                # zero_negative_prompt
                 "clip_skip": ("INT", {"default": 1, "min": 1, "max": 23, "step": 1}),
                 "sharpness": ("FLOAT", {"default": 0.6, "min": 0.0, "max": 30.0, "step": 0.1, "round": 0.1}),
                 "mask_blur": ("FLOAT", {"default": 1.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.1}),
                 "mask_blur_outset": ("INT", {"default": 0, "min": -100, "max": 1000, "step": 1}),
                 "preserve_original": ("BOOLEAN", {"default": True}),
-                # face restore
+                # face_restoration
 
                 "high_res_fix": ("BOOLEAN", {"default": False}),
                 "high_res_fix_start_width": ("INT", {"default": 448, "min": 128, "max": 2048, "step": 64}),
@@ -559,6 +559,26 @@ class DrawThingsSampler:
                 "open_clip_g_text": ("STRING", {"forceInput": False } ),
 
                 # ti embed
+                # image_guidance_scale
+                # decode_with_attention
+                # hires_fix_decode_with_attention
+                # clip_weight
+                # negative_prompt_for_image_prior
+                # image_prior_steps
+
+                # sdxl img size !!!
+
+                # aesthetic_score
+                # negative_aesthetic_score
+                # name ???
+                # cond_aug ???
+                # stage_2_steps
+                # stage_2_cfg
+                # stage_2_shift
+                # t5_text_encoder
+                # separate_t5
+                # t5_text
+
             },
             "hidden": {
                 "scale_factor": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
