@@ -109,3 +109,9 @@ package.json
 yarn.lock
 
 notes.md
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
