@@ -3,6 +3,8 @@ import { DtModelTypeHandler } from "./models.js"
 import { updateProto, getWidgetName } from "./util.js"
 import { findPropertyJson } from "./configProperties.js"
 
+const nodePackVersion = "1.1.1"
+
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"]
 
@@ -22,6 +24,13 @@ app.registerExtension({
             updateProto(nodeType, promptProto)
         }
     },
+
+    beforeConfigureGraph: function (graph) {
+        const samplerNodes = graph.nodes.filter(n => n.type === "DrawThingsSampler")
+        if (samplerNodes.some(n => n.nodePackVersion !== nodePackVersion)) {
+            console.log("Nodes in workflow are from different version of ComfyUI-DrawThings-gRPC")
+        }
+    }
 })
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -42,6 +51,10 @@ const samplerProto = {
     onMouseDown(e, pos, canvas) {
         // this exists for easier debugging in devtools
         console.debug("Click!", this)
+    },
+
+    onSerialize(serialised) {
+        serialised.nodePackVersion = nodePackVersion
     },
 
     getExtraMenuOptions(canvas, options) {
