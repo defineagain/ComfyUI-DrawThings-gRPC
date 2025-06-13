@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js"
 import { DtModelTypeHandler } from "./models.js"
-import { updateProto, getWidgetName } from "./util.js"
-import { findPropertyJson } from "./configProperties.js"
+import { updateProto } from "./util.js"
+import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
 const nodePackVersion = "1.1.1"
 
@@ -67,23 +67,17 @@ const samplerProto = {
                     navigator.clipboard.readText().then(async (text) => {
                         try {
                             const config = JSON.parse(text)
-
                             for (const [k, v] of Object.entries(config)) {
                                 const prop = findPropertyJson(k)
-
                                 if (!prop) {
                                     console.log('unknown prop in config:', k)
                                     continue
                                 }
-
                                 const name = prop?.python
                                 const widget = this.widgets.find((w) => w.name === name)
-
                                 await prop.import(k, v, widget, this, config)
                             }
-
-                            this.updateDynamicWidgets?.();
-
+                            this.updateDynamicWidgets?.()
                         } catch (e) {
                             alert("Failed to parse Draw Things config from clipboard\n\n" + e)
                             console.warn(e)
@@ -91,26 +85,21 @@ const samplerProto = {
                     })
                 },
             },
-            // {
-            //     content: "Copy Draw Things config",
-            //     callback: () => {
-            //         const config = {};
-            //         for (const w of this.widgets) {
-            //             if (["settings", "server", "port", "use_tls"].includes(w.name)) continue;
-
-            //             if (w.name === "model") {
-            //                 config[w.name] = w.value?.value?.file;
-            //                 continue;
-            //             }
-
-            //             const propertyName = getDTPropertyName(w.name)
-            //             config[propertyName ?? w.name] = w.value;
-            //         }
-            //         config.loras = []
-            //         config.control = []
-            //         navigator.clipboard.writeText(JSON.stringify(config));
-            //     },
-            // },
+            {
+                content: "Copy Draw Things config",
+                callback: () => {
+                    const config = {}
+                    for (const w of this.widgets) {
+                        const prop = findPropertyPython(w.name)
+                        if (!prop)
+                            continue
+                        prop.export(w, this, config)
+                    }
+                    config.loras = []
+                    config.control = []
+                    navigator.clipboard.writeText(JSON.stringify(config))
+                },
+            },
             {
                 content: (keepNodeShrunk ? "✓ " : "") + "Keep node shrunk when widgets change",
                 callback: async () => {
