@@ -64,7 +64,7 @@ const advancedWidgets = [
 let origProps = {};
 
 // From flux-auto-workflow.js
-function calcShift(h, w) {
+export function calcShift(h, w) {
     const step1 = (h * w) / 256;
     const step2 = (1.15 - 0.5) / (4096 - 256);
     const step3 = (step1 - 256) * step2;
@@ -279,17 +279,20 @@ app.registerExtension({
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
 const samplerWidgetsProto = {
+    updateDynamicWidgets() {
+        updateSamplerWidgets(this)
+    },
     onNodeCreated() {
-        updateSamplerWidgets(this);
+        this.updateDynamicWidgets();
     },
     onConfigure(data) {
-        updateSamplerWidgets(this);
+        this.updateDynamicWidgets()
     },
     onInputAdded(input) {
         if (input.widget) updateInput(input, this)
     },
     onWidgetChanged(name, value, old_Value, widget) {
-        updateSamplerWidgets(this, widget);
+        this.updateDynamicWidgets();
 
         if (name === "res_dpt_shift") {
             const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1"].includes(this.getModelVersion());

@@ -51,32 +51,28 @@ const samplerProto = {
             {
                 content: "Paste Draw Things config",
                 callback: () => {
-                    navigator.clipboard.readText().then((text) => {
+                    navigator.clipboard.readText().then(async (text) => {
                         try {
-                            for (const [k, v] of Object.entries(JSON.parse(text))) {
+                            const config = JSON.parse(text)
+
+                            for (const [k, v] of Object.entries(config)) {
                                 const prop = findPropertyJson(k)
+
+                                if (!prop) {
+                                    console.log('unknown prop in config:', k)
+                                    continue
+                                }
+
                                 const name = prop?.python
-                                if (!name) {
-                                    console.log("couldn't find property", k)
-                                    continue
-                                }
+                                const widget = this.widgets.find((w) => w.name === name)
 
-                                const w = this.widgets.find((w) => w.name === name)
-                                if (!w) {
-                                    console.log("couldn't find widget for property", name)
-                                    continue
-                                }
-
-                                if (k === "sampler") w.value = samplers[v]
-                                else if (name === "model") {
-                                    const model = w.options.values.find((val) => val?.value?.file === v)
-                                    if (model) w.value = model
-                                    else w.value = w.options.values[0]
-                                } else if (name === "seed_mode") w.value = seedModes[v]
-                                else w.value = v
+                                await prop.import(k, v, widget, this, config)
                             }
+
+                            this.updateDynamicWidgets?.();
+
                         } catch (e) {
-                            alert("Failed to parse Draw Things config from clipboard")
+                            alert("Failed to parse Draw Things config from clipboard\n\n" + e)
                             console.warn(e)
                         }
                     })
@@ -156,6 +152,6 @@ export const samplers = [
     "DDIM Trailing",
 ]
 
-const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
+export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
 
 /** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

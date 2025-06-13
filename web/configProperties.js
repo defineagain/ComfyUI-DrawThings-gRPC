@@ -1,3 +1,7 @@
+import { updateNodeModels } from './models.js'
+import { samplers, seedModes } from './ComfyUI-DrawThings-gRPC.js'
+import { calcShift } from './widgets.js'
+
 const propertyData = [
     ['start_width', 'width', 'DrawThingsSampler', 'width'],
     ['start_height', 'height', 'DrawThingsSampler', 'height'],
@@ -104,75 +108,122 @@ function roundBy64(value) {
     return Math.round(value / 64) * 64
 }
 
-const converters = {
-    start_width: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+/** @type {Record<string, (key, value, widget: import('@comfyorg/litegraph').IWidget, node, config) => void>} */
+const importers = {
+    model: async (k, v, w, n, c) => {
+        await updateNodeModels(n)
+        const matchingOption = w?.options?.values?.find(ov => ov.value?.file === v)
+        if (matchingOption) w.value = matchingOption
     },
-    start_height: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    start_width: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    sampler: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    start_height: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    hires_fix_start_width: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    sampler: (k, v, w) => {
+        w.value = samplers[v]
     },
-    hires_fix_start_height: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    seed: (k, v, w, n) => {
+        if (typeof v === "number" && v >= 0) {
+            w.value = v
+            const controlWidget = n.widgets.find((w) => w.name === "control_after_generate")
+            if (controlWidget) controlWidget.value = "fixed"
+        }
     },
-    seed_mode: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    hires_fix_start_width: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    decoding_tile_width: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    hires_fix_start_height: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    decoding_tile_height: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    seed_mode: (k, v, w) => {
+        if (w && seedModes[v]) w.value = seedModes[v]
     },
-    decoding_tile_overlap: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    decoding_tile_width: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    diffusion_tile_width: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    decoding_tile_height: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    diffusion_tile_height: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    decoding_tile_overlap: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    diffusion_tile_overlap: {
-        toComfy: roundBy64,
-        toJson: roundBy64
+    diffusion_tile_width: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    guidance_embed: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    diffusion_tile_height: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    resolution_dependent_shift: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    diffusion_tile_overlap: (k, v, w) => {
+        if (w) w.value = roundBy64(v)
     },
-    causal_inference_enabled: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    guidance_embed: (k, v, w, n, c) => {
+        if (w) w.value = v
     },
-    causal_inference: {
-        toComfy: (value, ctx) => 0,
-        toJson: (value, ctx) => 0
+    resolution_dependent_shift: (k, v, w, n, c) => {
+        if (w) w.value = v
+        if (v) {
+            const shiftWidget = n.widgets.find((w) => w.name === "shift")
+            const width = c.width || n.widgets.find((w) => w.name === "width")?.value
+            const height = c.height || n.widgets.find((w) => w.name === "height")?.value
+            if (shiftWidget && width && height) shiftWidget.value = calcShift(width, height)
+        }
+    },
+    causal_inference: (k, v, w, n, c) => {
+        // only set if enabled in the config
+        if (w && typeof v === 'number') w.value = v * 4 - 3
     },
 }
 
+const exporters = {
+    start_width: {},
+    start_height: {},
+    sampler: {},
+    hires_fix_start_width: {},
+    hires_fix_start_height: {},
+    seed_mode: {},
+    decoding_tile_width: {},
+    decoding_tile_height: {},
+    decoding_tile_overlap: {},
+    diffusion_tile_width: {},
+    diffusion_tile_height: {},
+    diffusion_tile_overlap: {},
+    guidance_embed: {},
+    resolution_dependent_shift: {},
+    causal_inference_enabled: {},
+    causal_inference: {},
+}
+
+class DTProperty {
+    constructor(fbs, python, node, json) {
+        this.fbs = fbs
+        this.python = python
+        this.node = node
+        this.json = json
+    }
+
+    customImport = undefined
+
+    async import(key, value, widget, node, config) {
+        if (this.customImport)
+            return await this.customImport(key, value, widget, node, config)
+        else {
+            if (widget)
+                widget.value = value
+        }
+
+    }
+}
+
 /** @type {DTProperty[]} */
-export const properties = propertyData.map(([fbs, python, node, json]) => ({ fbs, python, node, json }))
+export const properties = propertyData.map(([fbs, python, node, json]) => {
+
+    const prop = new DTProperty(fbs, python, node, json)
+    prop.customImport = importers[fbs]
+    prop.customExport = exporters[fbs]
+    return prop
+})
 
 export function findPropertyJson(name) {
     return properties.find(p => p.json === name)
