@@ -2,6 +2,7 @@ import { updateNodeModels } from './models.js'
 import { samplers, seedModes } from './ComfyUI-DrawThings-gRPC.js'
 import { calcShift } from './widgets.js'
 
+/** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
 const propertyData = [
     ['start_width', 'width', 'DrawThingsSampler', 'width'],
     ['start_height', 'height', 'DrawThingsSampler', 'height'],
@@ -55,10 +56,10 @@ const propertyData = [
     ['name', null, null, null],
 
     // check these
-    ['fps_id', null, null, null],
-    ['motion_bucket_id', null, null, null],
-    ['cond_aug', null, null, null],
-    ['start_frame_cfg', null, null, null],
+    ['fps_id', 'fps', 'DrawThingsSampler', 'fps'],
+    ['motion_bucket_id', 'motion_scale', 'DrawThingsSampler', 'motionScale'],
+    ['cond_aug', 'guiding_frame_noise', 'DrawThingsSampler', 'guidingFrameNoise'],
+    ['start_frame_cfg', 'start_frame_guidance', 'DrawThingsSampler', 'startFrameGuidance'],
 
     ['num_frames', 'num_frames', 'DrawThingsSampler', 'numFrames'],
     ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset'],
@@ -177,22 +178,34 @@ const importers = {
 }
 
 const exporters = {
-    start_width: {},
-    start_height: {},
-    sampler: {},
-    hires_fix_start_width: {},
-    hires_fix_start_height: {},
-    seed_mode: {},
-    decoding_tile_width: {},
-    decoding_tile_height: {},
-    decoding_tile_overlap: {},
-    diffusion_tile_width: {},
-    diffusion_tile_height: {},
-    diffusion_tile_overlap: {},
-    guidance_embed: {},
-    resolution_dependent_shift: {},
-    causal_inference_enabled: {},
-    causal_inference: {},
+    // start_width: {},
+    // start_height: {},
+    model: async (w, n, c) => {
+      if (w && w.value && w.value.value) c.model = w.value.value.file ?? w.value.value.name
+    },
+    sampler: (w, n, c) => {
+        if (w && typeof w.value === 'string') c.sampler = samplers.indexOf(w.value)
+    },
+    // hires_fix_start_width: {},
+    // hires_fix_start_height: {},
+    seed_mode: (w, n, c) => {
+        if (w && typeof w.value === 'string') c.seed_mode = seedModes.indexOf(w.value)
+    },
+    // decoding_tile_width: {},
+    // decoding_tile_height: {},
+    // decoding_tile_overlap: {},
+    // diffusion_tile_width: {},
+    // diffusion_tile_height: {},
+    // diffusion_tile_overlap: {},
+    // guidance_embed: (w, n, c) => {
+    // },
+    // resolution_dependent_shift: (w, n, c) => {
+    // },
+    // shift: (w, n, c) => {
+    // },
+    causal_inference: (w, n, c) => {
+        if (w && typeof w.value === 'number') c.causal_inference = (w.value + 3) / 4
+    },
 }
 
 class DTProperty {
@@ -204,21 +217,28 @@ class DTProperty {
     }
 
     customImport = undefined
+    customExport = undefined
 
-    async import(key, value, widget, node, config) {
+    async import(jsonKey, jsonValue, widget, node, config) {
         if (this.customImport)
-            return await this.customImport(key, value, widget, node, config)
+            return await this.customImport(jsonKey, jsonValue, widget, node, config)
         else {
             if (widget)
-                widget.value = value
+                widget.value = jsonValue
         }
+    }
 
+    async export(widget, node, config) {
+        if (this.customExport)
+            return await this.customExport(widget, node, config)
+        else {
+            if (this.json && widget && widget.value !== undefined) config[this.json] = widget.value
+        }
     }
 }
 
 /** @type {DTProperty[]} */
 export const properties = propertyData.map(([fbs, python, node, json]) => {
-
     const prop = new DTProperty(fbs, python, node, json)
     prop.customImport = importers[fbs]
     prop.customExport = exporters[fbs]
