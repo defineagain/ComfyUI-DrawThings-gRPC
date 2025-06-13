@@ -226,9 +226,12 @@ async def dt_sampler(
     GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
     GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
     GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
+
+    # causal_inference is (x + 3) / 4
     if causal_inference:
         GenerationConfiguration.AddCausalInferenceEnabled(builder, True)
-        GenerationConfiguration.AddCausalInference(builder, causal_inference)
+        GenerationConfiguration.AddCausalInference(builder, int((causal_inference + 3) / 4))
+
     GenerationConfiguration.AddBatchSize(builder, batch_size)
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
