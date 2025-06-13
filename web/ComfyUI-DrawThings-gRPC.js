@@ -3,7 +3,7 @@ import { DtModelTypeHandler } from "./models.js"
 import { updateProto } from "./util.js"
 import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
-const nodePackVersion = "1.1.1"
+const nodePackVersion = "1.1.2"
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"]
