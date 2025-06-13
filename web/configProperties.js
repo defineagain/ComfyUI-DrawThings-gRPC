@@ -2,6 +2,7 @@ import { updateNodeModels } from './models.js'
 import { samplers, seedModes } from './ComfyUI-DrawThings-gRPC.js'
 import { calcShift } from './widgets.js'
 
+/** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
 const propertyData = [
     ['start_width', 'width', 'DrawThingsSampler', 'width'],
     ['start_height', 'height', 'DrawThingsSampler', 'height'],
@@ -55,10 +56,10 @@ const propertyData = [
     ['name', null, null, null],
 
     // check these
-    ['fps_id', null, null, null],
-    ['motion_bucket_id', null, null, null],
-    ['cond_aug', null, null, null],
-    ['start_frame_cfg', null, null, null],
+    ['fps_id', 'fps', 'DrawThingsSampler', 'fps'],
+    ['motion_bucket_id', 'motion_scale', 'DrawThingsSampler', 'motionScale'],
+    ['cond_aug', 'guiding_frame_noise', 'DrawThingsSampler', 'guidingFrameNoise'],
+    ['start_frame_cfg', 'start_frame_guidance', 'DrawThingsSampler', 'startFrameGuidance'],
 
     ['num_frames', 'num_frames', 'DrawThingsSampler', 'numFrames'],
     ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset'],
