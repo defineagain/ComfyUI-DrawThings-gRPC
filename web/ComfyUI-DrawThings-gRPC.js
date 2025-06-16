@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js"
 import { DtModelTypeHandler } from "./models.js"
 import { updateProto } from "./util.js"
-import { findPropertyJson, findPropertyPython } from "./configProperties.js"
+import { findPropertyJson, findPropertyPython, samplers, seedModes } from "./configProperties.js"
 
 const nodePackVersion = "1.1.2"
 
@@ -134,26 +134,6 @@ const promptProto = {
     },
 }
 
-export const samplers = [
-    "DPM++ 2M Karras",
-    "Euler A",
-    "DDIM",
-    "PLMS",
-    "DPM++ SDE Karras",
-    "UniPC",
-    "LCM",
-    "Euler A Substep",
-    "DPM++ SDE Substep",
-    "TCD",
-    "Euler A Trailing",
-    "DPM++ SDE Trailing",
-    "DPM++ 2M AYS",
-    "Euler A AYS",
-    "DPM++ SDE AYS",
-    "DPM++ 2M Trailing",
-    "DDIM Trailing",
-]
 
-export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
 
 /** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

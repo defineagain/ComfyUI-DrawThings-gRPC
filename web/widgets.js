@@ -1,6 +1,7 @@
 /** @import { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph' */
 import { app } from "../../scripts/app.js";
 import { updateProto } from "./util.js";
+import { calcShift } from "./configProperties.js";
 
 const basicWidgets = [
     "server",
@@ -62,16 +63,6 @@ const advancedWidgets = [
 ];
 
 let origProps = {};
-
-// From flux-auto-workflow.js
-export function calcShift(h, w) {
-    const step1 = (h * w) / 256;
-    const step2 = (1.15 - 0.5) / (4096 - 256);
-    const step3 = (step1 - 256) * step2;
-    const step4 = step3 + 0.5;
-    const result = Math.exp(step4);
-    return Math.round(result * 100) / 100;
-}
 
 function findWidgetByName(node, name) {
     return node.widgets.find((w) => w.name === name);

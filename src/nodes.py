@@ -3,6 +3,7 @@
 import os
 import sys
 import base64
+from typing import Optional
 import numpy as np
 from PIL import Image
 import torch
@@ -11,6 +12,10 @@ import grpc
 import flatbuffers
 import json
 from google.protobuf.json_format import MessageToJson
+
+from .data_types import DrawThingsLists
+
+from .config import find_by_py
 
 from .generated import imageService_pb2, imageService_pb2_grpc
 from .generated import Control, GenerationConfiguration, LoRA
@@ -84,64 +89,11 @@ async def dt_sampler(
                 server,
                 port,
                 use_tls,
-                model: ModelInfo,
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference: int,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
+                config: dict,
                 positive,
                 negative,
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps,
-
-                separate_clip_l: bool,
-                clip_l_text: str,
-                separate_open_clip_g : bool,
-                open_clip_g_text: str,
-
-                batch_count=1,
-                scale_factor=1,
                 image=None,
                 mask=None,
-                control_net: ControlStack=None,
-                lora: LoraStack=None,
-                refiner=None,
-                upscaler=None,
             ) -> None:
     builder = flatbuffers.Builder(0)
 
@@ -166,7 +118,6 @@ async def dt_sampler(
     if control_net is not None and len(control_net):
         fin_controls = []
         for c in control_net:
-            # print(f'{c["input_type"]}')
             cnet_model = c['model']
             control_name = builder.CreateString(cnet_model["file"])
             Control.Start(builder)
@@ -190,116 +141,91 @@ async def dt_sampler(
             builder.PrependUOffsetTRelative(fc)
         controls_out = builder.EndVector()
 
-    start_width = width // 64 // scale_factor
-    start_height = height // 64 // scale_factor
+    start_width = config['width'] // 64 // config['scale_factor']
+    start_height = config['height'] // 64 // config['scale_factor']
     model_name = builder.CreateString(model['file'])
     if upscaler is not None:
         upscaler_model = builder.CreateString(upscaler["upscaler_model"])
     if refiner is not None:
         refiner_model = builder.CreateString(refiner["refiner_model"])
 
-    clip_l_text_buf = builder.CreateString(clip_l_text or "") if separate_clip_l else None
-    open_clip_g_text_buf = builder.CreateString(open_clip_g_text or "") if separate_open_clip_g else None
+    clip_l_text_buf = builder.CreateString(config['clip_l_text'] or "") if config['separate_clip_l'] else None
+    open_clip_g_text_buf = builder.CreateString(config['open_clip_g_text'] or "") if config['separate_open_clip_g'] else None
 
     GenerationConfiguration.Start(builder)
     GenerationConfiguration.AddModel(builder, model_name)
-    GenerationConfiguration.AddStrength(builder, strength)
-    GenerationConfiguration.AddSeed(builder, seed % 4294967295)
-    GenerationConfiguration.AddSeedMode(builder, DrawThingsLists.seed_mode.index(seed_mode))
+    GenerationConfiguration.AddStrength(builder, config['strength'])
+    GenerationConfiguration.AddSeed(builder, config['seed'] % 4294967295)
+    GenerationConfiguration.AddSeedMode(builder, DrawThingsLists.seed_mode.index(config['seed_mode']))
     GenerationConfiguration.AddStartWidth(builder, start_width)
     GenerationConfiguration.AddStartHeight(builder, start_height)
-    GenerationConfiguration.AddTargetImageWidth(builder, width)
-    GenerationConfiguration.AddTargetImageHeight(builder, height)
+    GenerationConfiguration.AddTargetImageWidth(builder, config['width'])
+    GenerationConfiguration.AddTargetImageHeight(builder, config['height'])
     if upscaler is not None:
         GenerationConfiguration.AddUpscaler(builder, upscaler_model)
         GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["upscaler_scale_factor"])
-    GenerationConfiguration.AddSteps(builder, steps)
-    GenerationConfiguration.AddNumFrames(builder, num_frames)
-    GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
-    GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
-    GenerationConfiguration.AddGuidanceEmbed(builder, guidance_embed)
-    GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
-    GenerationConfiguration.AddShift(builder, shift)
-    GenerationConfiguration.AddFpsId(builder, fps)
-    GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
-    GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
-    GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
+    GenerationConfiguration.AddSteps(builder, config['steps'])
+    GenerationConfiguration.AddNumFrames(builder, config['num_frames'])
+    GenerationConfiguration.AddGuidanceScale(builder, config['cfg'])
+    GenerationConfiguration.AddImageGuidanceScale(builder, config['cfg'])
+    GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, config['speed_up'])
+    GenerationConfiguration.AddGuidanceEmbed(builder, config['guidance_embed'])
+    GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(config['sampler_name']))
+    GenerationConfiguration.AddResolutionDependentShift(builder, config['res_dpt_shift'])
+    GenerationConfiguration.AddShift(builder, config['shift'])
+    GenerationConfiguration.AddFpsId(builder, config['fps'])
+    GenerationConfiguration.AddMotionBucketId(builder, config['motion_scale'])
+    GenerationConfiguration.AddCondAug(builder, config['guiding_frame_noise'])
+    GenerationConfiguration.AddStartFrameCfg(builder, config['start_frame_guidance'])
 
-    # causal_inference is (x + 3) / 4
-    if causal_inference:
+    if config['causal_inference']:
         GenerationConfiguration.AddCausalInferenceEnabled(builder, True)
-        GenerationConfiguration.AddCausalInference(builder, int((causal_inference + 3) / 4))
+        GenerationConfiguration.AddCausalInference(builder, int((config['causal_inference'] + 3) / 4))
 
-    GenerationConfiguration.AddBatchSize(builder, batch_size)
+    GenerationConfiguration.AddBatchSize(builder, config['batch_size'])
     if refiner is not None:
         GenerationConfiguration.AddRefinerModel(builder, refiner_model)
         GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-    # GenerationConfiguration.AddStage2Steps(builder, ) # wurst
-    # GenerationConfiguration.AddStage2Cfg(builder, ) # wurst
-    # GenerationConfiguration.AddStage2Shift(builder, ) # wurst
-    # GenerationConfiguration.AddZeroNegativePrompt(builder, )
-    # GenerationConfiguration.AddSeparateClipL(builder, )
-    # GenerationConfiguration.AddClipLText(builder, )
-    # GenerationConfiguration.AddSeparateOpenClipG(builder, )
-    # GenerationConfiguration.AddOpenClipGText(builder, )
-    GenerationConfiguration.AddClipSkip(builder, clip_skip)
-    GenerationConfiguration.AddSharpness(builder, sharpness)
-    GenerationConfiguration.AddMaskBlur(builder, mask_blur)
-    GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
-    GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
-    # GenerationConfiguration.AddFaceRestoration(builder, )
-    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
-    if high_res_fix is True:
-        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
-        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
-        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
 
-    GenerationConfiguration.AddTiledDecoding(builder, tiled_decoding)
-    if tiled_decoding is True:
-        GenerationConfiguration.AddDecodingTileWidth(builder, decoding_tile_width)
-        GenerationConfiguration.AddDecodingTileHeight(builder, decoding_tile_height)
-        GenerationConfiguration.AddDecodingTileOverlap(builder, decoding_tile_overlap)
+    GenerationConfiguration.AddClipSkip(builder, config['clip_skip'])
+    GenerationConfiguration.AddSharpness(builder, config['sharpness'])
+    GenerationConfiguration.AddMaskBlur(builder, config['mask_blur'])
+    GenerationConfiguration.AddMaskBlurOutset(builder, config['mask_blur_outset'])
+    GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, config['preserve_original'])
+    GenerationConfiguration.AddHiresFix(builder, config['high_res_fix'])
+    if config['high_res_fix'] is True:
+        GenerationConfiguration.AddHiresFixStartWidth(builder, config['high_res_fix_start_width'])
+        GenerationConfiguration.AddHiresFixStartHeight(builder, config['high_res_fix_start_height'])
+        GenerationConfiguration.AddHiresFixStrength(builder, config['high_res_fix_strength'])
 
-    GenerationConfiguration.AddTiledDiffusion(builder, tiled_diffusion)
-    if tiled_diffusion is True:
-        GenerationConfiguration.AddDiffusionTileWidth(builder, diffusion_tile_width)
-        GenerationConfiguration.AddDiffusionTileHeight(builder, diffusion_tile_height)
-        GenerationConfiguration.AddDiffusionTileOverlap(builder, diffusion_tile_overlap)
+    GenerationConfiguration.AddTiledDecoding(builder, config['tiled_decoding'])
+    if config['tiled_decoding'] is True:
+        GenerationConfiguration.AddDecodingTileWidth(builder, config['decoding_tile_width'])
+        GenerationConfiguration.AddDecodingTileHeight(builder, config['decoding_tile_height'])
+        GenerationConfiguration.AddDecodingTileOverlap(builder, config['decoding_tile_overlap'])
 
-    GenerationConfiguration.AddTeaCache(builder, tea_cache)
-    if tea_cache is True: # flux or video option
-        GenerationConfiguration.AddTeaCacheStart(builder, tea_cache_start)
-        GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache_end)
-        GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
-        GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, tea_cache_max_skip_steps)
+    GenerationConfiguration.AddTiledDiffusion(builder, config['tiled_diffusion'])
+    if config['tiled_diffusion'] is True:
+        GenerationConfiguration.AddDiffusionTileWidth(builder, config['diffusion_tile_width'])
+        GenerationConfiguration.AddDiffusionTileHeight(builder, config['diffusion_tile_height'])
+        GenerationConfiguration.AddDiffusionTileOverlap(builder, config['diffusion_tile_overlap'])
 
-    if separate_clip_l:
+    GenerationConfiguration.AddTeaCache(builder, config['tea_cache'])
+    if config['tea_cache'] is True:
+        GenerationConfiguration.AddTeaCacheStart(builder, config['tea_cache_start'])
+        GenerationConfiguration.AddTeaCacheEnd(builder, config['tea_cache_end'])
+        GenerationConfiguration.AddTeaCacheThreshold(builder, config['tea_cache_threshold'])
+        GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, config['tea_cache_max_skip_steps'])
+
+    if config['separate_clip_l']:
         GenerationConfiguration.GenerationConfigurationAddSeparateClipL(builder, True)
         GenerationConfiguration.GenerationConfigurationAddClipLText(builder, clip_l_text_buf)
 
-    if separate_open_clip_g:
+    if config['separate_open_clip_g']:
         GenerationConfiguration.GenerationConfigurationAddSeparateOpenClipG(builder, True)
         GenerationConfiguration.GenerationConfigurationAddOpenClipGText(builder, open_clip_g_text_buf)
 
-    # ti embed
-
-    # The rest, don't know where they go or which models use them
-    # GenerationConfiguration.AddClipWeight(builder, )
-    # GenerationConfiguration.AddNegativePromptForImagePrior(builder, )
-    # GenerationConfiguration.AddImagePriorSteps(builder, )
-    # GenerationConfiguration.AddCropTop(builder, )
-    # GenerationConfiguration.AddCropLeft(builder, )
-    # GenerationConfiguration.AddAestheticScore(builder, )
-    # GenerationConfiguration.AddNegativeAestheticScore(builder, )
-    # GenerationConfiguration.AddNegativeOriginalImageHeight(builder, )
-    # GenerationConfiguration.AddNegativeOriginalImageWidth(builder, )
-    # GenerationConfiguration.AddName(builder, )
-    # GenerationConfiguration.AddStochasticSamplingGamma(builder, )
-    # GenerationConfiguration.AddT5TextEncoder(builder, )
-
-    GenerationConfiguration.AddBatchCount(builder, batch_count)
+    GenerationConfiguration.AddBatchCount(builder, config['batch_count'])
     if controls_out is not None:
         GenerationConfiguration.AddControls(builder, controls_out)
     if loras_out is not None:
@@ -307,7 +233,6 @@ async def dt_sampler(
 
     builder.Finish(GenerationConfiguration.End(builder))
     configuration = builder.Output()
-    # generated = GenerationConfiguration.GenerationConfiguration.GetRootAs(configuration, 0)
 
     contents = []
     img2img = None
@@ -315,33 +240,16 @@ async def dt_sampler(
     if image is not None:
         img2img = convert_image_for_request(image)
         if mask is not None:
-            maskimg = convert_mask_for_request(mask, width, height)
+            maskimg = convert_mask_for_request(mask, config['width'], config['height'])
 
     override = imageService_pb2.MetadataOverride()
-    # models_override = [{
-    #     "default_scale": 8,
-    #     "file": "sd_v1.5_f16.ckpt",
-    #     "name": "Generic (Stable Diffusion v1.5)",
-    #     "prefix": "",
-    #     "upcast_attention": False,
-    #     "version": "v1"}]
-    # override.models = bytes(f"{models_override}", encoding='utf-8')
-    # override.loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]'
-    # override.controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]'
-    # override.textualInversions = b"[]"
-    # override.upscalers = b"[]"
 
     hints = []
     if control_net is not None:
         for control_cfg in control_net:
             control_image = control_cfg["image"]
             if control_image is not None:
-                # NOTE: So apparantly THIS is where you set which slot to use, NOT via InputOverride as that's for all the types
-                # Invalid ControlHintType 'unspecified'
-                if control_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
-                    c_input_slot = "Custom"
-                else:
-                    c_input_slot = control_cfg["input_type"]
+                c_input_slot = control_cfg["input_type"] if control_cfg["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
                 taw = imageService_pb2.TensorAndWeight()
                 taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
                 taw.weight = control_cfg["weight"]
@@ -352,7 +260,6 @@ async def dt_sampler(
                 hints.append(hnt)
 
     if lora is not None:
-        # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
             if 'control_image' in lora_cfg:
                 modifier = lora_cfg["model"]["modifier"]
@@ -369,17 +276,17 @@ async def dt_sampler(
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
-            image = img2img,                      # Image data as sha256 content.
-            scaleFactor = scale_factor,
-            mask = maskimg,                       # Optional  Mask data as sha256 content.
-            hints = hints,                        # List of hints
-            prompt = positive,                    # Optional prompt string
-            negativePrompt = negative,            # Optional negative prompt string
-            configuration = bytes(configuration), # Configuration data as bytes (FlatBuffer)
-            override = override,                  # Override the existing metadata on various Zoo objects.
-            user = "ComfyUI",                     # The name of the client.
-            device = "LAPTOP",                    # The type of the device uses.
-            contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
+            image = img2img,
+            scaleFactor = config['scale_factor'],
+            mask = maskimg,
+            hints = hints,
+            prompt = positive,
+            negativePrompt = negative,
+            configuration = bytes(configuration),
+            override = override,
+            user = "ComfyUI",
+            device = "LAPTOP",
+            contents = contents
         ))
 
         response_images = []
@@ -400,7 +307,7 @@ async def dt_sampler(
                         model_version = model["version"]
                         if model_version:
                             x0 = decode_preview(preview_image, model_version)
-                    prepare_callback(current_step, steps, x0)
+                    prepare_callback(current_step, config['steps'], x0)
                 except Exception as e:
                     print('DrawThings-gRPC had an error decoding the preview image:', e)
 
@@ -409,7 +316,6 @@ async def dt_sampler(
 
         images = []
         for img_data in response_images:
-            # Convert the image data to a Pillow Image object
             result = convert_response_image(img_data)
             if result is not None:
                 data = result['data']
@@ -420,72 +326,12 @@ async def dt_sampler(
                 if channels >= 4:
                     mode = "RGBA"
                 img = Image.frombytes(mode, (width, height), data)
-                # print(f"size: {img.size}, mode: {img.mode}")
                 image_np = np.array(img)
-                # Convert to float32 tensor and normalize
                 tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
                 images.append(tensor_image)
 
         return (torch.stack(images),)
 
-class DrawThingsLists:
-    dtserver = "localhost"
-    dtport = "7859"
-
-    sampler_list = [
-                "DPM++ 2M Karras",
-                "Euler A",
-                "DDIM",
-                "PLMS",
-                "DPM++ SDE Karras",
-                "UniPC",
-                "LCM",
-                "Euler A Substep",
-                "DPM++ SDE Substep",
-                "TCD",
-                "Euler A Trailing",
-                "DPM++ SDE Trailing",
-                "DPM++ 2M AYS",
-                "Euler A AYS",
-                "DPM++ SDE AYS",
-                "DPM++ 2M Trailing",
-                "DDIM Trailing",
-            ]
-
-    seed_mode = [
-                "Legacy",
-                "TorchCpuCompatible",
-                "ScaleAlike",
-                "NvidiaGpuCompatible",
-            ]
-
-    control_mode = [
-                "Balanced",
-                "Prompt",
-                "Control",
-            ]
-
-    control_input_type = [
-                "Unspecified",
-                "Custom", # -> Slot
-                "Depth", # -> Slot
-                "Canny",
-                "Scribble", # -> Slot
-                "Pose", # -> Slot
-                "Normalbae",
-                "Color", # -> Slot
-                "Lineart",
-                "Softedge",
-                "Seg",
-                "Inpaint",
-                "Ip2p",
-                "Shuffle",
-                "Mlsd",
-                "Tile",
-                "Blur",
-                "Lowquality",
-                "Gray",
-            ]
 
 class DrawThingsSampler:
     def __init__(self):
@@ -606,137 +452,134 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self,
-                settings,
-                server,
-                port,
-                use_tls,
-                model,
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
+                settings: str,
+                server: str,
+                port: str,
+                use_tls: bool,
+                model: dict,
+                seed: int,
+                seed_mode: str,
+                steps: int,
+                num_frames: int,
+                cfg: float,
+                strength: float,
+                speed_up: bool,
+                guidance_embed: float,
+                sampler_name: str,
+                res_dpt_shift: bool,
+                shift: float,
+                batch_size: int,
+                fps: int,
+                motion_scale: float,
+                guiding_frame_noise: float,
+                start_frame_guidance: float,
+                causal_inference: float,
+                clip_skip: int,
+                sharpness: float,
+                mask_blur: float,
+                mask_blur_outset: float,
+                preserve_original: bool,
+                width: int,
+                height: int,
+                high_res_fix: bool,
+                high_res_fix_start_width: int,
+                high_res_fix_start_height: int,
+                high_res_fix_strength: float,
+                tiled_decoding: bool,
+                decoding_tile_width: int,
+                decoding_tile_height: int,
+                decoding_tile_overlap: int,
+                tiled_diffusion: bool,
+                diffusion_tile_width: int,
+                diffusion_tile_height: int,
+                diffusion_tile_overlap: int,
+                tea_cache: bool,
+                tea_cache_start: int,
+                tea_cache_end: int,
                 tea_cache_threshold,
-                tea_cache_max_skip_steps,
-                separate_clip_l,
-                clip_l_text,
-                separate_open_clip_g,
-                open_clip_g_text,
+                tea_cache_max_skip_steps: int,
+                separate_clip_l: bool,
+                clip_l_text: str,
+                separate_open_clip_g: bool,
+                open_clip_g_text: str,
                 batch_count=1,
                 scale_factor=1,
                 image=None,
                 mask=None,
                 positive="",
                 negative="",
-                control_net: ControlStack=None,
-                lora: LoraStack=None,
+                control_net: Optional[ControlStack]=None,
+                lora: Optional[LoraStack]=None,
                 refiner=None,
                 upscaler=None,
                 ):
 
-        return asyncio.run(dt_sampler(
-                server,
-                port,
-                use_tls,
-                model["value"],
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
-                positive or "",
-                negative or "",
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps,
-                separate_clip_l,
-                clip_l_text,
-                separate_open_clip_g,
-                open_clip_g_text,
-                batch_count=batch_count,
-                scale_factor=scale_factor,
-                image=image,
-                mask=mask,
-                control_net=control_net,
-                lora=lora,
-                refiner=refiner,
-                upscaler=upscaler,
-                ))
+        config = {
+            "model": model["value"],
+            "seed": seed,
+            "seed_mode": seed_mode,
+            "steps": steps,
+            "num_frames": num_frames,
+            "cfg": cfg,
+            "strength": strength,
+            "speed_up": speed_up,
+            "guidance_embed": guidance_embed,
+            "sampler_name": sampler_name,
+            "res_dpt_shift": res_dpt_shift,
+            "shift": shift,
+            "batch_size": batch_size,
+            "fps": fps,
+            "motion_scale": motion_scale,
+            "guiding_frame_noise": guiding_frame_noise,
+            "start_frame_guidance": start_frame_guidance,
+            "causal_inference": causal_inference,
+            "clip_skip": clip_skip,
+            "sharpness": sharpness,
+            "mask_blur": mask_blur,
+            "mask_blur_outset": mask_blur_outset,
+            "preserve_original": preserve_original,
+            "width": width,
+            "height": height,
+            "high_res_fix": high_res_fix,
+            "high_res_fix_start_width": high_res_fix_start_width,
+            "high_res_fix_start_height": high_res_fix_start_height,
+            "high_res_fix_strength": high_res_fix_strength,
+            "tiled_decoding": tiled_decoding,
+            "decoding_tile_width": decoding_tile_width,
+            "decoding_tile_height": decoding_tile_height,
+            "decoding_tile_overlap": decoding_tile_overlap,
+            "tiled_diffusion": tiled_diffusion,
+            "diffusion_tile_width": diffusion_tile_width,
+            "diffusion_tile_height": diffusion_tile_height,
+            "diffusion_tile_overlap": diffusion_tile_overlap,
+            "tea_cache": tea_cache,
+            "tea_cache_start": tea_cache_start,
+            "tea_cache_end": tea_cache_end,
+            "tea_cache_threshold": tea_cache_threshold,
+            "tea_cache_max_skip_steps": tea_cache_max_skip_steps,
+            "separate_clip_l": separate_clip_l,
+            "clip_l_text": clip_l_text,
+            "separate_open_clip_g": separate_open_clip_g,
+            "open_clip_g_text": open_clip_g_text,
+            "batch_count": batch_count,
+            "upscaler_scale_factor": scale_factor,
+            "control_net": control_net,
+            "lora": lora,
+            # refiner=refiner,
+            # upscaler=upscaler
+        }
+        return asyncio.run(dt_sampler(server, port, use_tls, config, positive, negative, image, mask))
+
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
     #     return float("NaN")
 
+
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
+
 
 class DrawThingsRefiner:
     def __init__(self):
