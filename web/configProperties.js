@@ -301,7 +301,7 @@ class DTProperty {
 
     coerce(value) {
         if (this.type === "int" || this.type === "float") {
-            if (Number.isNaN(value))
+            if (typeof value !== "number")
                 return this.defaultValue || 0
             if (Number.isFinite(this.min) && value < this.min) return this.min
             if (Number.isFinite(this.max) && value > this.max) return this.max
