@@ -61,11 +61,9 @@ export const propertyData = [
     ['hires_fix_start_height', 'high_res_fix_start_height', 'DrawThingsSampler', 'hiresFixHeight', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=hiresFix'],
     ['hires_fix_strength', 'high_res_fix_strength', 'DrawThingsSampler', 'hiresFixStrength', 'float', 0.7, 0, 1, 0.01, 'ifTrue=hiresFix'],
 
-    // in upscaler node
-    ['upscaler', 'upscaler', 'DrawThingsUpscaler', 'upscaler'],
 
     ['image_guidance_scale', 'image_guidance_scale', 'DrawThingsSampler', 'imageGuidanceScale', 'float', 5, 0, 50, 0.1],
-    ['seed_mode', 'seed_mode', 'DrawThingsSampler', 'seedMode'],
+    ['seed_mode', 'seed_mode', 'DrawThingsSampler', 'seedMode', 'index', 2, seedModes],
     ['clip_skip', 'clip_skip', 'DrawThingsSampler', 'clipSkip', 'int', 1, 1, 23, 1],
     ['controls', null, 'DrawThingsControlNet', 'controls'],
     ['loras', null, 'DrawThingsLoRA', 'loras'],
@@ -77,9 +75,6 @@ export const propertyData = [
     ['negative_prompt_for_image_prior', null, null],
     ['image_prior_steps', null, null],
 
-    // in refiner node
-    ['refiner_model', 'refiner_model', 'DrawThingsRefiner', 'refinerModel'],
-
     ['original_image_height', null, null, 'originalImageHeight'],
     ['original_image_width', null, null, 'originalImageWidth'],
     ['crop_top', null, null, 'cropTop'],
@@ -89,15 +84,10 @@ export const propertyData = [
     ['aesthetic_score', null, null, 'aestheticScore'],
     ['negative_aesthetic_score', null, null, 'negativeAestheticScore'],
     ['zero_negative_prompt', null, null, 'zeroNegativePrompt'],
-
-    // in refiner node
-    ['refiner_start', 'refiner_start', 'DrawThingsRefiner', 'refinerStart'],
-
     ['negative_original_image_height', null, null, 'negativeOriginalImageHeight'],
     ['negative_original_image_width', null, null, 'negativeOriginalImageWidth'],
     ['name', null, null, null],
 
-    // check these
     ['fps_id', 'fps', 'DrawThingsSampler', 'fps', 'int', 12, 1, 30, 1],
     ['motion_bucket_id', 'motion_scale', 'DrawThingsSampler', 'motionScale', 'int', 127, 0, 255, 1],
     ['cond_aug', 'guiding_frame_noise', 'DrawThingsSampler', 'guidingFrameNoise', 'float', 0.02, 0, 1, 0.01],
@@ -105,9 +95,9 @@ export const propertyData = [
 
     ['num_frames', 'num_frames', 'DrawThingsSampler', 'numFrames', 'int', numFramesDefMap, 1, numFramesDefMap, 1],
 
-    ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset', 'float', -100, 100],
-    ['sharpness', 'sharpness', 'DrawThingsSampler', 'sharpness', 'float', 0, 30],
-    ['shift', 'shift', 'DrawThingsSampler', 'shift', 'float', 0, 8],
+    ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset', 'float', 0, -100, 100, 0.1],
+    ['sharpness', 'sharpness', 'DrawThingsSampler', 'sharpness', 'float', 0, 0, 30, 0.1],
+    ['shift', 'shift', 'DrawThingsSampler', 'shift', 'float', 1, 0, 8, 0.01],
     ['stage_2_steps', null, null, 'stage2Steps'],
     ['stage_2_cfg', null, null, 'stage2Guidance'],
     ['stage_2_shift', null, null, 'stage2Shift'],
@@ -122,9 +112,6 @@ export const propertyData = [
     ['diffusion_tile_height', 'diffusion_tile_height', 'DrawThingsSampler', 'diffusionTileHeight', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
     ['diffusion_tile_overlap', 'diffusion_tile_overlap', 'DrawThingsSampler', 'diffusionTileOverlap', 'int', 512, 64, 1024, 64, 'roundTo64,ifTrue=tiledDiffusion'],
 
-    // in upscaler node
-    ['upscaler_scale_factor', 'upscaler_scale_factor', 'DrawThingsUpscaler', 'upscalerScaleFactor'],
-
     ['t5_text_encoder', null, null, 't5TextEncoder'],
     ['separate_clip_l', 'separate_clip_l', 'DrawThingsSampler', 'separateClipL', 'bool', false],
     ['clip_l_text', 'clip_l_text', 'DrawThingsSampler', null, 'string', "", 'ifTrue=separateClipL'],
@@ -132,7 +119,7 @@ export const propertyData = [
     ['open_clip_g_text', 'open_clip_g_text', 'DrawThingsSampler', null, 'string', "", 'ifTrue=separateOpenClipG'],
     ['speed_up_with_guidance_embed', 'speed_up', 'DrawThingsSampler', 'speedUpWithGuidanceEmbed', 'bool', true],
     ['guidance_embed', 'guidance_embed', 'DrawThingsSampler', 'guidanceEmbed', 'float', 4.5, 0, 50, 0.1, 'ifFalse=speedUpWithGuidanceEmbed'],
-    ['resolution_dependent_shift', 'res_dpt_shift', 'DrawThingsSampler', 'resolutionDependentShift', 'bool'],
+    ['resolution_dependent_shift', 'res_dpt_shift', 'DrawThingsSampler', 'resolutionDependentShift', 'bool', true],
     ['tea_cache_start', 'tea_cache_start', 'DrawThingsSampler', 'teaCacheStart', 'int', 5, 0, 'ref=steps', 1, 'ifTrue=teaCache'],
     ['tea_cache_end', 'tea_cache_end', 'DrawThingsSampler', 'teaCacheEnd', 'int', 'ref=steps', 0, 'ref=steps', 1, 'ifTrue=teaCache'],
     ['tea_cache_threshold', 'tea_cache_threshold', 'DrawThingsSampler', 'teaCacheThreshold', 'float', 0.3, 0, 1, 0.01, 'ifTrue=teaCache'],
@@ -144,6 +131,13 @@ export const propertyData = [
     // causal_inference_enabled is implied by causal_inference==0
     ['causal_inference_enabled', null, null, null],
     ['causal_inference', 'causal_inference', 'DrawThingsSampler', 'causalInference', 'int', 3, 0, 129, 4, 'ifPos=set(causalInference, true),causInfConvert'],
+
+    // in upscaler node
+    ['upscaler', 'upscaler', 'DrawThingsUpscaler', 'upscaler'],
+    ['upscaler_scale_factor', 'upscaler_scale_factor', 'DrawThingsUpscaler', 'upscalerScaleFactor'],
+    // in refiner node
+    ['refiner_model', 'refiner_model', 'DrawThingsRefiner', 'refinerModel'],
+    ['refiner_start', 'refiner_start', 'DrawThingsRefiner', 'refinerStart'],
 ]
 
 /** @typedef {{ fbs: string, python: string, node: string, json: string }} DTProperty */
@@ -254,11 +248,35 @@ const exporters = {
 }
 
 class DTProperty {
-    constructor(fbs, python, node, json) {
+    constructor(fbs, python, node, json, type, defaultValue, ...rest) {
         this.fbs = fbs
         this.python = python
         this.node = node
         this.json = json
+        this.type = type
+        this.defaultValue = defaultValue
+
+        if (type === "int" || type === "float") {
+            this.min = rest[0]
+            this.max = rest[1]
+            this.step = rest[2]
+            this.spec = rest[3]
+        }
+
+        if (type === "bool") {
+            this.spec = rest[0]
+        }
+
+        if (type === "index") {
+            this.values = rest[0]
+            this.spec = rest[1]
+        }
+
+        if (type === "string") {
+            this.spec = rest[0]
+        }
+
+        // console.log(this.fbs, this.defaultValue)
     }
 
     customImport = undefined
@@ -280,11 +298,40 @@ class DTProperty {
             if (this.json && widget && widget.value !== undefined) config[this.json] = widget.value
         }
     }
+
+    coerce(value) {
+        if (this.type === "int" || this.type === "float") {
+            if (Number.isNaN(value))
+                return this.defaultValue || 0
+            if (Number.isFinite(this.min) && value < this.min) return this.min
+            if (Number.isFinite(this.max) && value > this.max) return this.max
+            return value
+        }
+
+        if (this.type === "bool") {
+            if (typeof value !== "boolean") return this.defaultValue || false
+            return value
+        }
+
+        if (this.type === "string") {
+            if (typeof value !== "string") return this.defaultValue || ""
+            return value
+        }
+
+        if (this.type === "index") {
+            if (typeof value === "number" && value >= 0 && value < this.values.length)
+                return this.values[value]
+            if (typeof value === "string" && this.values.includes(value)) return value
+            return this.values[this.defaultValue]
+        }
+
+        return value
+    }
 }
 
 /** @type {DTProperty[]} */
-export const properties = propertyData.map(([fbs, python, node, json]) => {
-    const prop = new DTProperty(fbs, python, node, json)
+export const properties = propertyData.map(([fbs, ...rest]) => {
+    const prop = new DTProperty(fbs, ...rest)
     prop.customImport = importers[fbs]
     prop.customExport = exporters[fbs]
     return prop
@@ -296,4 +343,16 @@ export function findPropertyJson(name) {
 
 export function findPropertyPython(name) {
     return properties.find(p => p.python === name)
+}
+
+for (const pd of propertyData) {
+    if (pd[4] === "int" || pd[4] === "float") {
+        if (pd.length < 9)
+            console.log(pd[0])
+    }
+
+    if (pd[4] === 'bool') {
+        if (pd.length < 6)
+            console.log(pd[0])
+    }
 }

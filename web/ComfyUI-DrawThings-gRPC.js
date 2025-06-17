@@ -1,12 +1,19 @@
-import { app } from "../../scripts/app.js"
+import * as App from "../../scripts/app.js"
 import { DtModelTypeHandler } from "./models.js"
 import { updateProto } from "./util.js"
 import { findPropertyJson, findPropertyPython, samplers, seedModes } from "./configProperties.js"
+
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
+const app = App.app
 
 const nodePackVersion = "1.1.2"
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"]
+
+// this holds the node definition from python
+
+let dtSamplerNodeData = null
 
 app.registerExtension({
     name: "ComfyUI-DrawThings-gRPC",
@@ -19,6 +26,7 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeType.comfyClass === "DrawThingsSampler") {
             updateProto(nodeType, samplerProto)
+            dtSamplerNodeData = nodeData
         }
         if (nodeType.comfyClass === "DrawThingsPositive" || nodeType.comfyClass === "DrawThingsNegative") {
             updateProto(nodeType, promptProto)
@@ -50,11 +58,51 @@ const samplerProto = {
 
     onMouseDown(e, pos, canvas) {
         // this exists for easier debugging in devtools
-        console.debug("Click!", this)
+        console.debug("Click!", this, dtSamplerNodeData)
     },
 
     onSerialize(serialised) {
         serialised.nodePackVersion = nodePackVersion
+        serialised.widget_values_keyed = Object.fromEntries(this.widgets.map(w => ([w.name, w.value])))
+    },
+
+    onConfigure(serialised) {
+        // at this point, the node should already be loaded with values from the values array
+
+        // if there is keyed data, apply that
+        if (serialised.widget_values_keyed) {
+            for (const [name, value] of Object.entries(serialised.widget_values_keyed)) {
+                const widget = this.widgets.find((w) => w.name === name)
+                if (widget) widget.value = value
+            }
+        }
+
+        // check each widget value
+        const corrections = []
+        for (const w of this.widgets) {
+            const prop = findPropertyPython(w.name)
+            if (!prop) {
+                continue
+            }
+            const coerced = prop.coerce(w.value)
+            if (coerced !== w.value) {
+                corrections.push({ name: w.name, value: w.value, coerced })
+                w.value = coerced
+            }
+        }
+
+        if (corrections.length) {
+            const message = 'The Draw Things Sampler node contained invalid values - they have been corrected:'
+            const list = corrections.map((c) => `${c.name}: ${c.value} -> ${c.coerced}`)
+            const detail = message + "\n\n" + list.join("\n")
+
+            app.extensionManager.toast.add({
+                severity: "info",
+                summary: "Draw Things gRPC",
+                detail,
+                life: 8000
+              });
+        }
     },
 
     getExtraMenuOptions(canvas, options) {

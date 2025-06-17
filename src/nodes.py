@@ -85,43 +85,13 @@ async def handle_files_info_request(request):
         print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
-async def dt_sampler(
-                server,
-                port,
-                use_tls,
-                config: GenerationConfiguration.GenerationConfigurationT,
-                version,
-                positive,
-                negative,
-                image=None,
-                mask=None,
-            ) -> None:
-    # controls_out = None
-    # if control_net is not None and len(control_net):
-    #     fin_controls = []
-    #     for c in control_net:
-    #         cnet_model = c['model']
-    #         control_name = builder.CreateString(cnet_model["file"])
-    #         Control.Start(builder)
-    #         Control.AddFile(builder, control_name)
-    #         # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
-    #         Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
-    #         Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
-    #         Control.AddWeight(builder, c["weight"])
-    #         Control.AddGuidanceStart(builder, c["start"])
-    #         Control.AddGuidanceEnd(builder, c["end"])
-    #         # Control.AddNoPrompt(builder, False)
-    #         # Control.AddGlobalAveragePooling(builder, False)
-    #         # Control.AddDownSamplingRate(builder, 0)
-    #         # Control.AddTargetBlocks(builder, 0)
-    #         # Control.StartTargetBlocksVector(builder, )
-    #         fin_control = Control.End(builder)
-    #         fin_controls.append(fin_control)
+async def dt_sampler(inputs: dict) -> None:
+    server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
+    positive, negative = inputs.get('positive'), inputs.get('negative')
+    image, mask = inputs.get('image'), inputs.get('mask')
 
-    #     GenerationConfiguration.StartControlsVector(builder, len(fin_controls))
-    #     for fc in fin_controls:
-    #         builder.PrependUOffsetTRelative(fc)
-    #     controls_out = builder.EndVector()
+    config = build_config(inputs)
+    version = inputs["model"]["value"]["version"] if "value" in inputs["model"] and "version" in inputs["model"]["value"] else None
 
     builder = flatbuffers.Builder(0)
     builder.Finish(config.Pack(builder))
@@ -135,24 +105,24 @@ async def dt_sampler(
     if image is not None:
         img2img = convert_image_for_request(image)
     if mask is not None:
-        maskimg = convert_mask_for_request(mask, config.startWidth, config.startHeight)
+        maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
 
     # override = imageService_pb2.MetadataOverride()
 
     hints = []
-    # if control_net is not None:
-    #     for control_cfg in control_net:
-    #         control_image = control_cfg["image"]
-    #         if control_image is not None:
-    #             c_input_slot = control_cfg["input_type"] if control_cfg["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
-    #             taw = imageService_pb2.TensorAndWeight()
-    #             taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
-    #             taw.weight = control_cfg["weight"]
+    cnets = inputs.get("control_net")
+    if cnets is not None:
+        for cnet in cnets:
+            if cnet.get("image") is not None:
+                c_input_slot = cnet["input_type"] if cnet["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
+                taw = imageService_pb2.TensorAndWeight()
+                taw.tensor = convert_image_for_request(cnet["image"], c_input_slot.lower())
+                taw.weight = 1
 
-    #             hnt = imageService_pb2.HintProto()
-    #             hnt.hintType = c_input_slot.lower()
-    #             hnt.tensors.append(taw)
-    #             hints.append(hnt)
+                hnt = imageService_pb2.HintProto()
+                hnt.hintType = c_input_slot.lower()
+                hnt.tensors.append(taw)
+                hints.append(hnt)
 
     # if lora is not None:
     #     for lora_cfg in lora:
@@ -347,13 +317,7 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self, **kwargs):
-        server, port, use_tls = kwargs.get('server'), kwargs.get('port'), kwargs.get('use_tls')
-        positive, negative = kwargs.get('positive'), kwargs.get('negative')
-        image, mask = kwargs.get('image'), kwargs.get('mask')
-
-        c, v = build_config(kwargs)
-
-        return asyncio.run(dt_sampler(server, port, use_tls, c, v, positive, negative, image, mask))
+        return asyncio.run(dt_sampler(kwargs))
 
 
     # @classmethod
@@ -363,6 +327,7 @@ class DrawThingsSampler:
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
+        PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
         return True
 
 

@@ -1,6 +1,8 @@
 import numpy as np
 
+from .generated.Control import ControlT
 from .generated.LoRA import LoRAT
+
 from .generated.GenerationConfiguration import GenerationConfigurationT
 from .data_types import Config, ModelInfo
 from .data_types import DrawThingsLists
@@ -16,6 +18,13 @@ def clamp(x, min_val=64, max_val=2048):
 
 def clamp_f(x, min_val, max_val):
     return float(max(min(x if np.isfinite(x) else 0, max_val), min_val))
+
+
+def all_in(list, *args):
+    for arg in args:
+        if arg not in list:
+            return False
+    return True
 
 
 class Model:
@@ -89,12 +98,36 @@ def build_config(config: Config):
     apply_conditional(config, configT)
     apply_control(config, configT)
     apply_lora(config, configT)
-    model = Model(config.get("model"))
-    return (configT, model.version)
+
+    return configT
 
 
 def apply_control(config: Config, configT: GenerationConfigurationT):
     configT.controls = []
+
+    if "control_net" not in config or config["control_net"] is None or len(config["control_net"]) == 0:
+        return
+
+    for control in config["control_net"]:
+        if "model" not in control or "file" not in control["model"]:
+            continue
+        controlT = ControlT()
+        controlT.file = control["model"]["file"]
+
+        if "weight" in control:
+            controlT.weight = control["weight"]
+        if "input_type" in control:
+            controlT.inputOverride = DrawThingsLists.control_input_type.index(control["input_type"])
+        if "mode" in control:
+            controlT.controlMode = DrawThingsLists.control_mode.index(control["mode"])
+        if "weight" in control:
+            controlT.weight = control["weight"]
+        if "start" in control:
+            controlT.guidanceStart = control["start"]
+        if "end" in control:
+            controlT.guidanceEnd = control["end"]
+
+        configT.controls.append(controlT)
 
 
 def apply_lora(config: Config, configT: GenerationConfigurationT):
