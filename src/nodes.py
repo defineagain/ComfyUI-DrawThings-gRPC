@@ -15,7 +15,7 @@ from google.protobuf.json_format import MessageToJson
 
 from .data_types import DrawThingsLists
 
-from .config import find_by_py
+from .config import build_config
 
 from .generated import imageService_pb2, imageService_pb2_grpc
 from .generated import Control, GenerationConfiguration, LoRA
@@ -89,201 +89,96 @@ async def dt_sampler(
                 server,
                 port,
                 use_tls,
-                config: dict,
+                config: GenerationConfiguration.GenerationConfigurationT,
+                version,
                 positive,
                 negative,
                 image=None,
                 mask=None,
             ) -> None:
+    # controls_out = None
+    # if control_net is not None and len(control_net):
+    #     fin_controls = []
+    #     for c in control_net:
+    #         cnet_model = c['model']
+    #         control_name = builder.CreateString(cnet_model["file"])
+    #         Control.Start(builder)
+    #         Control.AddFile(builder, control_name)
+    #         # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
+    #         Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
+    #         Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
+    #         Control.AddWeight(builder, c["weight"])
+    #         Control.AddGuidanceStart(builder, c["start"])
+    #         Control.AddGuidanceEnd(builder, c["end"])
+    #         # Control.AddNoPrompt(builder, False)
+    #         # Control.AddGlobalAveragePooling(builder, False)
+    #         # Control.AddDownSamplingRate(builder, 0)
+    #         # Control.AddTargetBlocks(builder, 0)
+    #         # Control.StartTargetBlocksVector(builder, )
+    #         fin_control = Control.End(builder)
+    #         fin_controls.append(fin_control)
+
+    #     GenerationConfiguration.StartControlsVector(builder, len(fin_controls))
+    #     for fc in fin_controls:
+    #         builder.PrependUOffsetTRelative(fc)
+    #     controls_out = builder.EndVector()
+
     builder = flatbuffers.Builder(0)
+    builder.Finish(config.Pack(builder))
+    config_fbs = bytes(builder.Output())
 
-    loras_out = None
-    if lora is not None and len(lora):
-        fin_loras = []
-        for l in lora:
-            lora_model = l['model']
-            lora_file = builder.CreateString(lora_model['file'])
-            LoRA.Start(builder)
-            LoRA.AddFile(builder, lora_file)
-            LoRA.AddWeight(builder, l['weight'])
-            fin_lora = LoRA.End(builder)
-            fin_loras.append(fin_lora)
-
-        GenerationConfiguration.StartLorasVector(builder, len(fin_loras))
-        for fl in fin_loras:
-            builder.PrependUOffsetTRelative(fl)
-        loras_out = builder.EndVector()
-
-    controls_out = None
-    if control_net is not None and len(control_net):
-        fin_controls = []
-        for c in control_net:
-            cnet_model = c['model']
-            control_name = builder.CreateString(cnet_model["file"])
-            Control.Start(builder)
-            Control.AddFile(builder, control_name)
-            # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
-            Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
-            Control.AddWeight(builder, c["weight"])
-            Control.AddGuidanceStart(builder, c["start"])
-            Control.AddGuidanceEnd(builder, c["end"])
-            # Control.AddNoPrompt(builder, False)
-            # Control.AddGlobalAveragePooling(builder, False)
-            # Control.AddDownSamplingRate(builder, 0)
-            # Control.AddTargetBlocks(builder, 0)
-            # Control.StartTargetBlocksVector(builder, )
-            fin_control = Control.End(builder)
-            fin_controls.append(fin_control)
-
-        GenerationConfiguration.StartControlsVector(builder, len(fin_controls))
-        for fc in fin_controls:
-            builder.PrependUOffsetTRelative(fc)
-        controls_out = builder.EndVector()
-
-    start_width = config['width'] // 64 // config['scale_factor']
-    start_height = config['height'] // 64 // config['scale_factor']
-    model_name = builder.CreateString(model['file'])
-    if upscaler is not None:
-        upscaler_model = builder.CreateString(upscaler["upscaler_model"])
-    if refiner is not None:
-        refiner_model = builder.CreateString(refiner["refiner_model"])
-
-    clip_l_text_buf = builder.CreateString(config['clip_l_text'] or "") if config['separate_clip_l'] else None
-    open_clip_g_text_buf = builder.CreateString(config['open_clip_g_text'] or "") if config['separate_open_clip_g'] else None
-
-    GenerationConfiguration.Start(builder)
-    GenerationConfiguration.AddModel(builder, model_name)
-    GenerationConfiguration.AddStrength(builder, config['strength'])
-    GenerationConfiguration.AddSeed(builder, config['seed'] % 4294967295)
-    GenerationConfiguration.AddSeedMode(builder, DrawThingsLists.seed_mode.index(config['seed_mode']))
-    GenerationConfiguration.AddStartWidth(builder, start_width)
-    GenerationConfiguration.AddStartHeight(builder, start_height)
-    GenerationConfiguration.AddTargetImageWidth(builder, config['width'])
-    GenerationConfiguration.AddTargetImageHeight(builder, config['height'])
-    if upscaler is not None:
-        GenerationConfiguration.AddUpscaler(builder, upscaler_model)
-        GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["upscaler_scale_factor"])
-    GenerationConfiguration.AddSteps(builder, config['steps'])
-    GenerationConfiguration.AddNumFrames(builder, config['num_frames'])
-    GenerationConfiguration.AddGuidanceScale(builder, config['cfg'])
-    GenerationConfiguration.AddImageGuidanceScale(builder, config['cfg'])
-    GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, config['speed_up'])
-    GenerationConfiguration.AddGuidanceEmbed(builder, config['guidance_embed'])
-    GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(config['sampler_name']))
-    GenerationConfiguration.AddResolutionDependentShift(builder, config['res_dpt_shift'])
-    GenerationConfiguration.AddShift(builder, config['shift'])
-    GenerationConfiguration.AddFpsId(builder, config['fps'])
-    GenerationConfiguration.AddMotionBucketId(builder, config['motion_scale'])
-    GenerationConfiguration.AddCondAug(builder, config['guiding_frame_noise'])
-    GenerationConfiguration.AddStartFrameCfg(builder, config['start_frame_guidance'])
-
-    if config['causal_inference']:
-        GenerationConfiguration.AddCausalInferenceEnabled(builder, True)
-        GenerationConfiguration.AddCausalInference(builder, int((config['causal_inference'] + 3) / 4))
-
-    GenerationConfiguration.AddBatchSize(builder, config['batch_size'])
-    if refiner is not None:
-        GenerationConfiguration.AddRefinerModel(builder, refiner_model)
-        GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-
-    GenerationConfiguration.AddClipSkip(builder, config['clip_skip'])
-    GenerationConfiguration.AddSharpness(builder, config['sharpness'])
-    GenerationConfiguration.AddMaskBlur(builder, config['mask_blur'])
-    GenerationConfiguration.AddMaskBlurOutset(builder, config['mask_blur_outset'])
-    GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, config['preserve_original'])
-    GenerationConfiguration.AddHiresFix(builder, config['high_res_fix'])
-    if config['high_res_fix'] is True:
-        GenerationConfiguration.AddHiresFixStartWidth(builder, config['high_res_fix_start_width'])
-        GenerationConfiguration.AddHiresFixStartHeight(builder, config['high_res_fix_start_height'])
-        GenerationConfiguration.AddHiresFixStrength(builder, config['high_res_fix_strength'])
-
-    GenerationConfiguration.AddTiledDecoding(builder, config['tiled_decoding'])
-    if config['tiled_decoding'] is True:
-        GenerationConfiguration.AddDecodingTileWidth(builder, config['decoding_tile_width'])
-        GenerationConfiguration.AddDecodingTileHeight(builder, config['decoding_tile_height'])
-        GenerationConfiguration.AddDecodingTileOverlap(builder, config['decoding_tile_overlap'])
-
-    GenerationConfiguration.AddTiledDiffusion(builder, config['tiled_diffusion'])
-    if config['tiled_diffusion'] is True:
-        GenerationConfiguration.AddDiffusionTileWidth(builder, config['diffusion_tile_width'])
-        GenerationConfiguration.AddDiffusionTileHeight(builder, config['diffusion_tile_height'])
-        GenerationConfiguration.AddDiffusionTileOverlap(builder, config['diffusion_tile_overlap'])
-
-    GenerationConfiguration.AddTeaCache(builder, config['tea_cache'])
-    if config['tea_cache'] is True:
-        GenerationConfiguration.AddTeaCacheStart(builder, config['tea_cache_start'])
-        GenerationConfiguration.AddTeaCacheEnd(builder, config['tea_cache_end'])
-        GenerationConfiguration.AddTeaCacheThreshold(builder, config['tea_cache_threshold'])
-        GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, config['tea_cache_max_skip_steps'])
-
-    if config['separate_clip_l']:
-        GenerationConfiguration.GenerationConfigurationAddSeparateClipL(builder, True)
-        GenerationConfiguration.GenerationConfigurationAddClipLText(builder, clip_l_text_buf)
-
-    if config['separate_open_clip_g']:
-        GenerationConfiguration.GenerationConfigurationAddSeparateOpenClipG(builder, True)
-        GenerationConfiguration.GenerationConfigurationAddOpenClipGText(builder, open_clip_g_text_buf)
-
-    GenerationConfiguration.AddBatchCount(builder, config['batch_count'])
-    if controls_out is not None:
-        GenerationConfiguration.AddControls(builder, controls_out)
-    if loras_out is not None:
-        GenerationConfiguration.AddLoras(builder, loras_out)
-
-    builder.Finish(GenerationConfiguration.End(builder))
-    configuration = builder.Output()
+    # print(json.dumps(config.__dict__, indent=4))
 
     contents = []
     img2img = None
     maskimg = None
     if image is not None:
         img2img = convert_image_for_request(image)
-        if mask is not None:
-            maskimg = convert_mask_for_request(mask, config['width'], config['height'])
+    if mask is not None:
+        maskimg = convert_mask_for_request(mask, config.startWidth, config.startHeight)
 
-    override = imageService_pb2.MetadataOverride()
+    # override = imageService_pb2.MetadataOverride()
 
     hints = []
-    if control_net is not None:
-        for control_cfg in control_net:
-            control_image = control_cfg["image"]
-            if control_image is not None:
-                c_input_slot = control_cfg["input_type"] if control_cfg["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
-                taw.weight = control_cfg["weight"]
+    # if control_net is not None:
+    #     for control_cfg in control_net:
+    #         control_image = control_cfg["image"]
+    #         if control_image is not None:
+    #             c_input_slot = control_cfg["input_type"] if control_cfg["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
+    #             taw = imageService_pb2.TensorAndWeight()
+    #             taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
+    #             taw.weight = control_cfg["weight"]
 
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = c_input_slot.lower()
-                hnt.tensors.append(taw)
-                hints.append(hnt)
+    #             hnt = imageService_pb2.HintProto()
+    #             hnt.hintType = c_input_slot.lower()
+    #             hnt.tensors.append(taw)
+    #             hints.append(hnt)
 
-    if lora is not None:
-        for lora_cfg in lora:
-            if 'control_image' in lora_cfg:
-                modifier = lora_cfg["model"]["modifier"]
+    # if lora is not None:
+    #     for lora_cfg in lora:
+    #         if 'control_image' in lora_cfg:
+    #             modifier = lora_cfg["model"]["modifier"]
 
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
-                taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
+    #             taw = imageService_pb2.TensorAndWeight()
+    #             taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
+    #             taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
 
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
-                hnt.tensors.append(taw)
-                hints.append(hnt)
+    #             hnt = imageService_pb2.HintProto()
+    #             hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
+    #             hnt.tensors.append(taw)
+    #             hints.append(hnt)
 
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
             image = img2img,
-            scaleFactor = config['scale_factor'],
+            scaleFactor = 1,
             mask = maskimg,
             hints = hints,
             prompt = positive,
             negativePrompt = negative,
-            configuration = bytes(configuration),
-            override = override,
+            configuration = config_fbs,
+            # override = override,
             user = "ComfyUI",
             device = "LAPTOP",
             contents = contents
@@ -304,10 +199,10 @@ async def dt_sampler(
                 try:
                     x0 = None
                     if preview_image:
-                        model_version = model["version"]
-                        if model_version:
-                            x0 = decode_preview(preview_image, model_version)
-                    prepare_callback(current_step, config['steps'], x0)
+                        # model_version = config["model"]["version"] if "model" in config else None
+                        if version:
+                            x0 = decode_preview(preview_image,version)
+                    prepare_callback(current_step, config.steps, x0)
                 except Exception as e:
                     print('DrawThings-gRPC had an error decoding the preview image:', e)
 
@@ -451,124 +346,14 @@ class DrawThingsSampler:
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
 
-    def sample(self,
-                settings: str,
-                server: str,
-                port: str,
-                use_tls: bool,
-                model: dict,
-                seed: int,
-                seed_mode: str,
-                steps: int,
-                num_frames: int,
-                cfg: float,
-                strength: float,
-                speed_up: bool,
-                guidance_embed: float,
-                sampler_name: str,
-                res_dpt_shift: bool,
-                shift: float,
-                batch_size: int,
-                fps: int,
-                motion_scale: float,
-                guiding_frame_noise: float,
-                start_frame_guidance: float,
-                causal_inference: float,
-                clip_skip: int,
-                sharpness: float,
-                mask_blur: float,
-                mask_blur_outset: float,
-                preserve_original: bool,
-                width: int,
-                height: int,
-                high_res_fix: bool,
-                high_res_fix_start_width: int,
-                high_res_fix_start_height: int,
-                high_res_fix_strength: float,
-                tiled_decoding: bool,
-                decoding_tile_width: int,
-                decoding_tile_height: int,
-                decoding_tile_overlap: int,
-                tiled_diffusion: bool,
-                diffusion_tile_width: int,
-                diffusion_tile_height: int,
-                diffusion_tile_overlap: int,
-                tea_cache: bool,
-                tea_cache_start: int,
-                tea_cache_end: int,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps: int,
-                separate_clip_l: bool,
-                clip_l_text: str,
-                separate_open_clip_g: bool,
-                open_clip_g_text: str,
-                batch_count=1,
-                scale_factor=1,
-                image=None,
-                mask=None,
-                positive="",
-                negative="",
-                control_net: Optional[ControlStack]=None,
-                lora: Optional[LoraStack]=None,
-                refiner=None,
-                upscaler=None,
-                ):
+    def sample(self, **kwargs):
+        server, port, use_tls = kwargs.get('server'), kwargs.get('port'), kwargs.get('use_tls')
+        positive, negative = kwargs.get('positive'), kwargs.get('negative')
+        image, mask = kwargs.get('image'), kwargs.get('mask')
 
-        config = {
-            "model": model["value"],
-            "seed": seed,
-            "seed_mode": seed_mode,
-            "steps": steps,
-            "num_frames": num_frames,
-            "cfg": cfg,
-            "strength": strength,
-            "speed_up": speed_up,
-            "guidance_embed": guidance_embed,
-            "sampler_name": sampler_name,
-            "res_dpt_shift": res_dpt_shift,
-            "shift": shift,
-            "batch_size": batch_size,
-            "fps": fps,
-            "motion_scale": motion_scale,
-            "guiding_frame_noise": guiding_frame_noise,
-            "start_frame_guidance": start_frame_guidance,
-            "causal_inference": causal_inference,
-            "clip_skip": clip_skip,
-            "sharpness": sharpness,
-            "mask_blur": mask_blur,
-            "mask_blur_outset": mask_blur_outset,
-            "preserve_original": preserve_original,
-            "width": width,
-            "height": height,
-            "high_res_fix": high_res_fix,
-            "high_res_fix_start_width": high_res_fix_start_width,
-            "high_res_fix_start_height": high_res_fix_start_height,
-            "high_res_fix_strength": high_res_fix_strength,
-            "tiled_decoding": tiled_decoding,
-            "decoding_tile_width": decoding_tile_width,
-            "decoding_tile_height": decoding_tile_height,
-            "decoding_tile_overlap": decoding_tile_overlap,
-            "tiled_diffusion": tiled_diffusion,
-            "diffusion_tile_width": diffusion_tile_width,
-            "diffusion_tile_height": diffusion_tile_height,
-            "diffusion_tile_overlap": diffusion_tile_overlap,
-            "tea_cache": tea_cache,
-            "tea_cache_start": tea_cache_start,
-            "tea_cache_end": tea_cache_end,
-            "tea_cache_threshold": tea_cache_threshold,
-            "tea_cache_max_skip_steps": tea_cache_max_skip_steps,
-            "separate_clip_l": separate_clip_l,
-            "clip_l_text": clip_l_text,
-            "separate_open_clip_g": separate_open_clip_g,
-            "open_clip_g_text": open_clip_g_text,
-            "batch_count": batch_count,
-            "upscaler_scale_factor": scale_factor,
-            "control_net": control_net,
-            "lora": lora,
-            # refiner=refiner,
-            # upscaler=upscaler
-        }
-        return asyncio.run(dt_sampler(server, port, use_tls, config, positive, negative, image, mask))
+        c, v = build_config(kwargs)
+
+        return asyncio.run(dt_sampler(server, port, use_tls, c, v, positive, negative, image, mask))
 
 
     # @classmethod
@@ -744,7 +529,7 @@ class DrawThingsLoRA:
         return {
             "required": {
                 "lora_name": ("DT_MODEL", {"model_type": "loras", "tooltip": "The model used."}),
-                "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "lora_weight": ("FLOAT", {"default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
                 # "lora": ("DT_LORA",),

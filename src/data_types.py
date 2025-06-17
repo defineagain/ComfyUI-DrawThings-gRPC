@@ -48,16 +48,20 @@ _ControlStackItem = TypedDict(
 )
 ControlStack = list[_ControlStackItem]
 
-
+# this should match kwargs in the sampler node method
 class Config(TypedDict, total=False):
-    start_width: int
-    start_height: int
+    settings: str
+    server: str
+    port: str
+    use_tls: bool
+    width: int
+    height: int
     seed: int
     seed_mode: str
     steps: int
-    guidance_scale: float
+    cfg: float
     strength: float
-    sampler: str
+    sampler_name: str
     batch_count: int
     batch_size: int
     clip_skip: int
@@ -65,30 +69,31 @@ class Config(TypedDict, total=False):
     mask_blur_outset: int
     sharpness: float
     shift: float
-    preserve_original_after_inpaint: bool
-    resolution_dependent_shift: bool
+    preserve_original: bool
+    res_dpt_shift: bool
     image_guidance_scale: float
 
-    model: str
-    controls: list[dict]
-    loras: list[dict]
-    upscaler: str
-    upscaler_scale_factor: int
-    refiner_model: str
-    refiner_start: float
+    model: ModelInfo
+    control_net: ControlStack
+    lora: LoraStack
+    upscaler: dict
+    # upscaler_scale_factor: int
+    # refiner_model: str
+    # refiner_start: float
+    refiner: dict
 
     num_frames: int
-    fps_id: int
-    motion_bucket_id: int
-    cond_aug: float
-    start_frame_cfg: float
+    fps: int
+    motion_scale: int
+    guiding_frame_noise: float
+    start_frame_guidance: float
     causal_inference: int
 
     # conditional
-    hires_fix: bool
-    hires_fix_start_width: int
-    hires_fix_start_height: int
-    hires_fix_strength: int
+    high_res_fix: bool
+    high_res_fix_start_width: int
+    high_res_fix_start_height: int
+    high_res_fix_strength: float
 
     tiled_decoding: bool
     decoding_tile_width: int
@@ -106,7 +111,7 @@ class Config(TypedDict, total=False):
     separate_open_clip_g: bool
     open_clip_g_text: str
 
-    speed_up_with_guidance_embed: bool
+    speed_up: bool
     guidance_embed: float
 
     tea_cache_start: int
