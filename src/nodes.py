@@ -3,39 +3,38 @@
 import os
 import sys
 import base64
-import numpy as np
-from PIL import Image
 import torch
 import asyncio
 import grpc
 import flatbuffers
 import json
+import numpy as np
+from PIL import Image
+from server import PromptServer
+from aiohttp import web
 from google.protobuf.json_format import MessageToJson
 
 from .generated import imageService_pb2, imageService_pb2_grpc
-from .generated import Control, GenerationConfiguration, LoRA
-
-
+from .credentials import credentials
 from .data_types import *
+from .config import build_config
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
-from server import PromptServer
-from aiohttp import web
-
-from .credentials import credentials
 
 def get_channel(server, port, use_tls):
     if use_tls and credentials is not None:
         return grpc.secure_channel(f"{server}:{port}", credentials)
     return grpc.insecure_channel(f"{server}:{port}")
 
+
 def get_aio_channel(server, port, use_tls):
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
     if use_tls and credentials is not None:
         return grpc.aio.secure_channel(f"{server}:{port}", credentials, options=options)
     return grpc.aio.insecure_channel(f"{server}:{port}", options=options)
+
 
 def get_files(server, port, use_tls) -> ModelsInfo:
     with get_channel(server, port, use_tls) as channel:
@@ -59,13 +58,10 @@ def get_files(server, port, use_tls) -> ModelsInfo:
 
         return model_info
 
+
 routes = PromptServer.instance.routes
 @routes.post('/dt_grpc_files_info')
 async def handle_files_info_request(request):
-    # if 'server' not in request.args or 'port' not in request.args:
-    #     return web.json_response({"error": "Missing server or port parameter"}, status=400)
-    # server = request.args['server']
-    # port = request.args['port']
     try:
         post = await request.post()
         server = post.get('server')
@@ -80,286 +76,59 @@ async def handle_files_info_request(request):
         print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
-async def dt_sampler(
-                server,
-                port,
-                use_tls,
-                model: ModelInfo,
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference: int,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
-                positive,
-                negative,
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps,
+async def dt_sampler(inputs: dict):
+    server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
+    positive, negative = inputs.get('positive'), inputs.get('negative')
+    image, mask = inputs.get('image'), inputs.get('mask')
 
-                separate_clip_l: bool,
-                clip_l_text: str,
-                separate_open_clip_g : bool,
-                open_clip_g_text: str,
+    version = inputs["model"]["value"]["version"] if "value" in inputs["model"] and "version" in inputs["model"]["value"] else None
+    inputs["version"] = version
+    config = build_config(inputs)
 
-                batch_count=1,
-                scale_factor=1,
-                image=None,
-                mask=None,
-                control_net: ControlStack=None,
-                lora: LoraStack=None,
-                refiner=None,
-                upscaler=None,
-            ) -> None:
     builder = flatbuffers.Builder(0)
+    builder.Finish(config.Pack(builder))
+    config_fbs = bytes(builder.Output())
 
-    loras_out = None
-    if lora is not None and len(lora):
-        fin_loras = []
-        for l in lora:
-            lora_model = l['model']
-            lora_file = builder.CreateString(lora_model['file'])
-            LoRA.Start(builder)
-            LoRA.AddFile(builder, lora_file)
-            LoRA.AddWeight(builder, l['weight'])
-            fin_lora = LoRA.End(builder)
-            fin_loras.append(fin_lora)
-
-        GenerationConfiguration.StartLorasVector(builder, len(fin_loras))
-        for fl in fin_loras:
-            builder.PrependUOffsetTRelative(fl)
-        loras_out = builder.EndVector()
-
-    controls_out = None
-    if control_net is not None and len(control_net):
-        fin_controls = []
-        for c in control_net:
-            # print(f'{c["input_type"]}')
-            cnet_model = c['model']
-            control_name = builder.CreateString(cnet_model["file"])
-            Control.Start(builder)
-            Control.AddFile(builder, control_name)
-            # NOTE: So apparantly THIS is where you set all the types, NOT via Hints as that's for which slot to use
-            Control.AddInputOverride(builder, DrawThingsLists.control_input_type.index(c["input_type"]))
-            Control.AddControlMode(builder, DrawThingsLists.control_mode.index(c["mode"]))
-            Control.AddWeight(builder, c["weight"])
-            Control.AddGuidanceStart(builder, c["start"])
-            Control.AddGuidanceEnd(builder, c["end"])
-            # Control.AddNoPrompt(builder, False)
-            # Control.AddGlobalAveragePooling(builder, False)
-            # Control.AddDownSamplingRate(builder, 0)
-            # Control.AddTargetBlocks(builder, 0)
-            # Control.StartTargetBlocksVector(builder, )
-            fin_control = Control.End(builder)
-            fin_controls.append(fin_control)
-
-        GenerationConfiguration.StartControlsVector(builder, len(fin_controls))
-        for fc in fin_controls:
-            builder.PrependUOffsetTRelative(fc)
-        controls_out = builder.EndVector()
-
-    start_width = width // 64 // scale_factor
-    start_height = height // 64 // scale_factor
-    model_name = builder.CreateString(model['file'])
-    if upscaler is not None:
-        upscaler_model = builder.CreateString(upscaler["upscaler_model"])
-    if refiner is not None:
-        refiner_model = builder.CreateString(refiner["refiner_model"])
-
-    clip_l_text_buf = builder.CreateString(clip_l_text or "") if separate_clip_l else None
-    open_clip_g_text_buf = builder.CreateString(open_clip_g_text or "") if separate_open_clip_g else None
-
-    GenerationConfiguration.Start(builder)
-    GenerationConfiguration.AddModel(builder, model_name)
-    GenerationConfiguration.AddStrength(builder, strength)
-    GenerationConfiguration.AddSeed(builder, seed % 4294967295)
-    GenerationConfiguration.AddSeedMode(builder, DrawThingsLists.seed_mode.index(seed_mode))
-    GenerationConfiguration.AddStartWidth(builder, start_width)
-    GenerationConfiguration.AddStartHeight(builder, start_height)
-    GenerationConfiguration.AddTargetImageWidth(builder, width)
-    GenerationConfiguration.AddTargetImageHeight(builder, height)
-    if upscaler is not None:
-        GenerationConfiguration.AddUpscaler(builder, upscaler_model)
-        GenerationConfiguration.AddUpscalerScaleFactor(builder, upscaler["upscaler_scale_factor"])
-    GenerationConfiguration.AddSteps(builder, steps)
-    GenerationConfiguration.AddNumFrames(builder, num_frames)
-    GenerationConfiguration.AddGuidanceScale(builder, cfg)
-    GenerationConfiguration.AddImageGuidanceScale(builder, cfg) # Don't know why again, but adding to be sure
-    GenerationConfiguration.AddSpeedUpWithGuidanceEmbed(builder, speed_up)
-    GenerationConfiguration.AddGuidanceEmbed(builder, guidance_embed)
-    GenerationConfiguration.AddSampler(builder, DrawThingsLists.sampler_list.index(sampler_name))
-    GenerationConfiguration.AddResolutionDependentShift(builder, res_dpt_shift)
-    GenerationConfiguration.AddShift(builder, shift)
-    GenerationConfiguration.AddFpsId(builder, fps)
-    GenerationConfiguration.AddMotionBucketId(builder, motion_scale)
-    GenerationConfiguration.AddCondAug(builder, guiding_frame_noise)
-    GenerationConfiguration.AddStartFrameCfg(builder, start_frame_guidance)
-
-    # causal_inference is (x + 3) / 4
-    if causal_inference:
-        GenerationConfiguration.AddCausalInferenceEnabled(builder, True)
-        GenerationConfiguration.AddCausalInference(builder, int((causal_inference + 3) / 4))
-
-    GenerationConfiguration.AddBatchSize(builder, batch_size)
-    if refiner is not None:
-        GenerationConfiguration.AddRefinerModel(builder, refiner_model)
-        GenerationConfiguration.AddRefinerStart(builder, refiner["refiner_start"])
-    # GenerationConfiguration.AddStage2Steps(builder, ) # wurst
-    # GenerationConfiguration.AddStage2Cfg(builder, ) # wurst
-    # GenerationConfiguration.AddStage2Shift(builder, ) # wurst
-    # GenerationConfiguration.AddZeroNegativePrompt(builder, )
-    # GenerationConfiguration.AddSeparateClipL(builder, )
-    # GenerationConfiguration.AddClipLText(builder, )
-    # GenerationConfiguration.AddSeparateOpenClipG(builder, )
-    # GenerationConfiguration.AddOpenClipGText(builder, )
-    GenerationConfiguration.AddClipSkip(builder, clip_skip)
-    GenerationConfiguration.AddSharpness(builder, sharpness)
-    GenerationConfiguration.AddMaskBlur(builder, mask_blur)
-    GenerationConfiguration.AddMaskBlurOutset(builder, mask_blur_outset)
-    GenerationConfiguration.AddPreserveOriginalAfterInpaint(builder, preserve_original)
-    # GenerationConfiguration.AddFaceRestoration(builder, )
-    GenerationConfiguration.AddHiresFix(builder, high_res_fix)
-    if high_res_fix is True:
-        GenerationConfiguration.AddHiresFixStartWidth(builder, high_res_fix_start_width)
-        GenerationConfiguration.AddHiresFixStartHeight(builder, high_res_fix_start_height)
-        GenerationConfiguration.AddHiresFixStrength(builder, high_res_fix_strength)
-
-    GenerationConfiguration.AddTiledDecoding(builder, tiled_decoding)
-    if tiled_decoding is True:
-        GenerationConfiguration.AddDecodingTileWidth(builder, decoding_tile_width)
-        GenerationConfiguration.AddDecodingTileHeight(builder, decoding_tile_height)
-        GenerationConfiguration.AddDecodingTileOverlap(builder, decoding_tile_overlap)
-
-    GenerationConfiguration.AddTiledDiffusion(builder, tiled_diffusion)
-    if tiled_diffusion is True:
-        GenerationConfiguration.AddDiffusionTileWidth(builder, diffusion_tile_width)
-        GenerationConfiguration.AddDiffusionTileHeight(builder, diffusion_tile_height)
-        GenerationConfiguration.AddDiffusionTileOverlap(builder, diffusion_tile_overlap)
-
-    GenerationConfiguration.AddTeaCache(builder, tea_cache)
-    if tea_cache is True: # flux or video option
-        GenerationConfiguration.AddTeaCacheStart(builder, tea_cache_start)
-        GenerationConfiguration.AddTeaCacheEnd(builder, tea_cache_end)
-        GenerationConfiguration.AddTeaCacheThreshold(builder, tea_cache_threshold)
-        GenerationConfiguration.AddTeaCacheMaxSkipSteps(builder, tea_cache_max_skip_steps)
-
-    if separate_clip_l:
-        GenerationConfiguration.GenerationConfigurationAddSeparateClipL(builder, True)
-        GenerationConfiguration.GenerationConfigurationAddClipLText(builder, clip_l_text_buf)
-
-    if separate_open_clip_g:
-        GenerationConfiguration.GenerationConfigurationAddSeparateOpenClipG(builder, True)
-        GenerationConfiguration.GenerationConfigurationAddOpenClipGText(builder, open_clip_g_text_buf)
-
-    # ti embed
-
-    # The rest, don't know where they go or which models use them
-    # GenerationConfiguration.AddClipWeight(builder, )
-    # GenerationConfiguration.AddNegativePromptForImagePrior(builder, )
-    # GenerationConfiguration.AddImagePriorSteps(builder, )
-    # GenerationConfiguration.AddCropTop(builder, )
-    # GenerationConfiguration.AddCropLeft(builder, )
-    # GenerationConfiguration.AddAestheticScore(builder, )
-    # GenerationConfiguration.AddNegativeAestheticScore(builder, )
-    # GenerationConfiguration.AddNegativeOriginalImageHeight(builder, )
-    # GenerationConfiguration.AddNegativeOriginalImageWidth(builder, )
-    # GenerationConfiguration.AddName(builder, )
-    # GenerationConfiguration.AddStochasticSamplingGamma(builder, )
-    # GenerationConfiguration.AddT5TextEncoder(builder, )
-
-    GenerationConfiguration.AddBatchCount(builder, batch_count)
-    if controls_out is not None:
-        GenerationConfiguration.AddControls(builder, controls_out)
-    if loras_out is not None:
-        GenerationConfiguration.AddLoras(builder, loras_out)
-
-    builder.Finish(GenerationConfiguration.End(builder))
-    configuration = builder.Output()
-    # generated = GenerationConfiguration.GenerationConfiguration.GetRootAs(configuration, 0)
+    try:
+        print(json.dumps(inputs, indent=4))
+        print(json.dumps(config, indent=4))
+    except Exception as e:
+        pass
 
     contents = []
     img2img = None
     maskimg = None
     if image is not None:
         img2img = convert_image_for_request(image)
-        if mask is not None:
-            maskimg = convert_mask_for_request(mask, width, height)
+    if mask is not None:
+        maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
 
-    override = imageService_pb2.MetadataOverride()
-    # models_override = [{
-    #     "default_scale": 8,
-    #     "file": "sd_v1.5_f16.ckpt",
-    #     "name": "Generic (Stable Diffusion v1.5)",
-    #     "prefix": "",
-    #     "upcast_attention": False,
-    #     "version": "v1"}]
-    # override.models = bytes(f"{models_override}", encoding='utf-8')
-    # override.loras = b'["hyper_sd_v1.x_4_step_lora_f16.ckpt"]'
-    # override.controlNets = b'["controlnet_depth_1.x_v1.1_f16.ckpt"]'
-    # override.textualInversions = b"[]"
-    # override.upscalers = b"[]"
+    # override = imageService_pb2.MetadataOverride()
 
     hints = []
-    if control_net is not None:
-        for control_cfg in control_net:
-            control_image = control_cfg["image"]
-            if control_image is not None:
-                # NOTE: So apparantly THIS is where you set which slot to use, NOT via InputOverride as that's for all the types
-                # Invalid ControlHintType 'unspecified'
-                if control_cfg["input_type"] not in ["Custom", "Depth", "Scribble", "Pose", "Color"]:
-                    c_input_slot = "Custom"
-                else:
-                    c_input_slot = control_cfg["input_type"]
+    cnets = inputs.get("control_net")
+    if cnets is not None:
+        for cnet in cnets:
+            if cnet.get("image") is not None:
+                c_input_slot = cnet["input_type"] if cnet["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
                 taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(control_image, c_input_slot.lower())
-                taw.weight = control_cfg["weight"]
+                taw.tensor = convert_image_for_request(cnet["image"], c_input_slot.lower())
+                taw.weight = 1
 
                 hnt = imageService_pb2.HintProto()
                 hnt.hintType = c_input_slot.lower()
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
+    lora = inputs.get("lora")
     if lora is not None:
-        # Needed for loras like FLUX.1-Depth-dev-lora
         for lora_cfg in lora:
             if 'control_image' in lora_cfg:
                 modifier = lora_cfg["model"]["modifier"]
 
                 taw = imageService_pb2.TensorAndWeight()
                 taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
-                taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
+                taw.weight = 1 # lora_cfg["weight"] if "weight" in lora_cfg else 1
 
                 hnt = imageService_pb2.HintProto()
                 hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
@@ -369,17 +138,17 @@ async def dt_sampler(
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
-            image = img2img,                      # Image data as sha256 content.
-            scaleFactor = scale_factor,
-            mask = maskimg,                       # Optional  Mask data as sha256 content.
-            hints = hints,                        # List of hints
-            prompt = positive,                    # Optional prompt string
-            negativePrompt = negative,            # Optional negative prompt string
-            configuration = bytes(configuration), # Configuration data as bytes (FlatBuffer)
-            override = override,                  # Override the existing metadata on various Zoo objects.
-            user = "ComfyUI",                     # The name of the client.
-            device = "LAPTOP",                    # The type of the device uses.
-            contents = contents                   # The image data as array of bytes. It is addressed by its sha256 content. This is modeled as content-addressable storage.
+            image = img2img,
+            scaleFactor = 1,
+            mask = maskimg,
+            hints = hints,
+            prompt = positive,
+            negativePrompt = negative,
+            configuration = config_fbs,
+            # override = override,
+            user = "ComfyUI",
+            device = "LAPTOP",
+            contents = contents
         ))
 
         response_images = []
@@ -396,11 +165,9 @@ async def dt_sampler(
             if current_step:
                 try:
                     x0 = None
-                    if preview_image:
-                        model_version = model["version"]
-                        if model_version:
-                            x0 = decode_preview(preview_image, model_version)
-                    prepare_callback(current_step, steps, x0)
+                    if preview_image and version:
+                        x0 = decode_preview(preview_image,version)
+                    prepare_callback(current_step, config.steps, x0)
                 except Exception as e:
                     print('DrawThings-gRPC had an error decoding the preview image:', e)
 
@@ -409,7 +176,6 @@ async def dt_sampler(
 
         images = []
         for img_data in response_images:
-            # Convert the image data to a Pillow Image object
             result = convert_response_image(img_data)
             if result is not None:
                 data = result['data']
@@ -420,72 +186,12 @@ async def dt_sampler(
                 if channels >= 4:
                     mode = "RGBA"
                 img = Image.frombytes(mode, (width, height), data)
-                # print(f"size: {img.size}, mode: {img.mode}")
                 image_np = np.array(img)
-                # Convert to float32 tensor and normalize
                 tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
                 images.append(tensor_image)
 
         return (torch.stack(images),)
 
-class DrawThingsLists:
-    dtserver = "localhost"
-    dtport = "7859"
-
-    sampler_list = [
-                "DPM++ 2M Karras",
-                "Euler A",
-                "DDIM",
-                "PLMS",
-                "DPM++ SDE Karras",
-                "UniPC",
-                "LCM",
-                "Euler A Substep",
-                "DPM++ SDE Substep",
-                "TCD",
-                "Euler A Trailing",
-                "DPM++ SDE Trailing",
-                "DPM++ 2M AYS",
-                "Euler A AYS",
-                "DPM++ SDE AYS",
-                "DPM++ 2M Trailing",
-                "DDIM Trailing",
-            ]
-
-    seed_mode = [
-                "Legacy",
-                "TorchCpuCompatible",
-                "ScaleAlike",
-                "NvidiaGpuCompatible",
-            ]
-
-    control_mode = [
-                "Balanced",
-                "Prompt",
-                "Control",
-            ]
-
-    control_input_type = [
-                "Unspecified",
-                "Custom", # -> Slot
-                "Depth", # -> Slot
-                "Canny",
-                "Scribble", # -> Slot
-                "Pose", # -> Slot
-                "Normalbae",
-                "Color", # -> Slot
-                "Lineart",
-                "Softedge",
-                "Seg",
-                "Inpaint",
-                "Ip2p",
-                "Shuffle",
-                "Mlsd",
-                "Tile",
-                "Blur",
-                "Lowquality",
-                "Gray",
-            ]
 
 class DrawThingsSampler:
     def __init__(self):
@@ -605,130 +311,8 @@ class DrawThingsSampler:
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
 
-    def sample(self,
-                settings,
-                server,
-                port,
-                use_tls,
-                model,
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps,
-                separate_clip_l,
-                clip_l_text,
-                separate_open_clip_g,
-                open_clip_g_text,
-                batch_count=1,
-                scale_factor=1,
-                image=None,
-                mask=None,
-                positive="",
-                negative="",
-                control_net: ControlStack=None,
-                lora: LoraStack=None,
-                refiner=None,
-                upscaler=None,
-                ):
-
-        return asyncio.run(dt_sampler(
-                server,
-                port,
-                use_tls,
-                model["value"],
-                seed,
-                seed_mode,
-                steps,
-                num_frames,
-                cfg,
-                strength,
-                speed_up,
-                guidance_embed,
-                sampler_name,
-                res_dpt_shift,
-                shift,
-                batch_size,
-                fps,
-                motion_scale,
-                guiding_frame_noise,
-                start_frame_guidance,
-                causal_inference,
-                clip_skip,
-                sharpness,
-                mask_blur,
-                mask_blur_outset,
-                preserve_original,
-                positive or "",
-                negative or "",
-                width,
-                height,
-                high_res_fix,
-                high_res_fix_start_width,
-                high_res_fix_start_height,
-                high_res_fix_strength,
-                tiled_decoding,
-                decoding_tile_width,
-                decoding_tile_height,
-                decoding_tile_overlap,
-                tiled_diffusion,
-                diffusion_tile_width,
-                diffusion_tile_height,
-                diffusion_tile_overlap,
-                tea_cache,
-                tea_cache_start,
-                tea_cache_end,
-                tea_cache_threshold,
-                tea_cache_max_skip_steps,
-                separate_clip_l,
-                clip_l_text,
-                separate_open_clip_g,
-                open_clip_g_text,
-                batch_count=batch_count,
-                scale_factor=scale_factor,
-                image=image,
-                mask=mask,
-                control_net=control_net,
-                lora=lora,
-                refiner=refiner,
-                upscaler=upscaler,
-                ))
+    def sample(self, **kwargs):
+        return asyncio.run(dt_sampler(kwargs))
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
@@ -736,26 +320,18 @@ class DrawThingsSampler:
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
+        PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
         return True
+
 
 class DrawThingsRefiner:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
-        def get_filtered_files():
-            file_list = ["Press R to (re)load this list"]
-            try:
-                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            except:
-                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
-            else:
-                file_list.extend([f['name'] for f in all_files['models']])
-            return file_list
-
+    def INPUT_TYPES(cls):
         return {
             "required": {
-                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "refiner_model": ("DT_MODEL", {"model_type": "models" }),
                 "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
             }
         }
@@ -770,14 +346,15 @@ class DrawThingsRefiner:
         return (refiner,)
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
+    def VALIDATE_INPUTS(cls, **kwargs):
         return True
+
 
 class DrawThingsUpscaler:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "upscaler_model": ("DT_MODEL", {"model_type": "upscalers"}),
@@ -794,11 +371,12 @@ class DrawThingsUpscaler:
         upscaler = {"upscaler_model": upscaler_model, "upscaler_scale_factor": upscaler_scale_factor}
         return (upscaler,)
 
+
 class DrawThingsPositive:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "positive": ("STRING", {
@@ -818,7 +396,7 @@ class DrawThingsNegative:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "negative": ("STRING", {
@@ -834,11 +412,12 @@ class DrawThingsNegative:
     def prompt(self, negative):
         return (negative,)
 
+
 class DrawThingsControlNet:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "control_name": ("DT_MODEL", {"model_type": "controlNets", "tooltip": "The model used."}),
@@ -890,7 +469,7 @@ class DrawThingsControlNet:
     #     return float("NaN")
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
+    def VALIDATE_INPUTS(cls, **kwargs):
         return True
 
 class DrawThingsLoRA:
@@ -901,7 +480,7 @@ class DrawThingsLoRA:
         return {
             "required": {
                 "lora_name": ("DT_MODEL", {"model_type": "loras", "tooltip": "The model used."}),
-                "lora_weight": ("FLOAT", {"default": 1.00, "min": -3.00, "max": 3.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "lora_weight": ("FLOAT", {"default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
             },
             "optional": {
                 # "lora": ("DT_LORA",),
@@ -940,8 +519,7 @@ class DrawThingsLoRA:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
-# A dictionary that contains all nodes you want to export with their names
-# NOTE: names should be globally unique
+
 NODE_CLASS_MAPPINGS = {
     "DrawThingsSampler": DrawThingsSampler,
     "DrawThingsControlNet": DrawThingsControlNet,
@@ -952,7 +530,6 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsUpscaler": DrawThingsUpscaler,
 }
 
-# A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsSampler": "Draw Things Sampler",
     "DrawThingsControlNet": "Draw Things Control Net",

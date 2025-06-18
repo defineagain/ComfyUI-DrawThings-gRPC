@@ -3,7 +3,7 @@ import { setCallback } from "./dynamicInputs.js";
 import { updateNodeModels } from "./models.js";
 import { updateProto } from "./util.js";
 
-const dtModelNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"];
+const dtModelNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner"];
 const dtServerNodeTypes = ["DrawThingsSampler"];
 
 app.registerExtension({

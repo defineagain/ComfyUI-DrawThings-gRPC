@@ -1,6 +1,7 @@
 /** @import { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph' */
 import { app } from "../../scripts/app.js";
 import { updateProto } from "./util.js";
+import { calcShift } from "./configProperties.js";
 
 const basicWidgets = [
     "server",
@@ -63,16 +64,6 @@ const advancedWidgets = [
 
 let origProps = {};
 
-// From flux-auto-workflow.js
-export function calcShift(h, w) {
-    const step1 = (h * w) / 256;
-    const step2 = (1.15 - 0.5) / (4096 - 256);
-    const step3 = (step1 - 256) * step2;
-    const step4 = step3 + 0.5;
-    const result = Math.exp(step4);
-    return Math.round(result * 100) / 100;
-}
-
 function findWidgetByName(node, name) {
     return node.widgets.find((w) => w.name === name);
 }
@@ -117,18 +108,19 @@ function showWidget(node, widgetName, show = false, suffix = "") {
     if (!widget) return;
     if (!origProps[widget.name]) {
         origProps[widget.name] = {
-            origType: widget.type,
+            // origType: widget.type,
             origComputeSize: widget.computeSize,
             origComputedHeight: widget.computedHeight,
         };
     }
 
-    const isVisible = !widget.type.startsWith("hidden");
+    const isVisible = !widget.hidden // !widget.type.startsWith("hidden");
     if (isVisible === show) return;
 
-    widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
+    // widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
     widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
     widget.computedHeight = show ? origProps[widget.name].origComputedHeight : 0;
+    widget.hidden = !show;
 
     widget.linkedWidgets?.forEach((w) => showWidget(node, w, ":" + widget.name, show));
 
@@ -139,6 +131,13 @@ function showWidget(node, widgetName, show = false, suffix = "") {
         node.setSize([node.size[0], minHeight]);
 
     setTimeout(() => app.canvas.setDirty(true, true), 10);
+}
+
+function showWidgetX(node, widgetName, show = false) {
+    const widget = findWidgetByName(node, widgetName);
+    if (!widget) return;
+    widget.hidden = !show
+    // setTimeout(() => app.canvas.setDirty(true, true), 10);
 }
 
 function showWidgets(node, show, ...widgetNames) {
