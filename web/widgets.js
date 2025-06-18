@@ -108,18 +108,19 @@ function showWidget(node, widgetName, show = false, suffix = "") {
     if (!widget) return;
     if (!origProps[widget.name]) {
         origProps[widget.name] = {
-            origType: widget.type,
+            // origType: widget.type,
             origComputeSize: widget.computeSize,
             origComputedHeight: widget.computedHeight,
         };
     }
 
-    const isVisible = !widget.type.startsWith("hidden");
+    const isVisible = !widget.hidden // !widget.type.startsWith("hidden");
     if (isVisible === show) return;
 
-    widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
+    // widget.type = show ? origProps[widget.name].origType : "hidden" + suffix;
     widget.computeSize = show ? origProps[widget.name].origComputeSize : () => [0, -4];
     widget.computedHeight = show ? origProps[widget.name].origComputedHeight : 0;
+    widget.hidden = !show;
 
     widget.linkedWidgets?.forEach((w) => showWidget(node, w, ":" + widget.name, show));
 
@@ -130,6 +131,13 @@ function showWidget(node, widgetName, show = false, suffix = "") {
         node.setSize([node.size[0], minHeight]);
 
     setTimeout(() => app.canvas.setDirty(true, true), 10);
+}
+
+function showWidgetX(node, widgetName, show = false) {
+    const widget = findWidgetByName(node, widgetName);
+    if (!widget) return;
+    widget.hidden = !show
+    // setTimeout(() => app.canvas.setDirty(true, true), 10);
 }
 
 function showWidgets(node, show, ...widgetNames) {

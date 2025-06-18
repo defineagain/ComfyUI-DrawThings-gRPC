@@ -181,7 +181,7 @@ function getModelOptions(modelInfo, version) {
     const models = toOptions(modelInfo.models);
     const controlNets = toOptions(modelInfo.controlNets, true);
     const loras = toOptions(modelInfo.loras, true);
-    const upscalers = modelInfo.upscalers.map((m) => `${m.name}`).sort();
+    const upscalers = toOptions(modelInfo.upscalers) //  modelInfo.upscalers.map((m) => `${m.name}`).sort();
     const isNotConnected = modelInfo.isNotConnected;
 
     return { models, controlNets, loras, upscalers, isNotConnected };

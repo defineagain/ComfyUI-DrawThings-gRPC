@@ -90,14 +90,19 @@ async def dt_sampler(inputs: dict) -> None:
     positive, negative = inputs.get('positive'), inputs.get('negative')
     image, mask = inputs.get('image'), inputs.get('mask')
 
-    config = build_config(inputs)
     version = inputs["model"]["value"]["version"] if "value" in inputs["model"] and "version" in inputs["model"]["value"] else None
+    inputs["version"] = version
+    config = build_config(inputs)
 
     builder = flatbuffers.Builder(0)
     builder.Finish(config.Pack(builder))
     config_fbs = bytes(builder.Output())
 
-    # print(json.dumps(config.__dict__, indent=4))
+    try:
+        print(json.dumps(inputs, indent=4))
+        print(json.dumps(config, indent=4))
+    except Exception as e:
+        pass
 
     contents = []
     img2img = None
@@ -335,20 +340,10 @@ class DrawThingsRefiner:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
-        def get_filtered_files():
-            file_list = ["Press R to (re)load this list"]
-            try:
-                all_files = get_files(DrawThingsLists.dtserver, DrawThingsLists.dtport)
-            except:
-                file_list.insert(0, "Could not connect to Draw Things gRPC server. Please check the server address and port.")
-            else:
-                file_list.extend([f['name'] for f in all_files['models']])
-            return file_list
-
+    def INPUT_TYPES(cls):
         return {
             "required": {
-                "refiner_model": (get_filtered_files(), {"default": "Press R to (re)load this list", "tooltip": "The model used for denoising the input latent.\nPlease note that this lists all files, so be sure to pick the right one.\nPress R to (re)load this list."}),
+                "refiner_model": ("DT_MODEL", {"model_type": "models" }),
                 "refiner_start": ("FLOAT", {"default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01}),
             }
         }
@@ -365,6 +360,7 @@ class DrawThingsRefiner:
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
+
 
 class DrawThingsUpscaler:
     def __init__(self):
@@ -386,6 +382,7 @@ class DrawThingsUpscaler:
     def add_to_pipeline(self, upscaler_model, upscaler_scale_factor):
         upscaler = {"upscaler_model": upscaler_model, "upscaler_scale_factor": upscaler_scale_factor}
         return (upscaler,)
+
 
 class DrawThingsPositive:
     def __init__(self):

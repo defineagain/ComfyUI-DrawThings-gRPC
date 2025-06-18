@@ -96,10 +96,28 @@ def build_config(config: Config):
     configT = GenerationConfigurationT()
     apply_common(config, configT)
     apply_conditional(config, configT)
+    apply_extra(config, configT)
     apply_control(config, configT)
     apply_lora(config, configT)
 
     return configT
+
+
+def apply_extra(config: Config, configT: GenerationConfigurationT):
+    if "upscaler" in config and config["upscaler"] is not None:
+        upscaler = config["upscaler"]
+        if "upscaler_model" in upscaler:
+            if "value" in upscaler["upscaler_model"] and "file" in upscaler["upscaler_model"]["value"]:
+                configT.upscaler = upscaler["upscaler_model"]["value"]["file"]
+            elif type(upscaler["upscaler_model"]) == str:
+                configT.upscaler = upscaler["upscaler_model"]
+            configT.upscalerScaleFactor = upscaler.get("upscaler_scale_factor") or 2
+
+    if "refiner" in config and config["refiner"] is not None:
+        refiner = config["refiner"]
+        if "refiner_model" in refiner and "value" in refiner["refiner_model"] and "file" in refiner["refiner_model"]["value"]:
+            configT.refinerModel = refiner["refiner_model"]["value"]["file"]
+            configT.refinerStart = refiner.get("refiner_start") or 0.7
 
 
 def apply_control(config: Config, configT: GenerationConfigurationT):

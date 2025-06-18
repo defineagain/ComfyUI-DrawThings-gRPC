@@ -9,7 +9,7 @@ const app = App.app
 const nodePackVersion = "1.1.2"
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
-const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler"]
+const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner"]
 
 // this holds the node definition from python
 
