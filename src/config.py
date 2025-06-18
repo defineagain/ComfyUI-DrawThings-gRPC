@@ -2,9 +2,8 @@ import numpy as np
 
 from .generated.Control import ControlT
 from .generated.LoRA import LoRAT
-
 from .generated.GenerationConfiguration import GenerationConfigurationT
-from .data_types import Config, ModelInfo
+from .data_types import Config
 from .data_types import DrawThingsLists
 
 
@@ -94,6 +93,7 @@ class Model:
 
 def build_config(config: Config):
     configT = GenerationConfigurationT()
+
     apply_common(config, configT)
     apply_conditional(config, configT)
     apply_extra(config, configT)

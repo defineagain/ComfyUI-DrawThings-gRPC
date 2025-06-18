@@ -3,44 +3,38 @@
 import os
 import sys
 import base64
-from typing import Optional
-import numpy as np
-from PIL import Image
 import torch
 import asyncio
 import grpc
 import flatbuffers
 import json
+import numpy as np
+from PIL import Image
+from server import PromptServer
+from aiohttp import web
 from google.protobuf.json_format import MessageToJson
 
-from .data_types import DrawThingsLists
-
-from .config import build_config
-
 from .generated import imageService_pb2, imageService_pb2_grpc
-from .generated import Control, GenerationConfiguration, LoRA
-
-
+from .credentials import credentials
 from .data_types import *
+from .config import build_config
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
-from server import PromptServer
-from aiohttp import web
-
-from .credentials import credentials
 
 def get_channel(server, port, use_tls):
     if use_tls and credentials is not None:
         return grpc.secure_channel(f"{server}:{port}", credentials)
     return grpc.insecure_channel(f"{server}:{port}")
 
+
 def get_aio_channel(server, port, use_tls):
     options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
     if use_tls and credentials is not None:
         return grpc.aio.secure_channel(f"{server}:{port}", credentials, options=options)
     return grpc.aio.insecure_channel(f"{server}:{port}", options=options)
+
 
 def get_files(server, port, use_tls) -> ModelsInfo:
     with get_channel(server, port, use_tls) as channel:
@@ -64,13 +58,10 @@ def get_files(server, port, use_tls) -> ModelsInfo:
 
         return model_info
 
+
 routes = PromptServer.instance.routes
 @routes.post('/dt_grpc_files_info')
 async def handle_files_info_request(request):
-    # if 'server' not in request.args or 'port' not in request.args:
-    #     return web.json_response({"error": "Missing server or port parameter"}, status=400)
-    # server = request.args['server']
-    # port = request.args['port']
     try:
         post = await request.post()
         server = post.get('server')
@@ -85,7 +76,7 @@ async def handle_files_info_request(request):
         print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
-async def dt_sampler(inputs: dict) -> None:
+async def dt_sampler(inputs: dict):
     server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
     positive, negative = inputs.get('positive'), inputs.get('negative')
     image, mask = inputs.get('image'), inputs.get('mask')
@@ -129,19 +120,20 @@ async def dt_sampler(inputs: dict) -> None:
                 hnt.tensors.append(taw)
                 hints.append(hnt)
 
-    # if lora is not None:
-    #     for lora_cfg in lora:
-    #         if 'control_image' in lora_cfg:
-    #             modifier = lora_cfg["model"]["modifier"]
+    lora = inputs.get("lora")
+    if lora is not None:
+        for lora_cfg in lora:
+            if 'control_image' in lora_cfg:
+                modifier = lora_cfg["model"]["modifier"]
 
-    #             taw = imageService_pb2.TensorAndWeight()
-    #             taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
-    #             taw.weight = lora_cfg["weight"] if "weight" in lora_cfg else 1
+                taw = imageService_pb2.TensorAndWeight()
+                taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
+                taw.weight = 1 # lora_cfg["weight"] if "weight" in lora_cfg else 1
 
-    #             hnt = imageService_pb2.HintProto()
-    #             hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
-    #             hnt.tensors.append(taw)
-    #             hints.append(hnt)
+                hnt = imageService_pb2.HintProto()
+                hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
+                hnt.tensors.append(taw)
+                hints.append(hnt)
 
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
@@ -173,10 +165,8 @@ async def dt_sampler(inputs: dict) -> None:
             if current_step:
                 try:
                     x0 = None
-                    if preview_image:
-                        # model_version = config["model"]["version"] if "model" in config else None
-                        if version:
-                            x0 = decode_preview(preview_image,version)
+                    if preview_image and version:
+                        x0 = decode_preview(preview_image,version)
                     prepare_callback(current_step, config.steps, x0)
                 except Exception as e:
                     print('DrawThings-gRPC had an error decoding the preview image:', e)
@@ -324,11 +314,9 @@ class DrawThingsSampler:
     def sample(self, **kwargs):
         return asyncio.run(dt_sampler(kwargs))
 
-
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
     #     return float("NaN")
-
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
@@ -358,7 +346,7 @@ class DrawThingsRefiner:
         return (refiner,)
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
+    def VALIDATE_INPUTS(cls, **kwargs):
         return True
 
 
@@ -366,7 +354,7 @@ class DrawThingsUpscaler:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "upscaler_model": ("DT_MODEL", {"model_type": "upscalers"}),
@@ -388,7 +376,7 @@ class DrawThingsPositive:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "positive": ("STRING", {
@@ -408,7 +396,7 @@ class DrawThingsNegative:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "negative": ("STRING", {
@@ -424,11 +412,12 @@ class DrawThingsNegative:
     def prompt(self, negative):
         return (negative,)
 
+
 class DrawThingsControlNet:
     def __init__(self):
         pass
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "control_name": ("DT_MODEL", {"model_type": "controlNets", "tooltip": "The model used."}),
@@ -480,7 +469,7 @@ class DrawThingsControlNet:
     #     return float("NaN")
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
+    def VALIDATE_INPUTS(cls, **kwargs):
         return True
 
 class DrawThingsLoRA:
@@ -530,8 +519,7 @@ class DrawThingsLoRA:
     def VALIDATE_INPUTS(s, **kwargs):
         return True
 
-# A dictionary that contains all nodes you want to export with their names
-# NOTE: names should be globally unique
+
 NODE_CLASS_MAPPINGS = {
     "DrawThingsSampler": DrawThingsSampler,
     "DrawThingsControlNet": DrawThingsControlNet,
@@ -542,7 +530,6 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsUpscaler": DrawThingsUpscaler,
 }
 
-# A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsSampler": "Draw Things Sampler",
     "DrawThingsControlNet": "Draw Things Control Net",
