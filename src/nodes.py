@@ -21,7 +21,7 @@ from .config import build_config
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
+show_preview = True
 
 def get_channel(server, port, use_tls):
     if use_tls and credentials is not None:
@@ -75,6 +75,19 @@ async def handle_files_info_request(request):
     except Exception as e:
         print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
+
+
+@routes.post('/dt_grpc_preview')
+async def handle_preview_request(request):
+    global show_preview
+    try:
+        post = await request.post()
+        show_preview = False if post.get('preview') == "none" else True
+        print('show preview:', show_preview)
+        return web.json_response()
+    except Exception as e:
+        print(e)
+        return web.json_response()
 
 async def dt_sampler(inputs: dict):
     server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
@@ -152,7 +165,7 @@ async def dt_sampler(inputs: dict):
         ))
 
         response_images = []
-
+        print("show preview:", show_preview)
         while True:
             response = await generate_stream.read()
             if response == grpc.aio.EOF:
@@ -165,7 +178,7 @@ async def dt_sampler(inputs: dict):
             if current_step:
                 try:
                     x0 = None
-                    if preview_image and version:
+                    if preview_image and version and show_preview:
                         x0 = decode_preview(preview_image,version)
                     prepare_callback(current_step, config.steps, x0)
                 except Exception as e:
