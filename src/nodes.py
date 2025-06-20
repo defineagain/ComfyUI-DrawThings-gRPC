@@ -116,21 +116,22 @@ async def dt_sampler(inputs: dict):
     if mask is not None:
         maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
 
-    # override = imageService_pb2.MetadataOverride()
-
     hints = []
     cnets = inputs.get("control_net")
     if cnets is not None:
         for cnet in cnets:
-            if cnet.get("image") is not None:
-                c_input_slot = cnet["input_type"] if cnet["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(cnet["image"], c_input_slot.lower())
-                taw.weight = 1
+            if cnet.get("image") is not None and cnet.get("input_type") is not None:
+                taws = []
+                for i in range(cnet["image"].size(dim=0)):
+                    hint_tensor = convert_image_for_request(cnet["image"], cnet["input_type"].lower(), batch_index=i)
+                    taw = imageService_pb2.TensorAndWeight()
+                    taw.weight = 1
+                    taw.tensor = hint_tensor
+                    taws.append(taw)
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = c_input_slot.lower()
-                hnt.tensors.append(taw)
+                hnt.hintType = cnet["input_type"].lower()
+                hnt.tensors.extend(taws)
                 hints.append(hnt)
 
     lora = inputs.get("lora")
