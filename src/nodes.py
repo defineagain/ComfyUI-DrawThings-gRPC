@@ -3,6 +3,7 @@
 import os
 import sys
 import base64
+import grpc.aio
 import torch
 import asyncio
 import grpc
@@ -93,9 +94,8 @@ async def dt_sampler(inputs: dict):
     server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
     positive, negative = inputs.get('positive'), inputs.get('negative')
     image, mask = inputs.get('image'), inputs.get('mask')
+    version = inputs.get('version')
 
-    version = inputs["model"]["value"]["version"] if "value" in inputs["model"] and "version" in inputs["model"]["value"] else None
-    inputs["version"] = version
     config = build_config(inputs)
 
     builder = flatbuffers.Builder(0)
@@ -325,15 +325,33 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self, **kwargs):
-        return asyncio.run(dt_sampler(kwargs))
+        model_input = kwargs.get("model")
+        model = model_input.get("value") if model_input is not None else None
+        if model is None or model.get("file") is None:
+            raise Exception("Please select a model")
+
+        kwargs["model"] = model.get("file")
+        kwargs["version"] = model.get("version")
+
+        try:
+            return asyncio.run(dt_sampler(kwargs))
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            raise e
+        except Exception as e:
+            raise e
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
     #     return float("NaN")
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
-        PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
+    def VALIDATE_INPUTS(cls):
+        # PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
+        # if model.get("value") is None or model.get("value").get("file") is None:
+        #     raise Exception("Please select a model")
+        # print(model)
         return True
 
 

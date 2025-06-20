@@ -73,7 +73,8 @@ class Config(TypedDict, total=False):
     res_dpt_shift: bool
     image_guidance_scale: float
 
-    model: ModelInfo
+    model: str
+    version: str
     control_net: ControlStack
     lora: LoraStack
     upscaler: dict
