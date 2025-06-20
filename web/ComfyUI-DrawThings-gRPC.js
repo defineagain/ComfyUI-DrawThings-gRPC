@@ -6,7 +6,8 @@ import { findPropertyJson, findPropertyPython, samplers, seedModes } from "./con
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = App.app
 
-const nodePackVersion = "1.2.0"
+const nodePackVersion = "1.2.1"
+let previewMethod = undefined
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
 const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner"]
@@ -38,6 +39,19 @@ app.registerExtension({
         if (samplerNodes.some(n => n.nodePackVersion !== nodePackVersion)) {
             console.log("Nodes in workflow are from different version of ComfyUI-DrawThings-gRPC")
         }
+    },
+
+    async setup() {
+        await updatePreviewSetting()
+
+        const closeHandler = async () => {
+            await updatePreviewSetting()
+            document.getElementById('cm-close-button')?.removeEventListener("click", closeHandler)
+        }
+
+        document.querySelector('button[title="ComfyUI Manager"]').addEventListener("click", async () => {
+            document.getElementById('cm-close-button')?.addEventListener("click", closeHandler)
+        })
     }
 })
 
@@ -60,7 +74,6 @@ const samplerProto = {
         // this exists for easier debugging in devtools
         console.debug("Click!", this, dtSamplerNodeData)
     },
-
     onSerialize(serialised) {
         serialised.nodePackVersion = nodePackVersion
         serialised.widget_values_keyed = Object.fromEntries(this.widgets.map(w => ([w.name, w.value])))
@@ -184,6 +197,17 @@ const promptProto = {
     },
 }
 
+async function updatePreviewSetting() {
+    const res = await app.api.fetchApi('/manager/preview_method')
+    previewMethod = await res.text()
 
+    const body = new FormData()
+    body.append("preview", previewMethod)
+
+    await app.api.fetchApi(`/dt_grpc_preview`, {
+        method: "POST",
+        body,
+    })
+}
 
 /** @import { LGraphCanvas, LGraphNode, WidgetCallback, IWidget } from "litegraph.js"; */

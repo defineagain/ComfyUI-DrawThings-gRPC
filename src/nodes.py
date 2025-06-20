@@ -3,6 +3,7 @@
 import os
 import sys
 import base64
+import grpc.aio
 import torch
 import asyncio
 import grpc
@@ -21,7 +22,7 @@ from .config import build_config
 from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-
+show_preview = True
 
 def get_channel(server, port, use_tls):
     if use_tls and credentials is not None:
@@ -76,13 +77,25 @@ async def handle_files_info_request(request):
         print(e)
         return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
 
+
+@routes.post('/dt_grpc_preview')
+async def handle_preview_request(request):
+    global show_preview
+    try:
+        post = await request.post()
+        show_preview = False if post.get('preview') == "none" else True
+        print('show preview:', show_preview)
+        return web.json_response()
+    except Exception as e:
+        print(e)
+        return web.json_response()
+
 async def dt_sampler(inputs: dict):
     server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
     positive, negative = inputs.get('positive'), inputs.get('negative')
     image, mask = inputs.get('image'), inputs.get('mask')
+    version = inputs.get('version')
 
-    version = inputs["model"]["value"]["version"] if "value" in inputs["model"] and "version" in inputs["model"]["value"] else None
-    inputs["version"] = version
     config = build_config(inputs)
 
     builder = flatbuffers.Builder(0)
@@ -103,21 +116,22 @@ async def dt_sampler(inputs: dict):
     if mask is not None:
         maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
 
-    # override = imageService_pb2.MetadataOverride()
-
     hints = []
     cnets = inputs.get("control_net")
     if cnets is not None:
         for cnet in cnets:
-            if cnet.get("image") is not None:
-                c_input_slot = cnet["input_type"] if cnet["input_type"] in ["Custom", "Depth", "Scribble", "Pose", "Color"] else "Custom"
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(cnet["image"], c_input_slot.lower())
-                taw.weight = 1
+            if cnet.get("image") is not None and cnet.get("input_type") is not None:
+                taws = []
+                for i in range(cnet["image"].size(dim=0)):
+                    hint_tensor = convert_image_for_request(cnet["image"], cnet["input_type"].lower(), batch_index=i)
+                    taw = imageService_pb2.TensorAndWeight()
+                    taw.weight = 1
+                    taw.tensor = hint_tensor
+                    taws.append(taw)
 
                 hnt = imageService_pb2.HintProto()
-                hnt.hintType = c_input_slot.lower()
-                hnt.tensors.append(taw)
+                hnt.hintType = cnet["input_type"].lower()
+                hnt.tensors.extend(taws)
                 hints.append(hnt)
 
     lora = inputs.get("lora")
@@ -152,7 +166,7 @@ async def dt_sampler(inputs: dict):
         ))
 
         response_images = []
-
+        print("show preview:", show_preview)
         while True:
             response = await generate_stream.read()
             if response == grpc.aio.EOF:
@@ -165,7 +179,7 @@ async def dt_sampler(inputs: dict):
             if current_step:
                 try:
                     x0 = None
-                    if preview_image and version:
+                    if preview_image and version and show_preview:
                         x0 = decode_preview(preview_image,version)
                     prepare_callback(current_step, config.steps, x0)
                 except Exception as e:
@@ -312,15 +326,33 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self, **kwargs):
-        return asyncio.run(dt_sampler(kwargs))
+        model_input = kwargs.get("model")
+        model = model_input.get("value") if model_input is not None else None
+        if model is None or model.get("file") is None:
+            raise Exception("Please select a model")
+
+        kwargs["model"] = model.get("file")
+        kwargs["version"] = model.get("version")
+
+        try:
+            return asyncio.run(dt_sampler(kwargs))
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.UNAVAILABLE:
+                raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
+            raise e
+        except Exception as e:
+            raise e
 
     # @classmethod
     # def IS_CHANGED(s, **kwargs):
     #     return float("NaN")
 
     @classmethod
-    def VALIDATE_INPUTS(s, **kwargs):
-        PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
+    def VALIDATE_INPUTS(cls):
+        # PromptServer.instance.send_sync("dt-grpc-validate", dict({"hello": "js"}))
+        # if model.get("value") is None or model.get("value").get("file") is None:
+        #     raise Exception("Please select a model")
+        # print(model)
         return True
 
 

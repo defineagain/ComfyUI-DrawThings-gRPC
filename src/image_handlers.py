@@ -466,7 +466,7 @@ def decode_preview(preview, version):
     return image
 
 
-def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
+def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, batch_index=0):
     # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
@@ -477,11 +477,14 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None):
     channels = image_tensor.size(dim=3)
     # print(f"Request image tensor is {width}x{height} with {channels} channels")
 
-    image_tensor = image_tensor.to(torch.float16)
-    image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)
+    # image_tensor = image_tensor.to(torch.float16)
+    # image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)[0]
 
-    transform = torchvision.transforms.ToPILImage()
-    pil_image = transform(image_tensor)
+    # transform = torchvision.transforms.ToPILImage()
+    # pil_image = transform(image_tensor)
+
+    pil_image = torchvision.transforms.ToPILImage()(image_tensor[batch_index].permute(2, 0, 1))
+
 
     match control_type:
         case "depth":  # what else?

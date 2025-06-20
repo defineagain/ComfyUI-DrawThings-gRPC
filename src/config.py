@@ -26,19 +26,9 @@ def all_in(list, *args):
     return True
 
 
-class Model:
-    def __init__(self, model_option):
-        info = model_option["value"]
-        if not info:
-            self.file = "unknown"
-            self.name = "unknown"
-            self.version = "unknown"
-            self.prefix = "unknown"
-            return
-        self.file = info["file"]
-        self.name = info["name"]
-        self.version = info["version"]
-        self.prefix = info["prefix"]
+class ModelVersion:
+    def __init__(self, version):
+        self.version = version
 
     @property
     def res_dpt_shift(self):
@@ -166,7 +156,7 @@ def apply_lora(config: Config, configT: GenerationConfigurationT):
 
 def apply_common(config: Config, configT: GenerationConfigurationT):
     if "model" in config:
-        configT.model = Model(config["model"]).file
+        configT.model = config["model"]
     if "width" in config:
         configT.startWidth = config["width"] // 64
     if "height" in config:
@@ -206,7 +196,7 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
 
 
 def apply_conditional(config: Config, configT: GenerationConfigurationT):
-    model = Model(config.get("model"))
+    model = ModelVersion(config.get("version"))
 
     if config.get("high_res_fix"):
         configT.hiresFix = True

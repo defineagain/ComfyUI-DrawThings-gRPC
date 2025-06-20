@@ -160,8 +160,8 @@ function getModelOptions(modelInfo, version) {
                 content: "None selected",
                 value: {
                     name: "None selected",
-                    file: "",
-                    version: "",
+                    file: null,
+                    version: null,
                 },
                 toString() {
                     return "None selected";
