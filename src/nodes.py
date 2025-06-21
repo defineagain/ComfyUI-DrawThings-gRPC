@@ -1,217 +1,24 @@
 #!../../.venv python3
 
+import asyncio
+import json
 import os
 import sys
-import base64
-import grpc.aio
-import torch
-import asyncio
 import grpc
-import flatbuffers
-import json
-import numpy as np
-from PIL import Image
-from server import PromptServer
-from aiohttp import web
-from google.protobuf.json_format import MessageToJson
 
-from .generated import imageService_pb2, imageService_pb2_grpc
-from .credentials import credentials
+from .. import cancel_request
+from .draw_things import dt_sampler
 from .data_types import *
-from .config import build_config
-from .image_handlers import prepare_callback, convert_response_image, decode_preview, convert_image_for_request, convert_mask_for_request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
-show_preview = True
-
-def get_channel(server, port, use_tls):
-    if use_tls and credentials is not None:
-        return grpc.secure_channel(f"{server}:{port}", credentials)
-    return grpc.insecure_channel(f"{server}:{port}")
-
-
-def get_aio_channel(server, port, use_tls):
-    options = [["grpc.max_send_message_length", -1], ["grpc.max_receive_message_length", -1]]
-    if use_tls and credentials is not None:
-        return grpc.aio.secure_channel(f"{server}:{port}", credentials, options=options)
-    return grpc.aio.insecure_channel(f"{server}:{port}", options=options)
-
-
-def get_files(server, port, use_tls) -> ModelsInfo:
-    with get_channel(server, port, use_tls) as channel:
-        stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
-        response = stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
-        response_json = json.loads(MessageToJson(response))
-        DrawThingsSampler.files_list = response_json["files"]
-        override = dict(response_json['override'])
-        model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
-
-        if 'upscalers' not in model_info:
-            official = [
-                'realesrgan_x2plus_f16.ckpt',
-                'realesrgan_x4plus_f16.ckpt',
-                'realesrgan_x4plus_anime_6b_f16.ckpt',
-                'esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt',
-                'remacri_4x_f16.ckpt',
-                '4x_ultrasharp_f16.ckpt',
-            ]
-            model_info['upscalers'] = [UpscalerInfo(file=f, name=f) for f in official if f in DrawThingsSampler.files_list]
-
-        return model_info
-
-
-routes = PromptServer.instance.routes
-@routes.post('/dt_grpc_files_info')
-async def handle_files_info_request(request):
-    try:
-        post = await request.post()
-        server = post.get('server')
-        port = post.get('port')
-        use_tls = post.get('use_tls')
-
-        if server is None or port is None:
-            return web.json_response({"error": "Missing server or port parameter"}, status=400)
-        all_files = get_files(server, port, use_tls)
-        return web.json_response(all_files)
-    except Exception as e:
-        print(e)
-        return web.json_response({"error": "Could not connect to Draw Things gRPC server. Please check the server address and port."}, status=500)
-
-
-@routes.post('/dt_grpc_preview')
-async def handle_preview_request(request):
-    global show_preview
-    try:
-        post = await request.post()
-        show_preview = False if post.get('preview') == "none" else True
-        print('show preview:', show_preview)
-        return web.json_response()
-    except Exception as e:
-        print(e)
-        return web.json_response()
-
-async def dt_sampler(inputs: dict):
-    server, port, use_tls = inputs.get('server'), inputs.get('port'), inputs.get('use_tls')
-    positive, negative = inputs.get('positive'), inputs.get('negative')
-    image, mask = inputs.get('image'), inputs.get('mask')
-    version = inputs.get('version')
-
-    config = build_config(inputs)
-
-    builder = flatbuffers.Builder(0)
-    builder.Finish(config.Pack(builder))
-    config_fbs = bytes(builder.Output())
-
-    try:
-        print(json.dumps(inputs, indent=4))
-        print(json.dumps(config, indent=4))
-    except Exception as e:
-        pass
-
-    contents = []
-    img2img = None
-    maskimg = None
-    if image is not None:
-        img2img = convert_image_for_request(image)
-    if mask is not None:
-        maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
-
-    hints = []
-    cnets = inputs.get("control_net")
-    if cnets is not None:
-        for cnet in cnets:
-            if cnet.get("image") is not None and cnet.get("input_type") is not None:
-                taws = []
-                for i in range(cnet["image"].size(dim=0)):
-                    hint_tensor = convert_image_for_request(cnet["image"], cnet["input_type"].lower(), batch_index=i)
-                    taw = imageService_pb2.TensorAndWeight()
-                    taw.weight = 1
-                    taw.tensor = hint_tensor
-                    taws.append(taw)
-
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = cnet["input_type"].lower()
-                hnt.tensors.extend(taws)
-                hints.append(hnt)
-
-    lora = inputs.get("lora")
-    if lora is not None:
-        for lora_cfg in lora:
-            if 'control_image' in lora_cfg:
-                modifier = lora_cfg["model"]["modifier"]
-
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(lora_cfg["control_image"], modifier)
-                taw.weight = 1 # lora_cfg["weight"] if "weight" in lora_cfg else 1
-
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = modifier if modifier in ["custom", "depth", "scribble", "pose", "color"] else "custom"
-                hnt.tensors.append(taw)
-                hints.append(hnt)
-
-    async with get_aio_channel(server, port, use_tls) as channel:
-        stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
-        generate_stream = stub.GenerateImage(imageService_pb2.ImageGenerationRequest(
-            image = img2img,
-            scaleFactor = 1,
-            mask = maskimg,
-            hints = hints,
-            prompt = positive,
-            negativePrompt = negative,
-            configuration = config_fbs,
-            # override = override,
-            user = "ComfyUI",
-            device = "LAPTOP",
-            contents = contents
-        ))
-
-        response_images = []
-        print("show preview:", show_preview)
-        while True:
-            response = await generate_stream.read()
-            if response == grpc.aio.EOF:
-                break
-
-            current_step = response.currentSignpost.sampling.step
-            preview_image = response.previewImage
-            generated_images = response.generatedImages
-
-            if current_step:
-                try:
-                    x0 = None
-                    if preview_image and version and show_preview:
-                        x0 = decode_preview(preview_image,version)
-                    prepare_callback(current_step, config.steps, x0)
-                except Exception as e:
-                    print('DrawThings-gRPC had an error decoding the preview image:', e)
-
-            if generated_images:
-                response_images.extend(generated_images)
-
-        images = []
-        for img_data in response_images:
-            result = convert_response_image(img_data)
-            if result is not None:
-                data = result['data']
-                width = result['width']
-                height = result['height']
-                channels = result['channels']
-                mode = "RGB"
-                if channels >= 4:
-                    mode = "RGBA"
-                img = Image.frombytes(mode, (width, height), data)
-                image_np = np.array(img)
-                tensor_image = torch.from_numpy(image_np.astype(np.float32) / 255.0)
-                images.append(tensor_image)
-
-        return (torch.stack(images),)
-
 
 class DrawThingsSampler:
+    last_gen_canceled = False
     def __init__(self):
         pass
+
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         return {
             "required": {
                 "settings": (["Basic", "Advanced", "All"], {"default": "Basic"}),
@@ -326,6 +133,7 @@ class DrawThingsSampler:
     CATEGORY = "DrawThings"
 
     def sample(self, **kwargs):
+        DrawThingsSampler.last_gen_canceled = False
         model_input = kwargs.get("model")
         model = model_input.get("value") if model_input is not None else None
         if model is None or model.get("file") is None:
@@ -341,11 +149,17 @@ class DrawThingsSampler:
                 raise Exception("Could not connect to Draw Things gRPC server. Please check the server address and port.")
             raise e
         except Exception as e:
+            if cancel_request.should_cancel:
+                DrawThingsSampler.last_gen_canceled = True
+                return
             raise e
 
-    # @classmethod
-    # def IS_CHANGED(s, **kwargs):
-    #     return float("NaN")
+    @classmethod
+    def IS_CHANGED(cls, **kwargs):
+        if cls.last_gen_canceled:
+            return float("NaN")
+        items = json.dumps(kwargs, sort_keys=True)
+        return hash(items)
 
     @classmethod
     def VALIDATE_INPUTS(cls):
@@ -404,6 +218,38 @@ class DrawThingsUpscaler:
         return (upscaler,)
 
 
+class DrawThingsPrompt:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "insert_textual_inversion": (
+                    "DT_MODEL",
+                    {"model_type": "textualInversions"},
+                ),
+                "prompt": (
+                    "STRING",
+                    {
+                        "multiline": True,
+                        "default": "a lovely cat",
+                        "tooltip": "The conditioning describing the attributes you want to include in the image.",
+                    },
+                ),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("PROMPT",)
+    FUNCTION = "get_prompt"
+    CATEGORY = "DrawThings"
+
+    def get_prompt(self, prompt):
+        return (prompt,)
+
+
 class DrawThingsPositive:
     def __init__(self):
         pass
@@ -423,6 +269,7 @@ class DrawThingsPositive:
 
     def prompt(self, positive):
         return (positive,)
+
 
 class DrawThingsNegative:
     def __init__(self):
@@ -560,6 +407,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsNegative": DrawThingsNegative,
     "DrawThingsRefiner": DrawThingsRefiner,
     "DrawThingsUpscaler": DrawThingsUpscaler,
+    "DrawThingsPrompt": DrawThingsPrompt
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -570,4 +418,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsNegative": "Draw Things Negative Prompt",
     "DrawThingsRefiner": "Draw Things Refiner",
     "DrawThingsUpscaler": "Draw Things Upscaler",
+    "DrawThingsPrompt": "Draw Things Prompt"
 }
