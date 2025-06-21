@@ -1,7 +1,7 @@
 import * as App from "../../scripts/app.js"
 import { DtModelTypeHandler } from "./models.js"
-import { updateProto } from "./util.js"
-import { findPropertyJson, findPropertyPython, samplers, seedModes } from "./configProperties.js"
+import { updateProto, setCallback } from "./util.js"
+import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = App.app
@@ -9,15 +9,11 @@ const app = App.app
 const nodePackVersion = "1.2.3"
 let previewMethod = undefined
 
-// Include the name of any nodes to have their DT_MODEL inputs updated
-const DrawThingsNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner"]
-
 // this holds the node definition from python
-
 let dtSamplerNodeData = null
 
 app.registerExtension({
-    name: "ComfyUI-DrawThings-gRPC",
+    name: "DrawThings-gRPC-Main",
     getCustomWidgets(app) {
         return {
             DT_MODEL: DtModelTypeHandler,
@@ -34,23 +30,33 @@ app.registerExtension({
         }
     },
 
-    beforeConfigureGraph: function (graph) {
-        const samplerNodes = graph.nodes.filter(n => n.type === "DrawThingsSampler")
-        if (samplerNodes.some(n => n.nodePackVersion !== nodePackVersion)) {
-            console.log("Nodes in workflow are from different version of ComfyUI-DrawThings-gRPC")
-        }
-    },
+    // beforeConfigureGraph: function (graph) {
+    //     const samplerNodes = graph.nodes.filter(n => n.type === "DrawThingsSampler")
+    //     if (samplerNodes.some(n => n.nodePackVersion !== nodePackVersion)) {
+    //         console.log("Nodes in workflow are from different version of ComfyUI-DrawThings-gRPC")
+    //     }
+    // },
 
     async setup() {
+        // query the api for the preview setting
         await updatePreviewSetting()
 
+        // listen to the manager ui to update preview setting if necessary
         const closeHandler = async () => {
             await updatePreviewSetting()
             document.getElementById('cm-close-button')?.removeEventListener("click", closeHandler)
         }
-
-        document.querySelector('button[title="ComfyUI Manager"]').addEventListener("click", async () => {
+        setTimeout(() => document.querySelector('button[title="ComfyUI Manager"]').addEventListener("click", async () => {
             document.getElementById('cm-close-button')?.addEventListener("click", closeHandler)
+        }), 3000)
+
+        // if the prompt is cancelled, send a signal to the server to cancel the grpc request
+        setCallback(app.api, "interrupt", async (e) => {
+            if (app.graph.nodes.some(n => n.type === "DrawThingsSampler")) {
+                await app.api.fetchApi(`/dt_grpc_interrupt`, {
+                    method: "POST",
+                })
+            }
         })
     }
 })
@@ -74,6 +80,7 @@ const samplerProto = {
         // this exists for easier debugging in devtools
         console.debug("Click!", this, dtSamplerNodeData)
     },
+
     onSerialize(serialised) {
         serialised.nodePackVersion = nodePackVersion
         serialised.widget_values_keyed = Object.fromEntries(this.widgets.map(w => ([w.name, w.value])))
@@ -178,6 +185,7 @@ const samplerProto = {
     },
 }
 
+
 const promptProto = {
     async onNodeCreated() {
         // Some default node colours, available are:
@@ -196,6 +204,7 @@ const promptProto = {
         }
     },
 }
+
 
 async function updatePreviewSetting() {
     const res = await app.api.fetchApi('/manager/preview_method')
