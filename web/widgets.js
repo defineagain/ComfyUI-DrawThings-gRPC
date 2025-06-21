@@ -80,16 +80,15 @@ function doesInputWithNameExist(node, name) {
  * @param {LGraphNode} node
  */
 function updateInput(input, node) {
-    if (!input || !input.widget || !node) return;
+    if (!input || !input.widget || !node || !node.getWidgetFromSlot) return;
     if (input._origPos === undefined) {
         input._origPos = input.pos;
-        // input._isHidden = false;
 
         const widget = node.getWidgetFromSlot(input)
 
         Object.defineProperty(input, "pos", {
             get() {
-                if (widget?.type?.startsWith("hidden")) {
+                if (widget.hidden) {
                     return this.collapsedPos;
                 } else {
                     return input._origPos;

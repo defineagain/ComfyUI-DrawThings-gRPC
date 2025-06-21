@@ -6,7 +6,7 @@ import { findPropertyJson, findPropertyPython, samplers, seedModes } from "./con
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = App.app
 
-const nodePackVersion = "1.2.2"
+const nodePackVersion = "1.2.3"
 let previewMethod = undefined
 
 // Include the name of any nodes to have their DT_MODEL inputs updated
