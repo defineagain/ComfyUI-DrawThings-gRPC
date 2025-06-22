@@ -20,7 +20,7 @@ export const samplers = [
     "DDIM Trailing",
 ]
 
-export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
+export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"]
 
 // From flux-auto-workflow.js
 export function calcShift(h, w) {
@@ -46,8 +46,8 @@ const numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, "hunyuan_vide
 
 /** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
 export const propertyData = [
-    ['start_width', 'width', 'DrawThingsSampler', 'width', 'int', 512, 64, 2048, 64, 'roundTo64'],
-    ['start_height', 'height', 'DrawThingsSampler', 'height', 'int', 512, 64, 2048, 64, 'roundTo64'],
+    ['start_width', 'width', 'DrawThingsSampler', 'width', 'int', 512, 128, 2048, 64, 'roundTo64'],
+    ['start_height', 'height', 'DrawThingsSampler', 'height', 'int', 512, 128, 2048, 64, 'roundTo64'],
     ['seed', 'seed', 'DrawThingsSampler', 'seed', 'int', -1, -1, null, 1, 'modulo=4294967295'],
     ['steps', 'steps', 'DrawThingsSampler', 'steps', 'int', 16, 1, 150, 1],
     ['guidance_scale', 'cfg', 'DrawThingsSampler', 'guidanceScale', 'float', 5, 0, 50, 0.1],
@@ -57,8 +57,8 @@ export const propertyData = [
     ['batch_count', 'batch_count', 'DrawThingsSampler', 'batchCount', 'int', 1, 1, 4, 1],
     ['batch_size', 'batch_size', 'DrawThingsSampler', 'batchSize', 'int', 1, 1, 1, 1],
     ['hires_fix', 'high_res_fix', 'DrawThingsSampler', 'hiresFix', 'bool', false],
-    ['hires_fix_start_width', 'high_res_fix_start_width', 'DrawThingsSampler', 'hiresFixWidth', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=hiresFix'],
-    ['hires_fix_start_height', 'high_res_fix_start_height', 'DrawThingsSampler', 'hiresFixHeight', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=hiresFix'],
+    ['hires_fix_start_width', 'high_res_fix_start_width', 'DrawThingsSampler', 'hiresFixWidth', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=hiresFix'],
+    ['hires_fix_start_height', 'high_res_fix_start_height', 'DrawThingsSampler', 'hiresFixHeight', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=hiresFix'],
     ['hires_fix_strength', 'high_res_fix_strength', 'DrawThingsSampler', 'hiresFixStrength', 'float', 0.7, 0, 1, 0.01, 'ifTrue=hiresFix'],
 
 
@@ -102,14 +102,14 @@ export const propertyData = [
     ['stage_2_cfg', null, null, 'stage2Guidance'],
     ['stage_2_shift', null, null, 'stage2Shift'],
     ['tiled_decoding', 'tiled_decoding', 'DrawThingsSampler', 'tiledDecoding', 'bool', false],
-    ['decoding_tile_width', 'decoding_tile_width', 'DrawThingsSampler', 'decodingTileWidth', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
-    ['decoding_tile_height', 'decoding_tile_height', 'DrawThingsSampler', 'decodingTileHeight', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
+    ['decoding_tile_width', 'decoding_tile_width', 'DrawThingsSampler', 'decodingTileWidth', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
+    ['decoding_tile_height', 'decoding_tile_height', 'DrawThingsSampler', 'decodingTileHeight', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
     ['decoding_tile_overlap', 'decoding_tile_overlap', 'DrawThingsSampler', 'decodingTileOverlap', 'int', 512, 64, 1024, 64, 'roundTo64,ifTrue=tiledDecoding'],
     ['stochastic_sampling_gamma', 'stochastic_sampling_gamma', null, 'stochasticSamplingGamma'],
     ['preserve_original_after_inpaint', 'preserve_original', 'DrawThingsSampler', 'preserveOriginalAfterInpaint', 'bool', true],
     ['tiled_diffusion', 'tiled_diffusion', 'DrawThingsSampler', 'tiledDiffusion', 'bool', false],
-    ['diffusion_tile_width', 'diffusion_tile_width', 'DrawThingsSampler', 'diffusionTileWidth', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
-    ['diffusion_tile_height', 'diffusion_tile_height', 'DrawThingsSampler', 'diffusionTileHeight', 'int', 512, 64, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
+    ['diffusion_tile_width', 'diffusion_tile_width', 'DrawThingsSampler', 'diffusionTileWidth', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
+    ['diffusion_tile_height', 'diffusion_tile_height', 'DrawThingsSampler', 'diffusionTileHeight', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
     ['diffusion_tile_overlap', 'diffusion_tile_overlap', 'DrawThingsSampler', 'diffusionTileOverlap', 'int', 512, 64, 1024, 64, 'roundTo64,ifTrue=tiledDiffusion'],
 
     ['t5_text_encoder', null, null, 't5TextEncoder'],
