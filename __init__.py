@@ -1,7 +1,7 @@
 """Top-level package for ComfyUI-DrawThings-gRPC."""
 
 __author__ = """Jokimbe"""
-__version__ = "1.2.5"
+__version__ = "1.2.6"
 
 from .src.nodes import NODE_CLASS_MAPPINGS
 from .src.nodes import NODE_DISPLAY_NAME_MAPPINGS
