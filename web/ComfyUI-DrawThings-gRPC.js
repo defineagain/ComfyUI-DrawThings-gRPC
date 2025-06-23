@@ -6,7 +6,7 @@ import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = App.app
 
-const nodePackVersion = "1.2.4"
+const nodePackVersion = "1.2.6"
 let previewMethod = undefined
 
 // this holds the node definition from python
