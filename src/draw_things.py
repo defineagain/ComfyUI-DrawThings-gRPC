@@ -79,7 +79,7 @@ async def dt_sampler(inputs: dict):
     img2img = None
     maskimg = None
     if image is not None:
-        img2img = convert_image_for_request(image)
+        img2img = convert_image_for_request(image, width=config.startWidth * 64, height=config.startHeight * 64)
     if mask is not None:
         maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
 

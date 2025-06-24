@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import torch
 import torchvision
+from torchvision.transforms import v2 as transforms
 import struct
 from .data_types import *
 
@@ -466,25 +467,41 @@ def decode_preview(preview, version):
     return image
 
 
-def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, batch_index=0):
+def resize_crop(image, width, height):
+    # bhwc to bchw
+    bchw = image.permute(0, 3, 1, 2)
+
+    [sh, sw] = [bchw.size(dim=2), bchw.size(dim=3)]
+    [rh, rw] = [height / sh, width / sw]
+    scale = max(rh, rw)
+    [th, tw] = [int(sh * scale), int(sw * scale)]
+
+    resize = transforms.Resize([th, tw])
+    crop = transforms.CenterCrop([height, width])
+    transform = transforms.Compose([resize, crop])
+
+    resized = transform(bchw)
+
+    return resized.permute(0, 2, 3, 1)
+
+
+def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, batch_index=0, width=None, height=None):
     # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
     # A LATENT is a dict; the latent sample is referenced by the key samples and has shape [B,C,H,W], with C=4.
 
-    width = image_tensor.size(dim=2)
-    height = image_tensor.size(dim=1)
+    orig_width = image_tensor.size(dim=2)
+    orig_height = image_tensor.size(dim=1)
     channels = image_tensor.size(dim=3)
-    # print(f"Request image tensor is {width}x{height} with {channels} channels")
 
-    # image_tensor = image_tensor.to(torch.float16)
-    # image_tensor = image_tensor.permute(3, 1, 2, 0).squeeze(3)[0]
+    width = width if width is not None else orig_width
+    height = height if height is not None else orig_height
 
-    # transform = torchvision.transforms.ToPILImage()
-    # pil_image = transform(image_tensor)
+    if width != orig_width or height != orig_height:
+        image_tensor = resize_crop(image_tensor, width, height)
 
     pil_image = torchvision.transforms.ToPILImage()(image_tensor[batch_index].permute(2, 0, 1))
-
 
     match control_type:
         case "depth":  # what else?
@@ -523,18 +540,30 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, bat
     return bytes(image_bytes)
 
 
-def convert_mask_for_request(mask_tensor: torch.Tensor, width: int, height: int):
+def convert_mask_for_request(mask_tensor: torch.Tensor, batch_index = 0, width: int | None = None, height: int | None = None):
     # The binary mask is a shape of (height, width), with content of 0, 1, 2, 3
     # 2 means it is explicit masked, if 2 is presented, we will treat 0 as areas to retain, and 1 as areas to fill in from pure noise. If 2 is not presented, we will fill in 1 as pure noise still, but treat 0 as areas masked. If no 1 or 2 presented, this degrades back to generate from image.
     # In more academic point of view, when 1 is presented, we will go from 0 to step - tEnc to generate things from noise with text guidance in these areas. When 2 is explicitly masked, we will retain these areas during 0 to step - tEnc, and make these areas mixing during step - tEnc to end. When 2 is explicitly masked, we will retain areas marked as 0 during 0 to steps, otherwise we will only retain them during 0 to step - tEnc (depending on whether we have 1, if we don't, we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly). Regardless of these, when marked as 3, it will be retained.
 
-    transform = torchvision.transforms.ToPILImage()
-    pil_image = transform(mask_tensor)
+    # transform = torchvision.transforms.ToPILImage()
+    # pil_image = transform(mask_tensor)
 
     # match mask size to image size
     # [width, height] = image_tensor.size()[1:3]
     # print(f'image tensor is {width}x{height}')
-    pil_image = pil_image.resize((width, height))
+    # pil_image = pil_image.resize((width, height))
+
+    orig_width = mask_tensor.size(dim=2)
+    orig_height = mask_tensor.size(dim=1)
+    channels = mask_tensor.size(dim=3)
+
+    width = width if width is not None else orig_width
+    height = height if height is not None else orig_height
+
+    if width != orig_width or height != orig_height:
+        mask_tensor = resize_crop(mask_tensor, width, height)
+
+    pil_image = torchvision.transforms.ToPILImage()(mask_tensor[batch_index].permute(2, 0, 1))
 
     image_bytes = bytearray(68 + width * height)
     struct.pack_into(
