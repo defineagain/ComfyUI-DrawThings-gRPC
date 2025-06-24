@@ -20,6 +20,17 @@ app.registerExtension({
         }
     },
 
+    beforeConfigureGraph(graph) {
+        for (const node of graph.nodes) {
+            if (node.type === "DrawThingsPositive" || node.type === "DrawThingsNegative") {
+                node.type = "DrawThingsPrompt"
+                node.properties['Node name for S&R'] = "DrawThingsPrompt"
+                delete node.properties.ver
+                node.widgets_values.unshift("...")
+            }
+        }
+    },
+
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeType.comfyClass === "DrawThingsSampler") {
             updateProto(nodeType, samplerProto)

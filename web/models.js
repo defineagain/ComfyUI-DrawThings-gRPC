@@ -1,4 +1,61 @@
 import { dtModelNodeTypes } from './dtModelNodes.js'
+import * as App from "../../scripts/app.js"
+
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
+const app = App.app
+
+class ModelService {
+    constructor() {
+
+    }
+
+    async updateNodes() {
+        console.debug('updating models')
+        const dtModelNodes = app.graph.nodes.filter(n => n.isDtServerNode !== undefined)
+        const serverNodes = dtModelNodes.filter(n => n.isDtServerNode)
+
+        const nodesUpdated = new Map(dtModelNodes.map(n => ([n, false])))
+
+        const serverModels = new Map()
+
+        for (const sn of serverNodes) {
+            nodesUpdated[sn] = true
+            const { server, port, useTls } = sn.getServer()
+
+            if (!server || !port || useTls === undefined) continue
+            const key = modelInfoStoreKey(server, port, useTls)
+            if (!serverModels.has(key)) {
+                serverModels.set(key, await getModels(server, port, useTls))
+            }
+
+            const models = serverModels.get(key)
+
+            /** @param {import("@comfyorg/litegraph").LGraphNode} node */
+            function updateInputs(node) {
+                nodesUpdated[nodesUpdated] = true
+                node?.updateModels(models)
+                for (let slot = 0; slot < node.inputs.length; slot++) {
+                    const input = node.getInputNode(slot)
+                    if (input && nodesUpdated[input] === false) updateInputs(input)
+                }
+            }
+
+            updateInputs(sn)
+        }
+
+        // these nodes are not connected to a sampler node
+        // if there's a single server, update them with those models
+        // otherwise, they are sol
+        const models = serverModels.size === 1 ? serverModels.values().next().value : null
+        for (const node of nodesUpdated.keys()) {
+            if (nodesUpdated[node] === false) {
+                node.updateModels?.(null)
+            }
+        }
+    }
+}
+
+export const modelService = new ModelService()
 
 /**
  * @param node {LGraphNode}
@@ -12,8 +69,8 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
         "(None selected)",
         /** @type WidgetCallback<IWidget<any, any>> */
         (value, graph, node) => {
-            if (node.saveSelectedModels && value.value?.version !== "fail") node.saveSelectedModels()
-            updateNodeModels(node)
+            node.saveSelectedModels?.()
+            modelService.updateNodes()
         },
         {
             values: failedConnectionOptions.map((o) => getMenuItem(o, false)),
@@ -44,12 +101,25 @@ export async function getFiles(server, port, useTls) {
     return filesInfoResponse
 }
 
-/** @typedef {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} ModelInfo */
+/* @typedef {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} ModelInfo */
+
+/**
+ * @typedef {Object} Model
+ * @property {string} name
+ * @property {string} file
+ * @property {string} version
+ */
+
+/**
+ * @typedef {Object} ModelInfo
+ * @property {Model[]} models
+ */
+
 /** @type Map<string, ModelInfo> */
 const modelInfoStore = new Map()
 /** @type Map<string, Promise<void>> */
 const modelInfoRequests = new Map()
-const modelInfoStoreKey = (server, port) => `${server}:${port}`
+const modelInfoStoreKey = (server, port, useTls) => `${server}:${port}${useTls ? ":tls" : ""}`
 
 // yes this is kind of hacky :)
 const failedConnectionOptions = ["Couldn't connect to server", "Check server and click to retry"].map((c, i) => ({
@@ -64,6 +134,35 @@ const notConnectedOptions = ["Not connected to sampler node", "Connect to a samp
     })
 )
 
+async function getModels(server, port, useTls) {
+    if (!server || !port || useTls === undefined) return
+    const key = modelInfoStoreKey(server, port, useTls)
+
+    if (modelInfoRequests.has(key)) {
+        const request = modelInfoRequests.get(key)
+        await request
+    }
+    else {
+        const promise = new Promise((resolve) => {
+            console.debug("checking DT server", key, " (", fetches++, ")")
+            getFiles(server, port, useTls).then(async (response) => {
+                if (!response.ok) {
+                    modelInfoStore.set(key, null)
+                } else {
+                    const data = await response.json()
+                    modelInfoStore.set(key, data)
+                }
+                modelInfoRequests.delete(key)
+                resolve()
+            })
+        })
+        modelInfoRequests.set(key, promise)
+        await promise
+    }
+
+    return modelInfoStore.get(key)
+}
+
 const failedConnectionInfo = {
     models: failedConnectionOptions,
     controlNets: notConnectedOptions,
@@ -75,9 +174,10 @@ const failedConnectionInfo = {
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo)
 let fetches = 0
-let updaates = 0
+let updates = 0
 /** @param node {LGraphNode} */
-export async function updateNodeModels(node, updateDisconnected = false) {
+export async function updateNodeModelsX(node, updateDisconnected = false) {
+    return
     // find the sampler node
     let root = findRoot(node)
     if (!root) {
@@ -202,10 +302,10 @@ function getModelOptions(modelInfo, version) {
     return { models, controlNets, loras, upscalers, textualInversions, isNotConnected }
 }
 
-function getMenuItem(model, disabled) {
+export function getMenuItem(model, disabled) {
     return {
         value: model,
-        content: model.version && model.version !== "fail" ? `${model.name} (${model.version})` : model.name,
+        content: model.version && model.version !== "fail" ? `${model.name} (${getVersionAbbrev(model.version)})` : model.name,
         toString() {
             return model.name
         },
@@ -225,9 +325,27 @@ function getMenuItem(model, disabled) {
 const modelComparator = (a, b) => a.version?.localeCompare(b.version) || a.name.localeCompare(b.name)
 
 const versionNames = {
-    v1: "SD",
-    "sdxl_base_v0.9": "SDXL",
-    flux1: "Flux",
+    v1: 'SD',
+    v2: 'SD2',
+    'kandinsky2.1': 'Kan',
+    'sdxl_base_v0.9': 'SDXL',
+    'sdxl_refiner_v0.9': 'SDXL',
+    ssd_1b: 'SSD',
+    svd_i2v: 'SVD',
+    'wurstchen_v3.0_stage_c': 'Wur',
+    'wurstchen_v3.0_stage_b': 'Wur',
+    sd3: 'SD3',
+    pixart: 'Pix',
+    auraflow: 'AF',
+    flux1: 'F1',
+    sd3_large: 'SD3L',
+    hunyuan_video: 'Hun',
+    'wan_v2.1_1.3b': 'Wan',
+    'wan_v2.1_14b': 'Wan',
+    hidream_i1: 'HiD',
+}
+function getVersionAbbrev(version) {
+    return versionNames[version] ?? version
 }
 
 function setValidOption(widget, node, isNotConnected) {
