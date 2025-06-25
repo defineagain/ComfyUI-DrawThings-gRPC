@@ -10,16 +10,16 @@ class ModelService {
     }
 
     async updateNodes() {
-        console.debug('updating models')
         const dtModelNodes = app.graph.nodes.filter(n => n.isDtServerNode !== undefined)
         const serverNodes = dtModelNodes.filter(n => n.isDtServerNode)
 
-        const nodesUpdated = new Map(dtModelNodes.map(n => ([n, false])))
+        if (!serverNodes.length) return
 
+        const nodesUpdated = new Map(dtModelNodes.map(n => ([n, false])))
         const serverModels = new Map()
 
         for (const sn of serverNodes) {
-            nodesUpdated[sn] = true
+            nodesUpdated.set(sn, true)
             const { server, port, useTls } = sn.getServer()
 
             if (!server || !port || useTls === undefined) continue
@@ -31,25 +31,27 @@ class ModelService {
             const models = serverModels.get(key)
 
             /** @param {import("@comfyorg/litegraph").LGraphNode} node */
-            function updateInputs(node) {
-                nodesUpdated[nodesUpdated] = true
-                node?.updateModels(models)
-                for (let slot = 0; slot < node.inputs.length; slot++) {
-                    const input = node.getInputNode(slot)
-                    if (input && nodesUpdated[input] === false) updateInputs(input)
+            function updateInputs(node, version) {
+                nodesUpdated.set(node, true)
+                node.updateModels?.(models, version)
+
+                const inputNodes = getInputNodes(node)
+                for (const input of inputNodes) {
+                    if (nodesUpdated.get(input) === false) updateInputs(input, version)
                 }
             }
 
-            updateInputs(sn)
+            updateInputs(sn, sn.getModelVersion())
         }
 
         // these nodes are not connected to a sampler node
         // if there's a single server, update them with those models
-        // otherwise, they are sol
         const models = serverModels.size === 1 ? serverModels.values().next().value : null
+        // if there's a single sampler... well let's not disable by version because it's disconnected
         for (const node of nodesUpdated.keys()) {
-            if (nodesUpdated[node] === false) {
-                node.updateModels?.(null)
+            if (nodesUpdated.get(node) === false) {
+                nodesUpdated.set(node, true)
+                node.updateModels?.(models)
             }
         }
     }
@@ -73,7 +75,7 @@ export function DtModelTypeHandler(node, inputName, inputData, app) {
             modelService.updateNodes()
         },
         {
-            values: failedConnectionOptions.map((o) => getMenuItem(o, false)),
+            values: ["(None selected)"],
             modelType: inputData[1].model_type,
         }
     )
@@ -144,7 +146,6 @@ async function getModels(server, port, useTls) {
     }
     else {
         const promise = new Promise((resolve) => {
-            console.debug("checking DT server", key, " (", fetches++, ")")
             getFiles(server, port, useTls).then(async (response) => {
                 if (!response.ok) {
                     modelInfoStore.set(key, null)

@@ -13,14 +13,16 @@ app.registerExtension({
             updateProto(nodeType, dtModelNodeProto)
             if (dtServerNodeTypes.includes(nodeType.comfyClass)) {
                 updateProto(nodeType, dtServerNodeProto)
-            } else {
-                updateProto(nodeType, dtExtraNodeProto)
+            } else if (nodeType.comfyClass === "DrawThingsPrompt") {
+                updateProto(nodeType, dtModelPromptNodeProto)
+            }
+            else {
+                updateProto(nodeType, dtModelStandardNodeProto)
             }
         }
     },
 
     afterConfigureGraph() {
-        console.log('configure?')
         modelService.updateNodes()
     }
 })
@@ -30,7 +32,7 @@ const dtModelNodeProto = {
     saveSelectedModels() {
         const modelWidgets = this.widgets.filter((w) => w.options?.modelType)
         const selections = modelWidgets.reduce((acc, w) => {
-            if (typeof(w.value) === "object") acc[w.name] = w.value
+            if (typeof (w.value) === "object" || w.value === "(None selected)") acc[w.name] = w.value
             else acc[w.name] = this._lastSelectedModel?.[w.name]
             return acc
         }, {})
@@ -54,25 +56,10 @@ const dtModelNodeProto = {
     },
     onConfigure(serialised) {
         this._lastSelectedModel = serialised._lastSelectedModel || {}
-
-        for (const widget of this.widgets.filter((w) => w.options?.modelType)) {
-            if (widget.value?.toString() === "[object Object]") {
-                const value = {
-                    ...widget.value,
-                    toString() {
-                        return this.value.name
-                    },
-                }
-                widget.setValue(value)
-            }
-        }
     },
-    onAdded() {
-        console.log('added', this.id)
-    },
-    onRemoved() {
-        console.log('removed', this.id)
-    },
+    getModelWidget() {
+        return this.widgets.find((w) => w.options?.modelType)
+    }
 }
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -88,10 +75,6 @@ const dtServerNodeProto = {
         const tlsWidget = this.widgets.find((w) => w.name === "use_tls")
         if (tlsWidget) setCallback(tlsWidget, "callback", () => modelService.updateNodes())
     },
-
-    // onConfigure() {
-    //     updateNodeModelsX(this)
-    // },
 
     getServer() {
         const server = this.widgets.find((w) => w.name === "server")?.value
@@ -135,10 +118,103 @@ const dtServerNodeProto = {
     }
 }
 
+// for cnet, lora, upscaler, and refiner
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
-const dtExtraNodeProto = {
-    onConnectionsChange(...args) {
-        const isConnected = args[2]
-        if (isConnected) updateNodeModelsX(this)
+const dtModelStandardNodeProto = {
+    onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
+        if (isConnected) modelService.updateNodes()
     },
+
+    /**
+     * @param {import("./models.js").ModelInfo} models
+     * @param {string} version
+     */
+    updateModels(models, version) {
+        /** @type {import('@comfyorg/litegraph').IWidget} */
+        const widget = this.getModelWidget()
+        const type = widget?.options?.modelType
+
+        if (!type || !(type in models)) return
+
+        if (models === null) {
+            widget.options.values = ["Not connected", "Click to retry"]
+            widget.value = "Not connected"
+            return
+        }
+
+        widget.options.values = ["(None selected)", ...models[type]
+            .map((m) => getMenuItem(m, version && m.version && m.version !== version))
+            .sort((a, b) => {
+                if (a.disabled && !b.disabled) return 1
+                if (!a.disabled && b.disabled) return -1
+                return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
+            })]
+
+        if (widget.value === "Click to retry" || widget.value === "Not connected") {
+            if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
+            else widget.value = "(None selected)"
+        }
+
+        if (widget.value?.toString() === "[object Object]") {
+            const value = {
+                ...widget.value,
+                toString() {
+                    return this.value.name
+                },
+            }
+            widget.value = value
+        }
+    }
+}
+
+const dtModelPromptNodeProto = {
+    onConnectionsChanged: dtModelStandardNodeProto.onConnectionsChange,
+
+    updateModels(models, version) {
+        /** @type {import('@comfyorg/litegraph').IWidget} */
+        const widget = this.getModelWidget()
+        const type = widget?.options?.modelType
+
+        if (!type || !(type in models)) return
+
+        if (models === null) {
+            widget.options.values = ["Not connected", "Click to retry"]
+            widget.value = "Not connected"
+            return
+        }
+
+        const promptText = this.widgets.find((w) => w.name === "prompt")?.value
+        widget.options.values = ["...", ...models[type]
+            .filter(m => !m.name.startsWith("Bears"))
+            .map((m) => getMenuItem(m, version && m.version && m.version !== version))
+            .map(m => {
+                Object.defineProperty(m, 'content', {
+                    get() {
+                        const tag = `<${m.value.keyword}>`
+                        return `${promptText.includes(tag) ? "✓ " : ""}${m.value.name} (${m.value.version})`
+                    }
+                })
+                return m
+            })
+            .sort((a, b) => {
+                if (a.disabled && !b.disabled) return 1
+                if (!a.disabled && b.disabled) return -1
+                return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
+            })]
+
+        if (widget.value === "Click to retry" || widget.value === "Not connected") {
+            if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
+            else widget.value = "(None selected)"
+        }
+
+        if (widget.value?.toString() === "[object Object]") {
+            const value = {
+                ...widget.value,
+                toString() {
+                    return this.value.name
+                },
+            }
+            widget.value = value
+        }
+    }
 }
