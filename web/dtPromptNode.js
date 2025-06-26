@@ -55,7 +55,7 @@ const promptProto = {
         let isPositive = false
         let isNegative = false
 
-        for (const linkId of this.outputs[0].links) {
+        for (const linkId of this.outputs[0]?.links ?? []) {
             const link = this.graph.getLink(linkId)
             const targetId = link?.target_id
             const targetNode = this.graph.getNodeById(targetId)
@@ -87,5 +87,11 @@ const promptProto = {
     onNodeCreated() {
         const output = this.outputs.find((output) => output.name == "PROMPT")
         output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"]
+
+        const promptWidget = this.widgets.find(w => w.name === "prompt")
+        const promptNode = this
+        promptWidget.element.addEventListener('change', () => {
+            promptNode.updateOptions()
+        })
     }
 }

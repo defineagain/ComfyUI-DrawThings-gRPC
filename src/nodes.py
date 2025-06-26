@@ -148,6 +148,7 @@ class DrawThingsSampler:
 
     @classmethod
     def IS_CHANGED(cls, **kwargs):
+        return float("NaN")
         if cls.last_gen_canceled:
             return float("NaN")
         items = json.dumps(kwargs, sort_keys=True)

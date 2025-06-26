@@ -1,4 +1,4 @@
-import { updateNodeModelsX } from './models.js'
+import { modelService } from './models.js'
 
 export const samplers = [
     "DPM++ 2M Karras",
@@ -149,7 +149,7 @@ function roundBy64(value) {
 /** @type {Record<string, (key, value, widget: import('@comfyorg/litegraph').IWidget, node, config) => void>} */
 const importers = {
     model: async (k, v, w, n, c) => {
-        await updateNodeModelsX(n)
+        await modelService.updateNodes()
         const matchingOption = w?.options?.values?.find(ov => ov.value?.file === v)
         if (matchingOption) w.value = matchingOption
     },

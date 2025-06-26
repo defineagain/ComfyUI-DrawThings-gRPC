@@ -16,16 +16,10 @@ from .generated import imageService_pb2, imageService_pb2_grpc
 from .image_handlers import convert_image_for_request, convert_mask_for_request, convert_response_image, decode_preview, prepare_callback
 
 
-def get_channel(server, port, use_tls):
-    if use_tls and credentials is not None:
-        return grpc.secure_channel(f"{server}:{port}", credentials)
-    return grpc.insecure_channel(f"{server}:{port}")
-
-
-def get_files(server, port, use_tls) -> ModelsInfo:
-    with get_channel(server, port, use_tls) as channel:
+async def get_files(server, port, use_tls) -> ModelsInfo:
+    async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
-        response = stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
+        response = await stub.Echo(imageService_pb2.EchoRequest(name="ComfyUI"))
         response_json = json.loads(MessageToJson(response))
         override = dict(response_json['override'])
         model_info = { k: json.loads(str(base64.b64decode(override[k]), 'utf8')) for k in override.keys() }
@@ -81,7 +75,7 @@ async def dt_sampler(inputs: dict):
     if image is not None:
         img2img = convert_image_for_request(image, width=config.startWidth * 64, height=config.startHeight * 64)
     if mask is not None:
-        maskimg = convert_mask_for_request(mask, config.startWidth * 64, config.startHeight * 64)
+        maskimg = convert_mask_for_request(mask, width=config.startWidth * 64, height=config.startHeight * 64)
 
     hints = []
     cnets = inputs.get("control_net")

@@ -552,13 +552,15 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, batch_index = 0, width: 
     # [width, height] = image_tensor.size()[1:3]
     # print(f'image tensor is {width}x{height}')
     # pil_image = pil_image.resize((width, height))
-
+    print(mask_tensor.size())
     orig_width = mask_tensor.size(dim=2)
     orig_height = mask_tensor.size(dim=1)
-    channels = mask_tensor.size(dim=3)
+    # channels = mask_tensor.size(dim=3)
 
     width = width if width is not None else orig_width
     height = height if height is not None else orig_height
+
+    mask_tensor = mask_tensor.unsqueeze(3)
 
     if width != orig_width or height != orig_height:
         mask_tensor = resize_crop(mask_tensor, width, height)

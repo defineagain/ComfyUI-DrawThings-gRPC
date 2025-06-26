@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js"
 import { setCallback } from "./dynamicInputs.js"
-import { updateNodeModelsX, modelService, getMenuItem } from "./models.js"
+import { modelService, getMenuItem } from "./models.js"
 import { updateProto } from "./util.js"
 
 export const dtModelNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner", "DrawThingsPrompt"]
@@ -59,6 +59,9 @@ const dtModelNodeProto = {
     },
     getModelWidget() {
         return this.widgets.find((w) => w.options?.modelType)
+    },
+    onAdded() {
+        modelService.updateNodes()
     }
 }
 
@@ -134,13 +137,13 @@ const dtModelStandardNodeProto = {
         const widget = this.getModelWidget()
         const type = widget?.options?.modelType
 
-        if (!type || !(type in models)) return
-
         if (models === null) {
             widget.options.values = ["Not connected", "Click to retry"]
             widget.value = "Not connected"
             return
         }
+
+        if (!(type in models)) return
 
         widget.options.values = ["(None selected)", ...models[type]
             .map((m) => getMenuItem(m, version && m.version && m.version !== version))
@@ -168,30 +171,36 @@ const dtModelStandardNodeProto = {
 }
 
 const dtModelPromptNodeProto = {
-    onConnectionsChanged: dtModelStandardNodeProto.onConnectionsChange,
+    onConnectionsChange(type, index, isConnected, link_info, inputOrOutput) {
+        if (isConnected) modelService.updateNodes()
+    },
 
     updateModels(models, version) {
+        this._models = models?.textualInversions || null
+        this._version = version
+        this.updateOptions()
+    },
+
+    updateOptions() {
         /** @type {import('@comfyorg/litegraph').IWidget} */
         const widget = this.getModelWidget()
-        const type = widget?.options?.modelType
 
-        if (!type || !(type in models)) return
-
-        if (models === null) {
+        if (this._models === null) {
             widget.options.values = ["Not connected", "Click to retry"]
             widget.value = "Not connected"
             return
         }
 
+        /** @type {string} */
         const promptText = this.widgets.find((w) => w.name === "prompt")?.value
-        widget.options.values = ["...", ...models[type]
-            .filter(m => !m.name.startsWith("Bears"))
-            .map((m) => getMenuItem(m, version && m.version && m.version !== version))
+        const matches = [...promptText.matchAll(/<(.*?)>/gm)]
+        const tags = matches.map(m => m[1])
+        widget.options.values = ["...", ...this._models
+            .map((m) => getMenuItem(m, this._version && m.version && m.version !== this._version && !tags.includes(m.keyword)))
             .map(m => {
                 Object.defineProperty(m, 'content', {
                     get() {
-                        const tag = `<${m.value.keyword}>`
-                        return `${promptText.includes(tag) ? "✓ " : ""}${m.value.name} (${m.value.version})`
+                        return `${tags.includes(m.value.keyword) ? "✓ " : ""}${m.value.name} (${m.value.version})`
                     }
                 })
                 return m
@@ -202,19 +211,6 @@ const dtModelPromptNodeProto = {
                 return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
             })]
 
-        if (widget.value === "Click to retry" || widget.value === "Not connected") {
-            if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
-            else widget.value = "(None selected)"
-        }
-
-        if (widget.value?.toString() === "[object Object]") {
-            const value = {
-                ...widget.value,
-                toString() {
-                    return this.value.name
-                },
-            }
-            widget.value = value
-        }
-    }
+        widget.value = "..."
+    },
 }

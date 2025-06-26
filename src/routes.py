@@ -16,11 +16,11 @@ async def handle_files_info_request(request):
         post = await request.post()
         server = post.get('server')
         port = post.get('port')
-        use_tls = post.get('use_tls')
+        use_tls = True if post.get('use_tls') == "true" else False
 
         if server is None or port is None:
             return web.json_response({"error": "Missing server or port parameter"}, status=400)
-        all_files = get_files(server, port, use_tls)
+        all_files = await get_files(server, port, use_tls)
         return web.json_response(all_files)
     except Exception as e:
         print(e)

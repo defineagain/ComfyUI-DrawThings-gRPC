@@ -5,11 +5,26 @@ import * as App from "../../scripts/app.js"
 const app = App.app
 
 class ModelService {
-    constructor() {
+    #updateNodesPromise = null
 
+    constructor() {
     }
 
     async updateNodes() {
+        // since many nodes may be configured at once, we will batch calls to updateNodes
+        if (!this.#updateNodesPromise) {
+            this.#updateNodesPromise = new Promise(res => {
+                setTimeout(() => {
+                    this.#updateNodesPromise = null
+                    res(this.#updateNodes())
+                }, 10)
+            })
+        }
+
+        return this.#updateNodesPromise
+    }
+
+    async #updateNodes() {
         const dtModelNodes = app.graph.nodes.filter(n => n.isDtServerNode !== undefined)
         const serverNodes = dtModelNodes.filter(n => n.isDtServerNode)
 
@@ -47,7 +62,6 @@ class ModelService {
         // these nodes are not connected to a sampler node
         // if there's a single server, update them with those models
         const models = serverModels.size === 1 ? serverModels.values().next().value : null
-        // if there's a single sampler... well let's not disable by version because it's disconnected
         for (const node of nodesUpdated.keys()) {
             if (nodesUpdated.get(node) === false) {
                 nodesUpdated.set(node, true)
@@ -174,134 +188,14 @@ const failedConnectionInfo = {
 }
 
 modelInfoStore.set(modelInfoStoreKey(), failedConnectionInfo)
-let fetches = 0
-let updates = 0
-/** @param node {LGraphNode} */
-export async function updateNodeModelsX(node, updateDisconnected = false) {
-    return
-    // find the sampler node
-    let root = findRoot(node)
-    if (!root) {
-        if (!updateDisconnected) return
-        root = node
-    }
-
-    // get the server and port
-    const server = root.widgets.find((w) => w.name === "server")?.value
-    const port = root.widgets.find((w) => w.name === "port")?.value
-    const useTls = root.widgets.find((w) => w.name === "use_tls")?.value
-
-    const key = modelInfoStoreKey(server, port)
-
-    if (modelInfoRequests.has(key)) {
-        const request = modelInfoRequests.get(key)
-        await request
-    }
-    // fetch the models list and update store
-    else if (server && port) {
-        const promise = new Promise((resolve) => {
-            console.debug("checking DT server", key, " (", fetches++, ")")
-            getFiles(server, port, useTls).then(async (response) => {
-                if (!response.ok) {
-                    modelInfoStore.set(key, failedConnectionInfo)
-                } else {
-                    const data = await response.json()
-                    modelInfoStore.set(key, data)
-                }
-                modelInfoRequests.delete(key)
-                resolve()
-            })
-        })
-        modelInfoRequests.set(key, promise)
-        await promise
-    }
-
-    const models = modelInfoStore.get(key)
-    const samplerModel = root.widgets.find((w) => w.options?.modelType === "models")?.value
-    const version = samplerModel?.value?.version
-
-    const modelInfo = getModelOptions(models, version)
-
-    // update any connected nodes
-    updateInputs(root)
-
-    /** @param dtNode {LGraphNode} */
-    function updateInputs(dtNode, version) {
-        if (!dtNode) return
-
-        updateModelWidgets(dtNode, modelInfo)
-
-        // const inputs = dtNode.inputs.filter(isDtModelInput)
-        // for (const input of inputs) {
-        //     const slot = dtNode.findInputSlot(input.name)
-        //     const inputNode = dtNode.getInputNode(slot)
-        //     updateInputs(inputNode)
-        // }
-
-        const inputNodes = getInputNodes(dtNode)
-        for (const inputNode of inputNodes) {
-            if (dtModelNodeTypes.includes(inputNode.comfyClass))
-                updateInputs(inputNode, version)
-        }
-    }
-}
 
 /** @param node {LGraphNode} */
 function getInputNodes(node) {
-    // return typeof input?.type === 'string' && input.type.startsWith("DT_");
-
     return node.inputs.map((input, i) => ([i, input]))
         .filter(([index, input]) => input.link !== null)
         .map(([index, input]) => node.getInputNode(index))
 }
 
-/** @param node {LGraphNode}; @param models {{ models: any[], controlNets: any[], loras: any[], upscalers: any[]}} */
-function updateModelWidgets(node, models) {
-    if (!node || !models) return
-    const modelWidgets = node.widgets.filter((w) => w.options?.modelType)
-
-    for (const widget of modelWidgets) {
-        const type = widget.options.modelType
-
-        widget.options.values = models[type]
-        setValidOption(widget, node, models.isNotConnected)
-    }
-}
-
-function getModelOptions(modelInfo, version) {
-    function toOptions(modelGroup, disableByVersion = false) {
-        return [
-            {
-                content: "None selected",
-                value: {
-                    name: "None selected",
-                    file: null,
-                    version: null,
-                },
-                toString() {
-                    return "None selected"
-                },
-            },
-            ...modelGroup
-                .map((m) => getMenuItem(m, disableByVersion && version && m.version && m.version !== version))
-                .sort((a, b) => {
-                    if (a.value?.version === "fail" && b.value?.version === "fail") return 0
-                    if (a.disabled && !b.disabled) return 1
-                    if (!a.disabled && b.disabled) return -1
-                    return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
-                }),
-        ]
-    }
-
-    const models = toOptions(modelInfo.models)
-    const controlNets = toOptions(modelInfo.controlNets, true)
-    const loras = toOptions(modelInfo.loras, true)
-    const upscalers = toOptions(modelInfo.upscalers) //  modelInfo.upscalers.map((m) => `${m.name}`).sort();
-    const textualInversions = toOptions(modelInfo.textualInversions, true)
-    const isNotConnected = modelInfo.isNotConnected
-
-    return { models, controlNets, loras, upscalers, textualInversions, isNotConnected }
-}
 
 export function getMenuItem(model, disabled) {
     return {
@@ -323,7 +217,6 @@ export function getMenuItem(model, disabled) {
     }
 }
 
-const modelComparator = (a, b) => a.version?.localeCompare(b.version) || a.name.localeCompare(b.name)
 
 const versionNames = {
     v1: 'SD',
@@ -345,93 +238,11 @@ const versionNames = {
     'wan_v2.1_14b': 'Wan',
     hidream_i1: 'HiD',
 }
+
+
 function getVersionAbbrev(version) {
     return versionNames[version] ?? version
 }
 
-function setValidOption(widget, node, isNotConnected) {
-    if (!widget || widget.type !== "combo") return
-    const values = widget.options?.values
-    const selected = widget?.value
-
-    if (selected?.value?.toString() === "[object Object]") {
-        const value = {
-            ...selected,
-            toString() {
-                return this.value.name
-            },
-        }
-        widget.value = value
-    }
-
-    // const option = failedConnectionOptions.find((o) => o.name === selected);
-    // if (option) {
-    //     widget.value = values[0];
-    // }
-
-    if (!isNotConnected && selected?.value?.version === "fail") {
-        // server is no connected, so switch from a 'fail' option to the last selected model, or none
-        const lastSelected = node?.lastSelectedModel[widget.name]
-        if (lastSelected) {
-            const option = values.find((o) => o.content === lastSelected.content)
-            if (option) widget.value = option
-            return
-        }
-
-        widget.value = values[0]
-    }
-    // debugger;
-    if (isNotConnected) {
-        // unless "none selected", always select couldn't connect to server
-        if (selected?.value?.content !== "None selected") {
-            const option = values.find((o) => o.content === "Couldn't connect to server")
-            if (option) widget.value = option
-        }
-    }
-}
-
-/** @param {LGraphNode} node */
-function findRoot(node) {
-    if (!node || node.id === -1) return
-
-    if (node?.isDtServerNode === true) return node
-
-    if (node?.isDtServerNode === false) {
-        // this isn't necesarrily a safe assumption but it is for now
-        for (const output of node.outputs.filter((o) => o.type.startsWith("DT_"))) {
-            const outputSlot = node.findOutputSlot(output.name)
-            const outputNodes = node.getOutputNodes(outputSlot) ?? []
-            for (const outputNode of outputNodes) {
-                const root = findRoot(outputNode)
-                if (root) return root
-            }
-        }
-    }
-
-    return undefined
-}
-
-export function findModel(option, type) {
-    const name = extractModelName(option)
-
-    for (const info of modelInfoStore.values()) {
-        const model = info[type].find((m) => m.name === name)
-        if (model) return model
-    }
-
-    return undefined
-}
-
-function extractModelName(option) {
-    if (typeof option === "string") {
-        const matches = option.match(/^(.*) \(.+\)$/)
-        return matches ? matches[1] : option
-    }
-    if (typeof option === "object") {
-        if ("content" in option) return option.content
-        if ("name" in option) return option.name
-    }
-    return option
-}
 
 /** @import { LGraphNode, WidgetCallback, IWidget, IComboWidget } from "@comfyorg/litegraph"; */
