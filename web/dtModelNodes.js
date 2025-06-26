@@ -154,7 +154,7 @@ const dtModelStandardNodeProto = {
             })]
 
         if (widget.value === "Click to retry" || widget.value === "Not connected") {
-            if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
+            if (this._lastSelectedModel?.[widget.name]) widget.value = this._lastSelectedModel[widget.name]
             else widget.value = "(None selected)"
         }
 

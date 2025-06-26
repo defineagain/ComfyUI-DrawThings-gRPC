@@ -29,6 +29,18 @@ test('test output: flux_a', async ({ page }) => {
     await compareOutput(page, 'flux_a')
 })
 
+test('test output: img2img_crop_ti', async ({ page }) => {
+    await compareOutput(page, 'img2img_crop_ti')
+})
+
+test('test output: inpaint_cnet', async ({ page }) => {
+    await compareOutput(page, 'inpaint_cnet')
+})
+
+test('test output: inpaint_sdxl', async ({ page }) => {
+    await compareOutput(page, 'inpaint_sdxl')
+})
+
 async function compareOutput(page: Page, workflow: string) {
     await page.goto(comfyUrl);
 

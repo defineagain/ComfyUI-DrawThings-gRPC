@@ -125,7 +125,9 @@ class DrawThingsSampler:
     def sample(self, **kwargs):
         DrawThingsSampler.last_gen_canceled = False
         model_input = kwargs.get("model")
-        model = model_input.get("value") if model_input is not None else None
+        if type(model_input) is not dict:
+            raise Exception("Please select a model")
+        model = model_input.get("value")
         if model is None or model.get("file") is None:
             raise Exception("Please select a model")
 
@@ -389,7 +391,7 @@ class DrawThingsLoRA:
 
     @classmethod
     def INPUT_TYPES(s):
-        #fmt: off
+        # fmt: off
         return {
             "required": {
                 "lora_name": ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used." }),
@@ -399,7 +401,7 @@ class DrawThingsLoRA:
                 # "lora": ("DT_LORA",),
             },
         }
-        #fmt: on
+        # fmt: on
 
     RETURN_TYPES = ("DT_LORA",)
     RETURN_NAMES = ("LORA",)
