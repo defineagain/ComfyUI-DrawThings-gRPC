@@ -23,6 +23,15 @@ UpscalerInfo = TypedDict(
         "name": str,
     },
 )
+TextualInversionInfo = TypedDict(
+    "TextualInversionInfo",
+    {
+        "file": str,
+        "keyword": str,
+        "name": str,
+        "version": str,
+    }
+)
 ModelsInfo = TypedDict(
     "ModelsInfo",
     {
@@ -30,6 +39,7 @@ ModelsInfo = TypedDict(
         "controlNets": list[ControlNetInfo],
         "loras": list[LoRAInfo],
         "upscalers": list[UpscalerInfo],
+        "textualInversions": list[TextualInversionInfo],
     },
 )
 
