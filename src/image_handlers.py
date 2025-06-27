@@ -83,19 +83,16 @@ def decode_preview(preview, version):
     int_buffer = np.frombuffer(preview, dtype=np.uint32, count=17)
     image_height, image_width, channels = int_buffer[6:9]
 
-    if channels not in {3, 4, 16}:
+    if channels not in [3, 4, 16]:
         return None
 
     offset = 68
-    length = image_width * image_height * channels * 2
-
-    # print(f"Received image is {image_width}x{image_height} with {channels} channels")
-    # print(f"Input size: {len(preview)} (Expected: {length + 68})")
-
     fp16 = np.frombuffer(preview, dtype=np.float16, offset=offset)
 
     image = None
-    if version in ["v1", "v2", "svdI2v"]:
+    version = version.lower() if type(version) == str else version
+
+    if version in ["v1", "v2", "svdi2v"]:
         bytes_array = np.zeros((image_height, image_width, channels), dtype=np.uint8)
         for i in range(image_height * image_width):
             v0, v1, v2, v3 = fp16[i * 4 : i * 4 + 4]
@@ -195,7 +192,7 @@ def decode_preview(preview, version):
             bytes_array[i * 4 + 3] = 255
         image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
 
-    if version.startswith("flux") or version.startswith("hiDream"):
+    if version.startswith("flux") or version.startswith("hidream"):
         bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
         for i in range(image_height * image_width):
             v = fp16[i * 16 : i * 16 + 16]
@@ -335,7 +332,7 @@ def decode_preview(preview, version):
             bytes_array[i * 4 + 3] = 255
         image = Image.frombytes("RGBA", (image_width, image_height), bytes_array)
 
-    if version == "hunyuanVideo":
+    if version == "hunyuanvideo":
         bytes_array = np.zeros((image_height * image_width * 4,), dtype=np.uint8)
         for i in range(image_height * image_width):
             v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15 = fp16[
@@ -422,41 +419,9 @@ def decode_preview(preview, version):
                     fp16[i * 4 + 2],
                     fp16[i * 4 + 3],
                 )
-                r = max(
-                    min(
-                        int(
-                            10.175 * v0
-                            - 20.807 * v1
-                            - 27.834 * v2
-                            - 2.0577 * v3
-                            + 143.39
-                        ),
-                        255,
-                    ),
-                    0,
-                )
-                g = max(
-                    min(
-                        int(
-                            21.07 * v0 - 4.3022 * v1 - 11.258 * v2 - 18.8 * v3 + 131.53
-                        ),
-                        255,
-                    ),
-                    0,
-                )
-                b = max(
-                    min(
-                        int(
-                            7.8454 * v0
-                            - 2.3713 * v1
-                            - 0.45565 * v2
-                            - 41.648 * v3
-                            + 120.76
-                        ),
-                        255,
-                    ),
-                    0,
-                )
+                r = 10.175 * v0 - 20.807 * v1 - 27.834 * v2 - 2.0577 * v3 + 143.39
+                g = 21.07 * v0 - 4.3022 * v1 - 11.258 * v2 - 18.8 * v3 + 131.53
+                b = 7.8454 * v0 - 2.3713 * v1 - 0.45565 * v2 - 41.648 * v3 + 120.76
 
                 bytes_array[i * 4] = clamp(r)
                 bytes_array[i * 4 + 1] = clamp(g)
@@ -485,7 +450,13 @@ def resize_crop(image, width, height):
     return resized.permute(0, 2, 3, 1)
 
 
-def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, batch_index=0, width=None, height=None):
+def convert_image_for_request(
+    image_tensor: torch.Tensor,
+    control_type=None,
+    batch_index=0,
+    width=None,
+    height=None,
+):
     # Draw Things: C header + the Float16 blob of -1 to 1 values that represents the image (in RGB order and HWC format, meaning r(0, 0), g(0, 0), b(0, 0), r(1, 0), g(1, 0), b(1, 0) .... (r(x, y) represents the value of red at that particular coordinate). The actual header is a bit more complex, here is the reference: https://github.com/liuliu/s4nnc/blob/main/nnc/Tensor.swift#L1750 the ccv_nnc_tensor_param_t is here: https://github.com/liuliu/ccv/blob/unstable/lib/nnc/ccv_nnc_tfb.h#L79 The type is CCV_TENSOR_CPU_MEMORY, format is CCV_TENSOR_FORMAT_NHWC, datatype is CCV_16F (for Float16), dim is the dimension in N, H, W, C order (in the case it should be 1, actual height, actual width, 3).
 
     # ComfyUI: An IMAGE is a torch.Tensor with shape [B,H,W,C], C=3. If you are going to save or load images, you will need to convert to and from PIL.Image format - see the code snippets below! Note that some pytorch operations offer (or expect) [B,C,H,W], known as ‘channel first’, for reasons of computational efficiency. Just be careful.
@@ -501,7 +472,9 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, bat
     if width != orig_width or height != orig_height:
         image_tensor = resize_crop(image_tensor, width, height)
 
-    pil_image = torchvision.transforms.ToPILImage()(image_tensor[batch_index].permute(2, 0, 1))
+    pil_image = torchvision.transforms.ToPILImage()(
+        image_tensor[batch_index].permute(2, 0, 1)
+    )
 
     match control_type:
         case "depth":  # what else?
@@ -540,7 +513,12 @@ def convert_image_for_request(image_tensor: torch.Tensor, control_type=None, bat
     return bytes(image_bytes)
 
 
-def convert_mask_for_request(mask_tensor: torch.Tensor, batch_index = 0, width: int | None = None, height: int | None = None):
+def convert_mask_for_request(
+    mask_tensor: torch.Tensor,
+    batch_index=0,
+    width: int | None = None,
+    height: int | None = None,
+):
     # The binary mask is a shape of (height, width), with content of 0, 1, 2, 3
     # 2 means it is explicit masked, if 2 is presented, we will treat 0 as areas to retain, and 1 as areas to fill in from pure noise. If 2 is not presented, we will fill in 1 as pure noise still, but treat 0 as areas masked. If no 1 or 2 presented, this degrades back to generate from image.
     # In more academic point of view, when 1 is presented, we will go from 0 to step - tEnc to generate things from noise with text guidance in these areas. When 2 is explicitly masked, we will retain these areas during 0 to step - tEnc, and make these areas mixing during step - tEnc to end. When 2 is explicitly masked, we will retain areas marked as 0 during 0 to steps, otherwise we will only retain them during 0 to step - tEnc (depending on whether we have 1, if we don't, we don't need to step through 0 to step - tEnc, and if we don't, this degrades to generateImageOnly). Regardless of these, when marked as 3, it will be retained.
@@ -565,7 +543,9 @@ def convert_mask_for_request(mask_tensor: torch.Tensor, batch_index = 0, width: 
     if width != orig_width or height != orig_height:
         mask_tensor = resize_crop(mask_tensor, width, height)
 
-    pil_image = torchvision.transforms.ToPILImage()(mask_tensor[batch_index].permute(2, 0, 1))
+    pil_image = torchvision.transforms.ToPILImage()(
+        mask_tensor[batch_index].permute(2, 0, 1)
+    )
 
     image_bytes = bytearray(68 + width * height)
     struct.pack_into(
