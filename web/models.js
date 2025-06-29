@@ -1,8 +1,5 @@
-import { dtModelNodeTypes } from './dtModelNodes.js'
-import * as App from "../../scripts/app.js"
-
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
-const app = App.app
+const app = window.comfyAPI.app.app
 
 class ModelService {
     #updateNodesPromise = null

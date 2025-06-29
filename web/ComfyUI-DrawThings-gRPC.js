@@ -1,10 +1,7 @@
-import * as App from "../../scripts/app.js"
 import { DtModelTypeHandler } from "./models.js"
 import { updateProto, setCallback } from "./util.js"
 import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
-/** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
-const app = App.app
 
 const nodePackVersion = "1.3.1"
 let previewMethod = undefined
@@ -12,8 +9,10 @@ let previewMethod = undefined
 // this holds the node definition from python
 let dtSamplerNodeData = null
 
-app.registerExtension({
-    name: "DrawThings-gRPC-Main",
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyExtension} */
+export default {
+    name: "core",
+
     getCustomWidgets(app) {
         return {
             DT_MODEL: DtModelTypeHandler,
@@ -36,9 +35,6 @@ app.registerExtension({
             updateProto(nodeType, samplerProto)
             dtSamplerNodeData = nodeData
         }
-        if (nodeType.comfyClass === "DrawThingsPositive" || nodeType.comfyClass === "DrawThingsNegative") {
-            updateProto(nodeType, promptProto)
-        }
     },
 
     // beforeConfigureGraph: function (graph) {
@@ -48,7 +44,7 @@ app.registerExtension({
     //     }
     // },
 
-    async setup() {
+    async setup(app) {
         // query the api for the preview setting
         await updatePreviewSetting()
 
@@ -70,7 +66,7 @@ app.registerExtension({
             }
         })
     }
-})
+}
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
 const samplerProto = {
@@ -197,34 +193,16 @@ const samplerProto = {
 }
 
 
-const promptProto = {
-    async onNodeCreated() {
-        // Some default node colours, available are:
-        // black, blue, brown, cyan, green, pale_blue, purple, red, yellow
-        if (this?.comfyClass === "DrawThingsPositive") {
-            this.color = LGraphCanvas.node_colors.green.color
-            this.bgcolor = LGraphCanvas.node_colors.green.bgcolor
-            const output = this.outputs.find((output) => output.name == "POSITIVE")
-            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"]
-        }
-        if (this?.comfyClass === "DrawThingsNegative") {
-            this.color = LGraphCanvas.node_colors.red.color
-            this.bgcolor = LGraphCanvas.node_colors.red.bgcolor
-            const output = this.outputs.find((output) => output.name == "NEGATIVE")
-            output.color_on = output.color_off = app.canvas.default_connection_color_byType["CONDITIONING"]
-        }
-    },
-}
-
-
 async function updatePreviewSetting() {
-    const res = await app.api.fetchApi('/manager/preview_method')
+    const api = window.comfyAPI.api.api
+
+    const res = await api.fetchApi('/manager/preview_method')
     previewMethod = await res.text()
 
     const body = new FormData()
     body.append("preview", previewMethod)
 
-    await app.api.fetchApi(`/dt_grpc_preview`, {
+    await api.fetchApi(`/dt_grpc_preview`, {
         method: "POST",
         body,
     })

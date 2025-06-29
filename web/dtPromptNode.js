@@ -1,18 +1,4 @@
-import * as App from "../../scripts/app.js"
 import { updateProto } from "./util.js"
-
-/** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
-const app = App.app
-
-app.registerExtension({
-    name: "ComfyUI-DrawThings-gRPC-DtPromptNode",
-
-    beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeType.comfyClass === "DrawThingsPrompt") {
-            updateProto(nodeType, promptProto)
-        }
-    },
-})
 
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
@@ -94,4 +80,15 @@ const promptProto = {
             promptNode.updateOptions()
         })
     }
+}
+
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyExtension}*/
+export default {
+    name: "promptNode",
+
+    beforeRegisterNodeDef(nodeType, nodeData, app) {
+        if (nodeType.comfyClass === "DrawThingsPrompt") {
+            updateProto(nodeType, promptProto)
+        }
+    },
 }
