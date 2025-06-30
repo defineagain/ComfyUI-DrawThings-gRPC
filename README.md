@@ -53,23 +53,6 @@ gRPCServerCLI-macOS [path to models] --no-response-compression --model-browser
 
 ---
 
-## Usage
-
-1. Launch ComfyUI.
-2. Ensure your Draw Things gRPC server is running and accessible.
-3. Use the provided nodes in ComfyUI to send images to Draw Things for ControlNet processing.
-4. Images generated in ComfyUI will be automatically transferred to Draw Things.
-
----
-
-## Troubleshooting
-
-- **Connection Issues:** Ensure both ComfyUI and Draw Things gRPC server are running on the same network and the correct ports are open.
-- **TLS Errors:** Make sure Transport Layer Security settings match between client and server.
-- **Model Not Found:** Enable Model Browser in Draw Things settings or use `--model-browser` with gRPCServerCLI.
-
----
-
 ## Discussion
 
 Join the conversation and get support on [Discord](https://discord.com/channels/1038516303666876436/1357377020299837464).
