@@ -1,92 +1,100 @@
-import 'dotenv/config'
-import { test, expect, Page } from '@playwright/test';
-import sharp from 'sharp';
+import "dotenv/config";
+import { test } from "@playwright/test";
+import { expect } from "./fixtures";
+import { getNodeRef } from "./nodeRef";
+import { openWorkflow } from "./util";
+import { join } from "node:path";
 
-const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || ""
-if (!comfyUrl) throw new Error('PLAYWRIGHT_TEST_URL is not set')
+const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
+if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-const workflowFolder = '/Users/kcjer/Desktop/comfy_test_img/'
-const outputFolder = '/Users/kcjer/sd/ComfyUI/output/'
+export const workflowFolder = "/Users/kcjer/Desktop/comfy_test_img/";
+const outputFolder = "/Users/kcjer/sd/ComfyUI/output/";
 
-test('node', async ({ page }) => {
+test("widget change when settings mode changes", async ({ page }) => {
     await page.goto(comfyUrl);
 
     // Expect a title "to contain" a substring.
     await expect(page).toHaveTitle(/ComfyUI/);
 
-    const fileChooserPromise = page.waitForEvent('filechooser');
+    await openWorkflow(join(workflowFolder, "node.json"), page);
 
-    await page.locator('a').filter({ hasText: /^Workflow$/ }).click();
-    await page.getByText('OpenCtrl + o').click();
+    const nodeRef = await getNodeRef(page, "DrawThingsSampler");
 
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(workflowFolder + "node.json");
+    // "model" on basic and advanced
+    // "strength" on basic
+    // "clip_skip" on advanced
 
-    await page.locator('#graph-canvas').click({
-        position: {
-            x: 137,
-            y: 246
-        }
-    });
+    expect(await nodeRef.isWidgetVisible("settings")).toBeTruthy();
 
-    await page.locator('#graph-canvas').press(".")
-    await page.waitForTimeout(2000)
+    // start on basic
+    await nodeRef.clickWidget("settings");
+    await page.getByRole("menuitem", { name: "Basic" }).click();
 
-    const { view, pos, widget, size } = await page.evaluate(() => {
-        const view: [number, number, number, number] = window.app.canvas.visible_area
-        const node = window.app.canvas.visible_nodes[0]
-        const pos: [number, number, number, number] = node._posSize
-        const widget: number = node.widgets[0].y
+    expect(await nodeRef.isWidgetVisible("settings")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("model")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("strength")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("clip_skip")).toBeFalsy();
 
-        const canvas = window.app.canvas.canvas.getBoundingClientRect()
-        const size = {
-            width: canvas.width,
-            height: canvas.height,
-        }
+    // go to advanced
+    await nodeRef.clickWidget("settings");
+    await page.getByRole("menuitem", { name: "Advanced" }).click();
 
-        return { view, pos, widget, size }
-    })
+    expect(await nodeRef.isWidgetVisible("settings")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("model")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("strength")).toBeFalsy();
+    expect(await nodeRef.isWidgetVisible("clip_skip")).toBeTruthy();
 
-    console.log(view, pos, widget, size)
+    // go to all
+    await nodeRef.clickWidget("settings");
+    await page.getByRole("menuitem", { name: "All" }).click();
 
-    const yScale = (view[3] - view[1]) / size.height
-    const xScale = (view[2] - view[0]) / size.width
+    expect(await nodeRef.isWidgetVisible("settings")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("model")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("strength")).toBeTruthy();
+    expect(await nodeRef.isWidgetVisible("clip_skip")).toBeTruthy();
+});
 
-    // okay we need to map coords in the workflow to the canvas
-    const relativePos = {
-        x: (pos[0] - view[0]) / (view[2] - view[0]) * size.width,
-        y: (pos[1] - view[1]) / (view[3] - view[1]) * size.height,
-        width: pos[2] / (view[2] - view[0]) * size.width,
-        height: pos[3] / (view[3] - view[1]) * size.height
-    };
+test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
+    await page.goto(comfyUrl);
 
-    console.log('Relative Position and Size:', relativePos);
+    // Expect a title "to contain" a substring.
+    await expect(page).toHaveTitle(/ComfyUI/);
 
-    const getPos = ([x, y]) => ([x * xScale - view[0], y * yScale - view[1]])
+    await openWorkflow(join(workflowFolder, "node.json"), page);
 
-    /*
+    const nodeRef = await getNodeRef(page, "DrawThingsSampler");
 
-    0-100
-    view is of 20-70
-    you want x = 30
-    which is 3/5 = 60
-    x * 2 (width/width) - 20
+    // go to advanced
+    await nodeRef.clickWidget("settings");
+    await page.getByRole("menuitem", { name: "Advanced" }).click();
 
-    */
+    expect(await nodeRef.isWidgetVisible("high_res_fix")).toBeTruthy();
 
-    // try and click the widget
-    const widgetX = pos[0] + pos[3] / 2
-    const widgetY = pos[1] + widget + 10
-    const [clickX, clickY] = getPos([widgetX, widgetY])
-    console.log(clickX, clickY)
+    if (await nodeRef.getWidgetValue("high_res_fix")) {
+        await nodeRef.clickWidget("high_res_fix");
+    }
+    await page.waitForTimeout(500);
+    expect(await nodeRef.getWidgetValue("high_res_fix")).toBeFalsy();
 
-    await page.waitForTimeout(2000)
+    expect(
+        await nodeRef.isWidgetVisible([
+            "high_res_fix_start_width",
+            "high_res_fix_start_height",
+            "high_res_fix_strength",
+        ])
+    ).toEachBeFalsy();
 
-    await page.mouse.click(clickX, clickY)
-    await page.getByRole('menuitem', { name: 'Advanced' }).click();
+    await nodeRef.clickWidget("high_res_fix");
+    await page.waitForTimeout(500);
 
-    await page.waitForTimeout(2000)
+    expect(await nodeRef.getWidgetValue("high_res_fix")).toBeTruthy();
 
-    await page.mouse.click(clickX, clickY)
-    await page.getByRole('menuitem', { name: 'All' }).click();
-})
+    expect(
+        await nodeRef.isWidgetVisible([
+            "high_res_fix_start_width",
+            "high_res_fix_start_height",
+            "high_res_fix_strength",
+        ])
+    ).toEachBeTruthy();
+});
