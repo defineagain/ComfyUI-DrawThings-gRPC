@@ -253,7 +253,7 @@ export default {
         {
             id: "drawthings.node.keep_shrunk",
             type: "boolean",
-            name: "Keep node shrunk",
+            name: "Keep node shrunk when widgets change",
             default: true,
             category: ["DrawThings", "Nodes", "Keep node shrunk"],
             onChange: (newVal, oldVal) => {
