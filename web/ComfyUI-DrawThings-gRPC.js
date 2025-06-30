@@ -51,10 +51,9 @@ export default {
         // listen to the manager ui to update preview setting if necessary
         const closeHandler = async () => {
             await updatePreviewSetting()
-            document.getElementById('cm-close-button')?.removeEventListener("click", closeHandler)
         }
         setTimeout(() => document.querySelector('button[title="ComfyUI Manager"]').addEventListener("click", async () => {
-            document.getElementById('cm-close-button')?.addEventListener("click", closeHandler)
+            document.getElementById('cm-close-button')?.addEventListener("click", closeHandler, { once: true })
         }), 3000)
 
         // if the prompt is cancelled, send a signal to the server to cancel the grpc request
