@@ -1,7 +1,7 @@
 import { expect as baseExpect } from "@playwright/test";
 
-export const expect = baseExpect.extend({
-    toEachBeTruthy(items: any[]) {
+export const expect = baseExpect.extend<Record<string, any>>({
+    toEachBeTruthy<T extends any[]>(items: T) {
         const assertionName = "toEachBeTruthy";
 
         const itemsPass = items.map((item) => {

@@ -1,6 +1,15 @@
-import { Page } from '@playwright/test';
+import "dotenv/config";
+import { Page, expect } from "@playwright/test";
+
+const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
+if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
 export async function openWorkflow(workflow: string, page: Page) {
+    await page.goto(comfyUrl);
+
+    // Expect a title "to contain" a substring.
+    await expect(page).toHaveTitle(/ComfyUI/);
+
     const fileChooserPromise = page.waitForEvent("filechooser");
 
     await page
@@ -19,6 +28,7 @@ export async function openWorkflow(workflow: string, page: Page) {
         },
     });
 
+    await page.waitForTimeout(1000);
     await page.locator("#graph-canvas").press(".");
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
 }

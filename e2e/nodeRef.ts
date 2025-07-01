@@ -1,8 +1,9 @@
-import { Page } from '@playwright/test';
+import { Page } from "@playwright/test";
 
 export async function getNodeRef(
     page: Page,
-    node: number | string | ((node) => boolean)) {
+    node: number | string | ((node) => boolean)
+) {
     const nodeId = await page.evaluate((node) => {
         if (typeof node === "number") {
             return window.app.graph._nodes[node].id;
@@ -19,7 +20,9 @@ export async function getNodeRef(
     }
 
     return new NodeRef(nodeId, page);
-}export class NodeRef {
+}
+
+export class NodeRef {
     readonly id: number;
     readonly page: Page;
 
@@ -33,7 +36,8 @@ export async function getNodeRef(
     async clickWidget(name: string) {
         const { view, pos, widgetPos, size } = await this.page.evaluate(
             ([nodeId, name]) => {
-                const view: [number, number, number, number] = window.app.canvas.visible_area;
+                const view: [number, number, number, number] =
+                    window.app.canvas.visible_area;
                 const node = app.graph.getNodeById(nodeId);
                 const pos: [number, number, number, number] = node._posSize;
                 const widget = node.widgets.find((w) => w.name === name);
@@ -106,6 +110,36 @@ export async function getNodeRef(
         return widgets.every((v) => v === true);
     }
 
+    async isWidgetDisabled(name: string);
+    async isWidgetDisabled(names: string[]);
+    async isWidgetDisabled(arg: string | string[]) {
+        const names = Array.isArray(arg) ? arg : [arg];
+
+        const widgets = await this.page.evaluate(
+            async ([nodeId, names, delay]) => {
+                await new Promise((resolve) => setTimeout(resolve, delay));
+                const node = app.graph.getNodeById(nodeId);
+                const isDisabled: boolean[] = [];
+                for (const name of names) {
+                    const w = node.widgets.find((w) => w.name === name);
+                    if (!w || w.disabled !== true) {
+                        isDisabled.push(false);
+                        continue;
+                    }
+                    isDisabled.push(true);
+                }
+                return isDisabled;
+            },
+            [this.id, names, this.delay]
+        );
+
+        if (Array.isArray(arg)) {
+            return widgets;
+        } else {
+            return widgets[0];
+        }
+    }
+
     async getWidgetValue(name: string) {
         return await this.page.evaluate(
             ([nodeId, name]) => {
@@ -117,5 +151,9 @@ export async function getNodeRef(
             [this.id, name]
         );
     }
-}
 
+    async selectWidgetOption(widget: string, option: string | RegExp) {
+        await this.clickWidget(widget);
+        await this.page.getByRole("menuitem", { name: option }).first().click();
+    }
+}
