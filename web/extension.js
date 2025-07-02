@@ -1,5 +1,5 @@
 import dtPrompt from "./dtPromptNode.js"
-import dtCore from "./ComfyUI-DrawThings-gRPC.js"
+import dtCore, { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
 import dtModelNodes from "./dtModelNodes.js"
 import dtDynamicInputs from "./dynamicInputs.js"
 import dtWidgets from "./widgets.js"
@@ -16,12 +16,6 @@ const modules = [dtCore, dtPrompt, dtModelNodes, dtDynamicInputs, dtWidgets]
 app.registerExtension({
     name: "DrawThings-gRPC",
 
-    // beforeRegisterNodeDef(nodeType, nodeData, app) {
-    //     for (const module of modules) {
-    //         module.beforeRegisterNodeDef?.(nodeType, nodeData, app)
-    //     }
-    // },
-
     getCustomWidgets(...args) {
         return dtCore.getCustomWidgets(...args)
     },
@@ -34,6 +28,7 @@ app.registerExtension({
             }
         }
     },
+
     beforeRegisterNodeDef(...args) {
         for (const module of modules) {
             try { module.beforeRegisterNodeDef?.(...args) }
@@ -42,6 +37,7 @@ app.registerExtension({
             }
         }
     },
+
     afterConfigureGraph(...args) {
         for (const module of modules) {
             try { module.afterConfigureGraph?.(...args) }
@@ -50,6 +46,7 @@ app.registerExtension({
             }
         }
     },
+
     setup(...args) {
         for (const module of modules) {
             try { module.setup?.(...args) }
@@ -57,7 +54,40 @@ app.registerExtension({
                 console.error(`Error in ${module.name} beforeConfigureGraph:`, e)
             }
         }
+
+        injectCss("extensions/drawthings-grpc/dtGrpc.css")
     },
 
     settings: modules.flatMap(m => m.settings ?? []),
+
+    aboutPageBadges: [
+        {
+            label: `DrawThings-gRPC v${nodePackVersion}`,
+            url: 'https://github.com/Jokimbe/ComfyUI-DrawThings-gRPC',
+            icon: 'dt-grpc-about-badge-logo'
+        }
+    ],
 })
+
+/**
+ * Injects CSS into the page with a promise when complete.
+ * This was copied from rgthree
+ *
+ */
+export function injectCss(href) {
+    if (document.querySelector(`link[href^="${href}"]`)) {
+        return Promise.resolve()
+    }
+    return new Promise((resolve) => {
+        const link = document.createElement("link")
+        link.setAttribute("rel", "stylesheet")
+        link.setAttribute("type", "text/css")
+        const timeout = setTimeout(resolve, 1000)
+        link.addEventListener("load", (e) => {
+            clearInterval(timeout)
+            resolve()
+        })
+        link.href = href
+        document.head.appendChild(link)
+    })
+}

@@ -3,7 +3,7 @@ import { updateProto, setCallback } from "./util.js"
 import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
 
-const nodePackVersion = "1.3.1"
+export const nodePackVersion = "1.3.1"
 let previewMethod = undefined
 
 // this holds the node definition from python
