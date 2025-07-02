@@ -1,6 +1,6 @@
 from aiohttp import web
 from aiohttp.web_request import Request
-from server import PromptServer
+from server import PromptServer # type: ignore
 
 from .. import cancel_request, settings
 from .draw_things import get_files
@@ -8,7 +8,7 @@ from .draw_things import get_files
 routes = PromptServer.instance.routes
 
 
-@routes.post("/dt_grpc_files_info")
+@routes.post("/dt_grpc/files_info")
 async def handle_files_info_request(request):
     """
     Returns a list of all files on the Draw Things gRPC server.
@@ -35,7 +35,7 @@ async def handle_files_info_request(request):
         )
 
 
-@routes.post("/dt_grpc_preview")
+@routes.post("/dt_grpc/preview")
 async def handle_preview_request(request):
     """
     Toggles the preview mode on or off.
@@ -49,7 +49,7 @@ async def handle_preview_request(request):
         return web.json_response()
 
 
-@routes.post("/dt_grpc_interrupt")
+@routes.post("/dt_grpc/interrupt")
 async def handle_interrupt_request(request):
     """
     Handles interrupt requests to the gRPC server by setting the cancel request flag.

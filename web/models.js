@@ -106,7 +106,7 @@ export async function getFiles(server, port, useTls) {
 
     const api = window.comfyAPI.api.api
 
-    const filesInfoResponse = await api.fetchApi(`/dt_grpc_files_info`, {
+    const filesInfoResponse = await api.fetchApi(`/dt_grpc/files_info`, {
         method: "POST",
         body,
     })

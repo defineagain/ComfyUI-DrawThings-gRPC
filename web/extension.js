@@ -55,7 +55,7 @@ app.registerExtension({
             }
         }
 
-        injectCss("extensions/drawthings-grpc/dtGrpc.css")
+        injectCss("extensions/drawthings-grpc/drawThings.css")
     },
 
     settings: modules.flatMap(m => m.settings ?? []),

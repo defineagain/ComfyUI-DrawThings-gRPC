@@ -59,7 +59,7 @@ export default {
         // if the prompt is cancelled, send a signal to the server to cancel the grpc request
         setCallback(app.api, "interrupt", async (e) => {
             if (app.graph.nodes.some(n => n.type === "DrawThingsSampler")) {
-                await app.api.fetchApi(`/dt_grpc_interrupt`, {
+                await app.api.fetchApi(`/dt_grpc/interrupt`, {
                     method: "POST",
                 })
             }
@@ -201,7 +201,7 @@ async function updatePreviewSetting() {
     const body = new FormData()
     body.append("preview", previewMethod)
 
-    await api.fetchApi(`/dt_grpc_preview`, {
+    await api.fetchApi(`/dt_grpc/preview`, {
         method: "POST",
         body,
     })
