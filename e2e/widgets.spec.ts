@@ -69,19 +69,19 @@ test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
     await nodeRef.clickWidget("settings");
     await page.getByRole("menuitem", { name: "Advanced" }).click();
 
-    await testDependentOptions("high_res_fix", [
+    await testDependentOptions(nodeRef, "high_res_fix", [
         "high_res_fix_start_width",
         "high_res_fix_start_height",
         "high_res_fix_strength",
     ]);
 
-    await testDependentOptions("tiled_diffusion", [
+    await testDependentOptions(nodeRef, "tiled_diffusion", [
         "diffusion_tile_width",
         "diffusion_tile_height",
         "diffusion_tile_overlap",
     ]);
 
-    await testDependentOptions("tiled_decoding", [
+    await testDependentOptions(nodeRef, "tiled_decoding", [
         "decoding_tile_width",
         "decoding_tile_height",
         "decoding_tile_overlap",
@@ -152,6 +152,10 @@ test("flux settings widgets", async ({ page }) => {
     await testDependentOptions(nodeRef, "res_dpt_shift", ["shift"], "disable");
 });
 
+test("svd options", async ({ page }) => {});
+
+test("wan options", async ({ page }) => {});
+
 async function testDependentOptions(
     node: NodeRef,
     primary: string,
@@ -163,8 +167,10 @@ async function testDependentOptions(
 
     const check =
         mode === "disable"
-            ? (...args: Parameters<NodeRef["isWidgetDisabled"]>) => node.isWidgetDisabled(...args)
-            : (...args: Parameters<NodeRef["isWidgetVisible"]>) => node.isWidgetVisible(...args);
+            ? (...args: Parameters<NodeRef["isWidgetDisabled"]>) =>
+                  node.isWidgetDisabled(...args)
+            : (...args: Parameters<NodeRef["isWidgetVisible"]>) =>
+                  node.isWidgetVisible(...args);
 
     expect(await node.isWidgetVisible(primary)).toBeTruthy();
 

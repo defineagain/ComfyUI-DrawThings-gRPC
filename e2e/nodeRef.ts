@@ -156,4 +156,20 @@ export class NodeRef {
         await this.clickWidget(widget);
         await this.page.getByRole("menuitem", { name: option }).first().click();
     }
+
+    async getNodeColor() {
+        throw new Error("not yet implemented")
+    }
+
+    async connectOutput(output: string, node: NodeRef, input: string) {
+        throw new Error("not yet implemented")
+    }
+
+    async disconnectInput(input: string) {
+        throw new Error("not yet implemented")
+    }
+
+    async getWidgetOptions(widget: string) {
+        throw new Error("not yet implemented")
+    }
 }
