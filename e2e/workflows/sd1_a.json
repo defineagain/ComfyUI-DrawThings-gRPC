@@ -1,0 +1,389 @@
+{
+  "id": "101ed669-2d4a-4c85-9e62-16aa1f6bc99e",
+  "revision": 0,
+  "last_node_id": 15,
+  "last_link_id": 28,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "SaveImage",
+      "pos": [
+        2160,
+        490
+      ],
+      "size": [
+        450,
+        440
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 28
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.38",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ]
+    },
+    {
+      "id": 11,
+      "type": "DrawThingsPrompt",
+      "pos": [
+        1290,
+        490
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "PROMPT",
+          "type": "STRING",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "23beb75773a8b4f880f7f470ad28ef2d7bccd257",
+        "Node name for S&R": "DrawThingsPrompt"
+      },
+      "widgets_values": [
+        "...",
+        "Cowboy (wizard) simulation"
+      ],
+      "color": "#232",
+      "bgcolor": "#353",
+      "_lastSelectedModel": {}
+    },
+    {
+      "id": 15,
+      "type": "DrawThingsSampler",
+      "pos": [
+        1770,
+        490
+      ],
+      "size": [
+        312.08984375,
+        750
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "positive",
+          "shape": 7,
+          "type": "STRING",
+          "link": 26
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "negative",
+          "shape": 7,
+          "type": "STRING",
+          "link": 27
+        },
+        {
+          "name": "lora",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": null
+        },
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": null
+        },
+        {
+          "name": "upscaler",
+          "shape": 7,
+          "type": "DT_UPSCALER",
+          "link": null
+        },
+        {
+          "name": "refiner",
+          "shape": 7,
+          "type": "DT_REFINER",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "3663115d699768a923ebd9cff7e2fb9f7b461033",
+        "Node name for S&R": "DrawThingsSampler"
+      },
+      "widgets_values": [
+        "All",
+        "localhost",
+        "7859",
+        true,
+        {
+          "value": {
+            "prefix": "",
+            "modifier": "none",
+            "name": "Juggernaut Reborn (8-bit)",
+            "upcast_attention": false,
+            "default_scale": 12,
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "version": "v1"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        },
+        1,
+        4035201792,
+        "fixed",
+        "ScaleAlike",
+        512,
+        512,
+        20,
+        14,
+        4.5,
+        true,
+        4.5,
+        "DPM++ 2M Karras",
+        true,
+        1,
+        1,
+        5,
+        127,
+        0.02,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        true,
+        false,
+        448,
+        448,
+        0.7,
+        false,
+        640,
+        640,
+        128,
+        false,
+        512,
+        512,
+        64,
+        false,
+        5,
+        2,
+        0.2,
+        3,
+        false,
+        "",
+        false,
+        ""
+      ],
+      "nodePackVersion": "1.3.1",
+      "widget_values_keyed": {
+        "settings": "All",
+        "server": "localhost",
+        "port": "7859",
+        "use_tls": true,
+        "model": {
+          "value": {
+            "prefix": "",
+            "modifier": "none",
+            "name": "Juggernaut Reborn (8-bit)",
+            "upcast_attention": false,
+            "default_scale": 12,
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "version": "v1"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        },
+        "strength": 1,
+        "seed": 4035201792,
+        "control_after_generate": "fixed",
+        "seed_mode": "ScaleAlike",
+        "width": 512,
+        "height": 512,
+        "steps": 20,
+        "num_frames": 14,
+        "cfg": 4.5,
+        "speed_up": true,
+        "guidance_embed": 4.5,
+        "sampler_name": "DPM++ 2M Karras",
+        "res_dpt_shift": true,
+        "shift": 1,
+        "batch_size": 1,
+        "fps": 5,
+        "motion_scale": 127,
+        "guiding_frame_noise": 0.02,
+        "start_frame_guidance": 1,
+        "causal_inference": 0,
+        "clip_skip": 1,
+        "sharpness": 0,
+        "mask_blur": 0,
+        "mask_blur_outset": 0,
+        "preserve_original": true,
+        "high_res_fix": false,
+        "high_res_fix_start_width": 448,
+        "high_res_fix_start_height": 448,
+        "high_res_fix_strength": 0.7,
+        "tiled_decoding": false,
+        "decoding_tile_width": 640,
+        "decoding_tile_height": 640,
+        "decoding_tile_overlap": 128,
+        "tiled_diffusion": false,
+        "diffusion_tile_width": 512,
+        "diffusion_tile_height": 512,
+        "diffusion_tile_overlap": 64,
+        "tea_cache": false,
+        "tea_cache_start": 5,
+        "tea_cache_end": 2,
+        "tea_cache_threshold": 0.2,
+        "tea_cache_max_skip_steps": 3,
+        "separate_clip_l": false,
+        "clip_l_text": "",
+        "separate_open_clip_g": false,
+        "open_clip_g_text": ""
+      },
+      "_lastSelectedModel": {
+        "model": {
+          "value": {
+            "prefix": "",
+            "modifier": "none",
+            "name": "Juggernaut Reborn (8-bit)",
+            "upcast_attention": false,
+            "default_scale": 12,
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "version": "v1"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "DrawThingsPrompt",
+      "pos": [
+        1290,
+        750
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "PROMPT",
+          "type": "STRING",
+          "links": [
+            27
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "23beb75773a8b4f880f7f470ad28ef2d7bccd257",
+        "Node name for S&R": "DrawThingsPrompt"
+      },
+      "widgets_values": [
+        "...",
+        "wings"
+      ],
+      "color": "#322",
+      "bgcolor": "#533",
+      "_lastSelectedModel": {}
+    }
+  ],
+  "links": [
+    [
+      26,
+      11,
+      0,
+      15,
+      2,
+      "STRING"
+    ],
+    [
+      27,
+      12,
+      0,
+      15,
+      3,
+      "STRING"
+    ],
+    [
+      28,
+      15,
+      0,
+      2,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6225,
+      "offset": [
+        -954.0160642570282,
+        -316.66666666666674
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
