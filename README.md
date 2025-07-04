@@ -1,14 +1,13 @@
 # ComfyUI-DrawThings-gRPC
 
-**ComfyUI-DrawThings-gRPC** is a bridge between [ComfyUI](https://comfyui.org/) and [Draw Things](https://github.com/drawthingsai/draw-things-community) via gRPC. It allows ComfyUI to build and send image generation requests to Draw Things giving you more control over inputs amd settings than Draw Things alone offers, amd bringing the Draw Things sampler into your ComfyUI workflows.
+**ComfyUI-DrawThings-gRPC** is a bridge between [ComfyUI](https://comfy.org/) and [Draw Things](https://drawthings.ai/) via gRPC. It allows ComfyUI to send image generation requests to Draw Things, letting you bring the Draw Things sampler into your ComfyUI workflows.
 
 ---
 
 ## Requirements
 
-- [ComfyUI](https://docs.comfy.org/get_started)
-- Draw Things app (with gRPC server enabled) **or** [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries)
-- Python 3.10+ (for ComfyUI and this extension)
+- [ComfyUI](https://comfy.org)
+- [Draw Things](https://drawthings.ai/) app (with gRPC server enabled) **or** [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community/tree/main?tab=readme-ov-file#self-host-grpcservercli-from-packaged-binaries)
 
 ---
 
@@ -16,7 +15,7 @@
 
 ### 1. Install ComfyUI
 
-Follow the [official instructions](https://docs.comfy.org/get_started) to install ComfyUI.
+### 2. Install Draw Things
 
 ### 2. Install This Extension
 
@@ -26,7 +25,7 @@ Follow the [official instructions](https://docs.comfy.org/get_started) to instal
 **Manual Installation:**
 - Clone this repository into your `ComfyUI/custom_nodes` directory:
   ```sh
-  git clone https://github.com/yourusername/ComfyUI-DrawThings-gRPC.git ComfyUI/custom_nodes/ComfyUI-DrawThings-gRPC
+  git clone https://github.com/yourusername/ComfyUI-DrawThings-gRPC.git
   ```
 
 ### 3. Restart ComfyUI
