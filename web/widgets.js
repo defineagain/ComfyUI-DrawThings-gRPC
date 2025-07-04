@@ -1,7 +1,9 @@
 /** @import { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph' */
-import { app } from "../../scripts/app.js";
 import { updateProto } from "./util.js";
 import { calcShift } from "./configProperties.js";
+
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
+const app = window.comfyAPI.app.app
 
 const basicWidgets = [
     "server",
@@ -243,22 +245,23 @@ function updateSamplerWidgets(node) {
     }
 }
 
-app.registerExtension({
-    name: "ComfyUI-DrawThings-gRPC-Widgets",
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyExtension} */
+export default {
+    name: "widgets",
 
     settings: [
         {
             id: "drawthings.node.keep_shrunk",
             type: "boolean",
-            name: "Keep node shrunk",
-            default: false,
+            name: "Keep node shrunk when widgets change",
+            default: true,
             category: ["DrawThings", "Nodes", "Keep node shrunk"],
             onChange: (newVal, oldVal) => {
                 if (oldVal === false && newVal === true) {
                     app.graph.nodes
                         .filter((n) => n.type === "DrawThingsSampler")
                         .forEach((n) => {
-                            setTimeout(() => showWidget(n, "server", true), 10);
+                            setTimeout(() => n.updateDynamicWidgets(), 10);
                         });
                 }
             },
@@ -273,7 +276,7 @@ app.registerExtension({
             updateProto(nodeType, controlWidgetsProto);
         }
     },
-});
+};
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
 const samplerWidgetsProto = {

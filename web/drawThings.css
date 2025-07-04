@@ -1,0 +1,8 @@
+.dt-grpc-about-badge-logo {
+    width: 20px;
+    height: 20px;
+    background-size: 100% 100%;
+    background-color: currentcolor;
+    -webkit-mask-image: url(/dt_grpc/logo.svg);
+    mask-image: url(/dt_grpc/logo.svg);
+}

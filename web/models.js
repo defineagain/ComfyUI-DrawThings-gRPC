@@ -1,8 +1,5 @@
-import { dtModelNodeTypes } from './dtModelNodes.js'
-import * as App from "../../scripts/app.js"
-
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
-const app = App.app
+const app = window.comfyAPI.app.app
 
 class ModelService {
     #updateNodesPromise = null
@@ -109,7 +106,7 @@ export async function getFiles(server, port, useTls) {
 
     const api = window.comfyAPI.api.api
 
-    const filesInfoResponse = await api.fetchApi(`/dt_grpc_files_info`, {
+    const filesInfoResponse = await api.fetchApi(`/dt_grpc/files_info`, {
         method: "POST",
         body,
     })

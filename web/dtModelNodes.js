@@ -1,4 +1,3 @@
-import { app } from "../../scripts/app.js"
 import { setCallback } from "./dynamicInputs.js"
 import { modelService, getMenuItem } from "./models.js"
 import { updateProto } from "./util.js"
@@ -6,8 +5,10 @@ import { updateProto } from "./util.js"
 export const dtModelNodeTypes = ["DrawThingsSampler", "DrawThingsControlNet", "DrawThingsLoRA", "DrawThingsUpscaler", "DrawThingsRefiner", "DrawThingsPrompt"]
 export const dtServerNodeTypes = ["DrawThingsSampler"]
 
-app.registerExtension({
-    name: "ComfyUI-DrawThings-gRPC-DtModelNodes",
+/** @type {import("@comfyorg/comfyui-frontend-types").ComfyExtension} */
+export default {
+    name: "modelNodes",
+
     beforeRegisterNodeDef: (nodeType, nodeData, app) => {
         if (dtModelNodeTypes.includes(nodeType.comfyClass)) {
             updateProto(nodeType, dtModelNodeProto)
@@ -25,7 +26,7 @@ app.registerExtension({
     afterConfigureGraph() {
         modelService.updateNodes()
     }
-})
+}
 
 /** @type {import("@comfyorg/litegraph").LGraphNode} */
 const dtModelNodeProto = {
@@ -95,7 +96,8 @@ const dtServerNodeProto = {
      * @param {string} version
      */
     updateModels(models, version) {
-        const widget = this.widgets.find(w => w.name === "model")
+        const widget = this.getModelWidget()
+        if (!widget) return
         if (models === null) {
             widget.options.values = ["Not connected", "Click to retry"]
             widget.value = "Not connected"
@@ -135,6 +137,8 @@ const dtModelStandardNodeProto = {
     updateModels(models, version) {
         /** @type {import('@comfyorg/litegraph').IWidget} */
         const widget = this.getModelWidget()
+        if (!widget) return
+
         const type = widget?.options?.modelType
 
         if (models === null) {
@@ -184,6 +188,7 @@ const dtModelPromptNodeProto = {
     updateOptions() {
         /** @type {import('@comfyorg/litegraph').IWidget} */
         const widget = this.getModelWidget()
+        if (!widget) return
 
         if (this._models === null) {
             widget.options.values = ["Not connected", "Click to retry"]
