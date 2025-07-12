@@ -60,6 +60,34 @@ test("widget change when settings mode changes", async ({ page }) => {
     ).toMatchObject([true, true, true, true]);
 });
 
+test("tcd sampler", async ({ page }) => {
+    await openWorkflow(join(workflowFolder, "node.json"), page);
+
+    const node = await getNodeRef(page, "DrawThingsSampler");
+    await node.selectWidgetOption("settings", "Basic");
+    await page.waitForTimeout(500);
+
+    // select euler
+    await node.selectWidgetOption("sampler_name", "Euler A");
+
+    // assert stochastic sampling gamma is not visible
+    expect(await node.isWidgetVisible("stochastic_sampling_gamma")).toBeFalsy();
+
+    // select tcd
+    await node.selectWidgetOption("sampler_name", "TCD");
+
+    // assert stochastic sampling gamma appears
+    expect(
+        await node.isWidgetVisible("stochastic_sampling_gamma")
+    ).toBeTruthy();
+
+    // select euler
+    await node.selectWidgetOption("sampler_name", "Euler A");
+
+    // assert stochastic sampling gamma is not visible
+    expect(await node.isWidgetVisible("stochastic_sampling_gamma")).toBeFalsy();
+});
+
 test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
     await openWorkflow(join(workflowFolder, "node.json"), page);
 
@@ -154,7 +182,52 @@ test("flux settings widgets", async ({ page }) => {
 
 test("svd options", async ({ page }) => {});
 
-test("wan options", async ({ page }) => {});
+test("wan options", async ({ page }) => {
+    await openWorkflow(join(workflowFolder, "node.json"), page);
+
+    const nodeRef = await getNodeRef(page, "DrawThingsSampler");
+
+    // go to basic
+    await nodeRef.clickWidget("settings");
+    await page.getByRole("menuitem", { name: "Basic" }).click();
+
+    // select an sd model
+    await nodeRef.clickWidget("model");
+    await page
+        .getByRole("menuitem", { name: /\(SD\)/ })
+        .first()
+        .click();
+
+    // make sure wan widgets are not visible
+    await nodeRef.selectWidgetOption("settings", "Advanced");
+    expect(
+        await nodeRef.isWidgetVisible([
+            "causal_inference",
+            "causal_inference_pad",
+            "tea_cache",
+        ])
+    ).toMatchObject([false, false, false]);
+
+    // select wan model
+    await nodeRef.selectWidgetOption("model", /Wan 2.1/);
+
+    // assert widgets appear
+    expect(
+        await nodeRef.isWidgetVisible([
+            "causal_inference",
+            "causal_inference_pad",
+            "tea_cache",
+        ])
+    ).toMatchObject([true, true, true]);
+
+    // test tea_cache
+    await testDependentOptions(nodeRef, "tea_cache", [
+        "tea_cache_start",
+        "tea_cache_end",
+        "tea_cache_threshold",
+        "tea_cache_max_skip_steps",
+    ]);
+});
 
 async function testDependentOptions(
     node: NodeRef,
