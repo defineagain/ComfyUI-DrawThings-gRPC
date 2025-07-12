@@ -5,6 +5,9 @@ service ImageGenerationService {
   rpc FilesExist(FileListRequest) returns (FileExistenceResponse);
   rpc UploadFile(stream FileUploadRequest) returns (stream UploadResponse);
   rpc Echo(EchoRequest) returns (EchoReply);
+  rpc Pubkey(PubkeyRequest) returns (PubkeyResponse);
+  rpc Hours(HoursRequest) returns (HoursResponse);
+
 }
 
 message EchoRequest {
@@ -12,11 +15,18 @@ message EchoRequest {
   optional string sharedSecret = 2; // The secret use to authenticate if needed.
 }
 
+message ComputeUnitThreshold {
+  double community = 1;
+  double plus = 2;
+  int64 expireAt = 3;
+}
+
 message EchoReply {
   string message = 1;
   repeated string files = 2;
   optional MetadataOverride override = 3;
   bool sharedSecretMissing = 4; // If this is true, sharedSecret is required.
+  optional ComputeUnitThreshold thresholds = 5; // The thresholds currently imposed by the server.
 }
 
 message FileListRequest {
@@ -48,7 +58,7 @@ enum DeviceType {
 // parameters in this Request is exactly same as generate function in ImageGenerator
 message ImageGenerationRequest {
   optional bytes image = 1;      // Image data as sha256 content.
-  int32 scaleFactor = 2;
+  int32 scaleFactor = 2; 	 	
   optional bytes mask = 3;       // Optional  Mask data as sha256 content.
   repeated HintProto hints = 4; 	 // List of hints
   string prompt = 5;             // Optional prompt string
@@ -159,4 +169,20 @@ message FileUploadRequest {
     FileChunk chunk = 2;                // File chunk data.
   }
   optional string sharedSecret = 3; // The secret use to authenticate if needed.
+}
+
+message PubkeyRequest {
+  string name = 1;
+}
+
+message PubkeyResponse {
+  string message = 1;
+  string pubkey = 2;
+}
+
+message HoursRequest {
+}
+
+message HoursResponse {
+  ComputeUnitThreshold thresholds = 1; // The thresholds currently imposed by the server.
 }

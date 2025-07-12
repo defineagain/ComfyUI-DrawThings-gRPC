@@ -1,4 +1,4 @@
-import { modelService } from './models.js'
+import { modelService } from "./models.js";
 
 export const samplers = [
     "DPM++ 2M Karras",
@@ -18,18 +18,18 @@ export const samplers = [
     "DPM++ SDE AYS",
     "DPM++ 2M Trailing",
     "DDIM Trailing",
-]
+];
 
-export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"]
+export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
 
 // From flux-auto-workflow.js
 export function calcShift(h, w) {
-    const step1 = (h * w) / 256
-    const step2 = (1.15 - 0.5) / (4096 - 256)
-    const step3 = (step1 - 256) * step2
-    const step4 = step3 + 0.5
-    const result = Math.exp(step4)
-    return Math.round(result * 100) / 100
+    const step1 = (h * w) / 256;
+    const step2 = (1.15 - 0.5) / (4096 - 256);
+    const step3 = (step1 - 256) * step2;
+    const step4 = step3 + 0.5;
+    const result = Math.exp(step4);
+    return Math.round(result * 100) / 100;
 }
 
 /** @typedef {"v1" | "v2" | "kandinsky2.1" | "sdxl_base_v0.9" | "sdxl_refiner_v0.9" | "ssd_1b" | "svd_i2v"} _Models_A */
@@ -41,10 +41,12 @@ export function calcShift(h, w) {
 /** @typedef {Record<ModelVersion, any>} ModelMap */
 
 /** @type ModelMap */
-const numFramesMaxMap = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, "hunyuan_video": 201, "svd_i2v": 25 }
-const numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, "hunyuan_video": 129, "svd_i2v": 14 }
+const numFramesMaxMap = { "wan_v2.1_1.3b": 129, "wan_v2.1_14b": 129, hunyuan_video: 201, svd_i2v: 25 };
+const numFramesDefMap = { "wan_v2.1_1.3b": 81, "wan_v2.1_14b": 81, hunyuan_video: 129, svd_i2v: 14 };
 
 /** [ config.fbs name, comfy widget name, the node it belongs to, the property name in DT's json config] */
+// prettier-ignore
+/** @type {[fbs: string, comfy: string, nodeType: string, json: string, type: string, defaultValue: unknown, ...unknown][]} */
 export const propertyData = [
     ['start_width', 'width', 'DrawThingsSampler', 'width', 'int', 512, 128, 2048, 64, 'roundTo64'],
     ['start_height', 'height', 'DrawThingsSampler', 'height', 'int', 512, 128, 2048, 64, 'roundTo64'],
@@ -105,7 +107,7 @@ export const propertyData = [
     ['decoding_tile_width', 'decoding_tile_width', 'DrawThingsSampler', 'decodingTileWidth', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
     ['decoding_tile_height', 'decoding_tile_height', 'DrawThingsSampler', 'decodingTileHeight', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDecoding'],
     ['decoding_tile_overlap', 'decoding_tile_overlap', 'DrawThingsSampler', 'decodingTileOverlap', 'int', 512, 64, 1024, 64, 'roundTo64,ifTrue=tiledDecoding'],
-    ['stochastic_sampling_gamma', 'stochastic_sampling_gamma', null, 'stochasticSamplingGamma'],
+    ['stochastic_sampling_gamma', 'stochastic_sampling_gamma', 'DrawThingsSampler', 'stochasticSamplingGamma', 'float', 0.3, 0, 1, 0.01],
     ['preserve_original_after_inpaint', 'preserve_original', 'DrawThingsSampler', 'preserveOriginalAfterInpaint', 'bool', true],
     ['tiled_diffusion', 'tiled_diffusion', 'DrawThingsSampler', 'tiledDiffusion', 'bool', false],
     ['diffusion_tile_width', 'diffusion_tile_width', 'DrawThingsSampler', 'diffusionTileWidth', 'int', 512, 128, 2048, 64, 'roundTo64,ifTrue=tiledDiffusion'],
@@ -128,9 +130,10 @@ export const propertyData = [
     ['t5_text', null, null, null],
     ['tea_cache_max_skip_steps', 'tea_cache_max_skip_steps', 'DrawThingsSampler', 'teaCacheMaxSkipSteps', 'int', 3, 1, 50, 1, 'ifTrue=teaCache'],
 
-    // causal_inference_enabled is implied by causal_inference==0
+    // causal_inference_enabled is implied by causal_inference>0
     ['causal_inference_enabled', null, null, null],
-    ['causal_inference', 'causal_inference', 'DrawThingsSampler', 'causalInference', 'int', 3, 0, 129, 4, 'ifPos=set(causalInference, true),causInfConvert'],
+    ['causal_inference', 'causal_inference', 'DrawThingsSampler', 'causalInference', 'int', 0, 0, 129, 4, 'ifPos=set(causalInference, true),causInfConvert'],
+    ['causal_inference_pad', 'causal_inference_pad', 'DrawThingsSampler', 'causalInferencePad', 'int', 0, 0, 129, 4, 'causInfConvert'],
 
     // in upscaler node
     ['upscaler', 'upscaler', 'DrawThingsUpscaler', 'upscaler'],
@@ -139,32 +142,33 @@ export const propertyData = [
     ['refiner_model', 'refiner_model', 'DrawThingsRefiner', 'refinerModel'],
     ['refiner_start', 'refiner_start', 'DrawThingsRefiner', 'refinerStart'],
 ]
+// prettier-ignore-end
 
 /** @typedef {{ fbs: string, python: string, node: string, json: string }} DTProperty */
 
 function roundBy64(value) {
-    return Math.round(value / 64) * 64
+    return Math.round(value / 64) * 64;
 }
 
 /** @type {Record<string, (key, value, widget: import('@comfyorg/litegraph').IWidget, node, config) => void>} */
 const importers = {
     model: async (k, v, w, n, c) => {
-        await modelService.updateNodes()
-        const matchingOption = w?.options?.values?.find(ov => ov.value?.file === v)
-        if (matchingOption) w.value = matchingOption
+        await modelService.updateNodes();
+        const matchingOption = w?.options?.values?.find((ov) => ov.value?.file === v);
+        if (matchingOption) w.value = matchingOption;
     },
     start_width: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     start_height: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     sampler: (k, v, w) => {
-        w.value = samplers[v]
+        w.value = samplers[v];
     },
     seed: (k, v, w, n) => {
         if (typeof v === "number" && v >= 0) {
-            w.value = v
+            w.value = v;
             // Originally was setting to "fixed" if the config has a specific seed
             // but then I realised copying a config from draw things *always* has a seed
             // const controlWidget = n.widgets.find((w) => w.name === "control_after_generate")
@@ -172,63 +176,66 @@ const importers = {
         }
     },
     hires_fix_start_width: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     hires_fix_start_height: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     seed_mode: (k, v, w) => {
-        if (w && seedModes[v]) w.value = seedModes[v]
+        if (w && seedModes[v]) w.value = seedModes[v];
     },
     decoding_tile_width: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     decoding_tile_height: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     decoding_tile_overlap: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     diffusion_tile_width: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     diffusion_tile_height: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     diffusion_tile_overlap: (k, v, w) => {
-        if (w) w.value = roundBy64(v)
+        if (w) w.value = roundBy64(v);
     },
     guidance_embed: (k, v, w, n, c) => {
-        if (w) w.value = v
+        if (w) w.value = v;
     },
     resolution_dependent_shift: (k, v, w, n, c) => {
-        if (w) w.value = v
+        if (w) w.value = v;
         if (v) {
-            const shiftWidget = n.widgets.find((w) => w.name === "shift")
-            const width = c.width || n.widgets.find((w) => w.name === "width")?.value
-            const height = c.height || n.widgets.find((w) => w.name === "height")?.value
-            if (shiftWidget && width && height) shiftWidget.value = calcShift(width, height)
+            const shiftWidget = n.widgets.find((w) => w.name === "shift");
+            const width = c.width || n.widgets.find((w) => w.name === "width")?.value;
+            const height = c.height || n.widgets.find((w) => w.name === "height")?.value;
+            if (shiftWidget && width && height) shiftWidget.value = calcShift(width, height);
         }
     },
-    causal_inference: (k, v, w, n, c) => {
-        // only set if enabled in the config
-        if (w && typeof v === 'number') w.value = v * 4 - 3
+    causal_inference: function (k, v, w, n, c) {
+        if (Number.isFinite(v)) w.value = v * 4 - 3;
+        else w.value = this.defaultValue;
     },
-}
+    causal_inference_pad: (k, v, w, n, c) => {
+        if (w && typeof v === "number") w.value = v * 4;
+    },
+};
 
 const exporters = {
     // start_width: {},
     // start_height: {},
     model: async (w, n, c) => {
-        if (w && w.value && w.value.value) c.model = w.value.value.file ?? w.value.value.name
+        if (w && w.value && w.value.value) c.model = w.value.value.file ?? w.value.value.name;
     },
     sampler: (w, n, c) => {
-        if (w && typeof w.value === 'string') c.sampler = samplers.indexOf(w.value)
+        if (w && typeof w.value === "string") c.sampler = samplers.indexOf(w.value);
     },
     // hires_fix_start_width: {},
     // hires_fix_start_height: {},
     seed_mode: (w, n, c) => {
-        if (w && typeof w.value === 'string') c.seed_mode = seedModes.indexOf(w.value)
+        if (w && typeof w.value === "string") c.seed_mode = seedModes.indexOf(w.value);
     },
     // decoding_tile_width: {},
     // decoding_tile_height: {},
@@ -243,116 +250,115 @@ const exporters = {
     // shift: (w, n, c) => {
     // },
     causal_inference: (w, n, c) => {
-        if (w && typeof w.value === 'number') c.causal_inference = (w.value + 3) / 4
+        if (w && typeof w.value === "number") c.causal_inference = Math.floor((w.value + 3) / 4);
     },
-}
+    causal_inference: (w, n, c) => {
+        if (w && typeof w.value === "number") c.causal_inference_pad = Math.floor(w.value / 4);
+    },
+};
 
 class DTProperty {
     constructor(fbs, python, node, json, type, defaultValue, ...rest) {
-        this.fbs = fbs
-        this.python = python
-        this.node = node
-        this.json = json
-        this.type = type
-        this.defaultValue = defaultValue
+        this.fbs = fbs;
+        this.python = python;
+        this.node = node;
+        this.json = json;
+        this.type = type;
+        this.defaultValue = defaultValue;
 
         if (type === "int" || type === "float") {
-            this.min = rest[0]
-            this.max = rest[1]
-            this.step = rest[2]
-            this.spec = rest[3]
+            this.min = rest[0];
+            this.max = rest[1];
+            this.step = rest[2];
+            this.spec = rest[3];
         }
 
         if (type === "bool") {
-            this.spec = rest[0]
+            this.spec = rest[0];
         }
 
         if (type === "index") {
-            this.values = rest[0]
-            this.spec = rest[1]
+            this.values = rest[0];
+            this.spec = rest[1];
         }
 
         if (type === "string") {
-            this.spec = rest[0]
+            this.spec = rest[0];
         }
 
         // console.log(this.fbs, this.defaultValue)
     }
 
-    customImport = undefined
-    customExport = undefined
+    customImport = undefined;
+    customExport = undefined;
 
     async import(jsonKey, jsonValue, widget, node, config) {
-        if (this.customImport)
-            return await this.customImport(jsonKey, jsonValue, widget, node, config)
+        if (!widget || !node) return;
+        if (this.customImport) await this.customImport(jsonKey, jsonValue, widget, node, config);
         else {
-            if (widget)
-                widget.value = jsonValue
+            widget.value = jsonValue ?? this.defaultValue;
         }
     }
 
     async export(widget, node, config) {
-        if (this.customExport)
-            return await this.customExport(widget, node, config)
+        if (this.customExport) await this.customExport(widget, node, config);
         else {
-            if (this.json && widget && widget.value !== undefined) config[this.json] = widget.value
+            if (this.json && widget && widget.value !== undefined) config[this.json] = widget.value;
         }
     }
 
     coerce(value) {
         if (this.type === "int" || this.type === "float") {
-            if (typeof value !== "number")
-                return this.defaultValue || 0
-            if (Number.isFinite(this.min) && value < this.min) return this.min
-            if (Number.isFinite(this.max) && value > this.max) return this.max
-            return value
+            if (typeof value !== "number") return this.defaultValue || 0;
+            if (Number.isFinite(this.min) && value < this.min) return this.min;
+            if (Number.isFinite(this.max) && value > this.max) return this.max;
+            return value;
         }
 
         if (this.type === "bool") {
-            if (typeof value !== "boolean") return this.defaultValue || false
-            return value
+            if (typeof value !== "boolean") return this.defaultValue || false;
+            return value;
         }
 
         if (this.type === "string") {
-            if (typeof value !== "string") return this.defaultValue || ""
-            return value
+            if (typeof value !== "string") return this.defaultValue || "";
+            return value;
         }
 
         if (this.type === "index") {
-            if (typeof value === "number" && value >= 0 && value < this.values.length)
-                return this.values[value]
-            if (typeof value === "string" && this.values.includes(value)) return value
-            return this.values[this.defaultValue]
+            if (typeof value === "number" && value >= 0 && value < this.values.length) return this.values[value];
+            if (typeof value === "string" && this.values.includes(value)) return value;
+            return this.values[this.defaultValue];
         }
 
-        return value
+        return value;
     }
 }
 
 /** @type {DTProperty[]} */
 export const properties = propertyData.map(([fbs, ...rest]) => {
-    const prop = new DTProperty(fbs, ...rest)
-    prop.customImport = importers[fbs]
-    prop.customExport = exporters[fbs]
-    return prop
-})
+    const prop = new DTProperty(fbs, ...rest);
+    prop.customImport = importers[fbs];
+    prop.customExport = exporters[fbs];
+    return prop;
+});
+
+export const dtProperties = propertyData
+    .filter((pd) => !pd.slice(4).includes(null))
+    .map(([fbs, comfy, nodeType, json, type, defaultValue,...rest]) => {
+        return new DTProperty({
+            fbs,
+            comfy,
+            json,
+            type,
+            defaultValue
+        });
+    });
 
 export function findPropertyJson(name) {
-    return properties.find(p => p.json === name)
+    return properties.find((p) => p.json === name);
 }
 
 export function findPropertyPython(name) {
-    return properties.find(p => p.python === name)
-}
-
-for (const pd of propertyData) {
-    if (pd[4] === "int" || pd[4] === "float") {
-        if (pd.length < 9)
-            console.log(pd[0])
-    }
-
-    if (pd[4] === 'bool') {
-        if (pd.length < 6)
-            console.log(pd[0])
-    }
+    return properties.find((p) => p.python === name);
 }

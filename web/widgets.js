@@ -165,6 +165,9 @@ function updateSamplerWidgets(node) {
      */
 
     if (isBasic) {
+        const isTcd = findWidgetByName(node, "sampler_name")?.value === "TCD";
+        showWidget(node, "stochastic_sampling_gamma", isTcd);
+
         // res_dpt_shift (flux, sd3, hidream)
         const resDPTShiftAvailable = ["flux1", "sd3", "hidream_i1"].includes(version);
         showWidget(node, "res_dpt_shift", resDPTShiftAvailable);
@@ -218,6 +221,7 @@ function updateSamplerWidgets(node) {
         // causal_inference (just for wan I think)
         const causalInferenceAvailable = ["wan_v2.1_1.3b", "wan_v2.1_14b"].includes(version);
         showWidget(node, "causal_inference", causalInferenceAvailable);
+        showWidget(node, "causal_inference_pad", causalInferenceAvailable);
 
         // high res fix
         const hiResFixEnabled = findWidgetByName(node, "high_res_fix")?.value;

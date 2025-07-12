@@ -1,8 +1,6 @@
 import numpy as np
 
-from .generated.Control import ControlT
-from .generated.LoRA import LoRAT
-from .generated.GenerationConfiguration import GenerationConfigurationT
+from .generated.config_generated import ControlT, LoRAT, GenerationConfigurationT
 from .data_types import Config
 from .data_types import DrawThingsLists
 
@@ -198,6 +196,10 @@ def apply_common(config: Config, configT: GenerationConfigurationT):
 def apply_conditional(config: Config, configT: GenerationConfigurationT):
     model = ModelVersion(config.get("version"))
 
+    if config.get("sampler_name") == "TCD":
+        if "stochastic_sampling_gamma" in config:
+            configT.stochasticSamplingGamma = config["stochastic_sampling_gamma"]
+
     if config.get("high_res_fix"):
         configT.hiresFix = True
         if "high_res_fix_start_width" in config:
@@ -286,7 +288,9 @@ def apply_conditional(config: Config, configT: GenerationConfigurationT):
         if "causal_inference" in config:
             if config["causal_inference"] > 0:
                 configT.causalInferenceEnabled = True
-                configT.causalInference = config["causal_inference"]
+                configT.causalInference = (config["causal_inference"] + 3) // 4
+                if "causal_inference_pad" in config:
+                    configT.causalInferencePad = config["causal_inference_pad"] // 4
             else:
                 configT.causalInferenceEnabled = False
 

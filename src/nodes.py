@@ -42,6 +42,7 @@ class DrawThingsSampler:
                 "speed_up": ("BOOLEAN", { "default": True}),
                 "guidance_embed": ("FLOAT", { "default": 4.5, "min": 0, "max": 50, "step": 0.1},),
                 "sampler_name": (DrawThingsLists.sampler_list, { "default": "DPM++ 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output." },),
+                "stochastic_sampling_gamma": ("FLOAT", { "default": 0.3, "min": 0, "max": 1, "step": 0.01},),
                 # stochastic_sampling_gamma
                 "res_dpt_shift": ("BOOLEAN", { "default": True}),
                 "shift": ("FLOAT", { "default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01 },),
@@ -52,6 +53,7 @@ class DrawThingsSampler:
                 "guiding_frame_noise": ("FLOAT", { "default": 0.02, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01 },),
                 "start_frame_guidance": ("FLOAT", { "default": 1.0, "min": 0.0, "max": 25.0, "step": 0.1, "round": 0.1 },),
                 "causal_inference": ("INT", { "default": 0, "min": 0, "max": 129, "step": 1, "tooltip": "Set to 0 to disable causal inference" },),
+                "causal_inference_pad": ("INT", { "default": 0, "min": 0, "max": 129, "step": 1 },),
                 # zero_negative_prompt
                 "clip_skip": ("INT", { "default": 1, "min": 1, "max": 23, "step": 1}),
                 "sharpness": ("FLOAT", { "default": 0.6,"min": 0.0,"max": 30.0,"step": 0.1,"round": 0.1 }),

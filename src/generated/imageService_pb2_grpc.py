@@ -54,6 +54,16 @@ class ImageGenerationServiceStub(object):
                 request_serializer=imageService__pb2.EchoRequest.SerializeToString,
                 response_deserializer=imageService__pb2.EchoReply.FromString,
                 _registered_method=True)
+        self.Pubkey = channel.unary_unary(
+                '/ImageGenerationService/Pubkey',
+                request_serializer=imageService__pb2.PubkeyRequest.SerializeToString,
+                response_deserializer=imageService__pb2.PubkeyResponse.FromString,
+                _registered_method=True)
+        self.Hours = channel.unary_unary(
+                '/ImageGenerationService/Hours',
+                request_serializer=imageService__pb2.HoursRequest.SerializeToString,
+                response_deserializer=imageService__pb2.HoursResponse.FromString,
+                _registered_method=True)
 
 
 class ImageGenerationServiceServicer(object):
@@ -83,6 +93,18 @@ class ImageGenerationServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Pubkey(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Hours(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ImageGenerationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -105,6 +127,16 @@ def add_ImageGenerationServiceServicer_to_server(servicer, server):
                     servicer.Echo,
                     request_deserializer=imageService__pb2.EchoRequest.FromString,
                     response_serializer=imageService__pb2.EchoReply.SerializeToString,
+            ),
+            'Pubkey': grpc.unary_unary_rpc_method_handler(
+                    servicer.Pubkey,
+                    request_deserializer=imageService__pb2.PubkeyRequest.FromString,
+                    response_serializer=imageService__pb2.PubkeyResponse.SerializeToString,
+            ),
+            'Hours': grpc.unary_unary_rpc_method_handler(
+                    servicer.Hours,
+                    request_deserializer=imageService__pb2.HoursRequest.FromString,
+                    response_serializer=imageService__pb2.HoursResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -215,6 +247,60 @@ class ImageGenerationService(object):
             '/ImageGenerationService/Echo',
             imageService__pb2.EchoRequest.SerializeToString,
             imageService__pb2.EchoReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Pubkey(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ImageGenerationService/Pubkey',
+            imageService__pb2.PubkeyRequest.SerializeToString,
+            imageService__pb2.PubkeyResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Hours(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/ImageGenerationService/Hours',
+            imageService__pb2.HoursRequest.SerializeToString,
+            imageService__pb2.HoursResponse.FromString,
             options,
             channel_credentials,
             insecure,
