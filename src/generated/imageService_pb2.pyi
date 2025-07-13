@@ -30,17 +30,29 @@ class EchoRequest(_message.Message):
     sharedSecret: str
     def __init__(self, name: _Optional[str] = ..., sharedSecret: _Optional[str] = ...) -> None: ...
 
+class ComputeUnitThreshold(_message.Message):
+    __slots__ = ("community", "plus", "expireAt")
+    COMMUNITY_FIELD_NUMBER: _ClassVar[int]
+    PLUS_FIELD_NUMBER: _ClassVar[int]
+    EXPIREAT_FIELD_NUMBER: _ClassVar[int]
+    community: float
+    plus: float
+    expireAt: int
+    def __init__(self, community: _Optional[float] = ..., plus: _Optional[float] = ..., expireAt: _Optional[int] = ...) -> None: ...
+
 class EchoReply(_message.Message):
-    __slots__ = ("message", "files", "override", "sharedSecretMissing")
+    __slots__ = ("message", "files", "override", "sharedSecretMissing", "thresholds")
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     FILES_FIELD_NUMBER: _ClassVar[int]
     OVERRIDE_FIELD_NUMBER: _ClassVar[int]
     SHAREDSECRETMISSING_FIELD_NUMBER: _ClassVar[int]
+    THRESHOLDS_FIELD_NUMBER: _ClassVar[int]
     message: str
     files: _containers.RepeatedScalarFieldContainer[str]
     override: MetadataOverride
     sharedSecretMissing: bool
-    def __init__(self, message: _Optional[str] = ..., files: _Optional[_Iterable[str]] = ..., override: _Optional[_Union[MetadataOverride, _Mapping]] = ..., sharedSecretMissing: bool = ...) -> None: ...
+    thresholds: ComputeUnitThreshold
+    def __init__(self, message: _Optional[str] = ..., files: _Optional[_Iterable[str]] = ..., override: _Optional[_Union[MetadataOverride, _Mapping]] = ..., sharedSecretMissing: bool = ..., thresholds: _Optional[_Union[ComputeUnitThreshold, _Mapping]] = ...) -> None: ...
 
 class FileListRequest(_message.Message):
     __slots__ = ("files", "filesWithHash", "sharedSecret")
@@ -254,3 +266,27 @@ class FileUploadRequest(_message.Message):
     chunk: FileChunk
     sharedSecret: str
     def __init__(self, initRequest: _Optional[_Union[InitUploadRequest, _Mapping]] = ..., chunk: _Optional[_Union[FileChunk, _Mapping]] = ..., sharedSecret: _Optional[str] = ...) -> None: ...
+
+class PubkeyRequest(_message.Message):
+    __slots__ = ("name",)
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    def __init__(self, name: _Optional[str] = ...) -> None: ...
+
+class PubkeyResponse(_message.Message):
+    __slots__ = ("message", "pubkey")
+    MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    PUBKEY_FIELD_NUMBER: _ClassVar[int]
+    message: str
+    pubkey: str
+    def __init__(self, message: _Optional[str] = ..., pubkey: _Optional[str] = ...) -> None: ...
+
+class HoursRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class HoursResponse(_message.Message):
+    __slots__ = ("thresholds",)
+    THRESHOLDS_FIELD_NUMBER: _ClassVar[int]
+    thresholds: ComputeUnitThreshold
+    def __init__(self, thresholds: _Optional[_Union[ComputeUnitThreshold, _Mapping]] = ...) -> None: ...

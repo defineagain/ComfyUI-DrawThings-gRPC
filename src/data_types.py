@@ -104,6 +104,7 @@ class Config(TypedDict, total=False):
     guiding_frame_noise: float
     start_frame_guidance: float
     causal_inference: int
+    causal_inference_pad: int
 
     # conditional
     high_res_fix: bool
@@ -158,7 +159,7 @@ class Config(TypedDict, total=False):
     # stage_2_steps: int
     # stage_2_cfg: int
     # stage_2_shift: int
-    # stochastic_sampling_gamma: int
+    stochastic_sampling_gamma: int
     # t5_text_encoder: int
     # separate_t5: int
     # t5_text: int

@@ -3,7 +3,7 @@ import { updateProto, setCallback } from "./util.js"
 import { findPropertyJson, findPropertyPython } from "./configProperties.js"
 
 
-export const nodePackVersion = "1.3.2"
+export const nodePackVersion = "1.4.0"
 let previewMethod = undefined
 
 // this holds the node definition from python
@@ -143,16 +143,14 @@ const samplerProto = {
                     navigator.clipboard.readText().then(async (text) => {
                         try {
                             const config = JSON.parse(text)
-                            for (const [k, v] of Object.entries(config)) {
-                                const prop = findPropertyJson(k)
-                                if (!prop) {
-                                    console.log('unknown prop in config:', k)
+
+                            for (const w of this.widgets) {
+                                const prop = findPropertyPython(w.name)
+                                if (!prop)
                                     continue
-                                }
-                                const name = prop?.python
-                                const widget = this.widgets.find((w) => w.name === name)
-                                await prop.import(k, v, widget, this, config)
+                                await prop.import(w.name, config[prop.json], w, this, config)
                             }
+
                             this.updateDynamicWidgets?.()
                         } catch (e) {
                             alert("Failed to parse Draw Things config from clipboard\n\n" + e)

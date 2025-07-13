@@ -106,7 +106,7 @@ cookiecutter-pypackage-env/
 
 node_modules/
 package.json
-yarn.lock
+package-lock.json
 
 notes.md
 
