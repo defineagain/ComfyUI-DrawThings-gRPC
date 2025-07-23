@@ -3,13 +3,14 @@ import dtCore, { nodePackVersion } from "./ComfyUI-DrawThings-gRPC.js"
 import dtModelNodes from "./dtModelNodes.js"
 import dtDynamicInputs from "./dynamicInputs.js"
 import dtWidgets from "./widgets.js"
+import loraNode from "./lora.js"
 
 import * as App from "../../scripts/app.js"
 
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = App.app
 
-const modules = [dtCore, dtPrompt, dtModelNodes, dtDynamicInputs, dtWidgets]
+const modules = [dtCore, dtPrompt, dtModelNodes, /* dtDynamicInputs, */ dtWidgets, loraNode]
 
 // different features of the nodepack extension are implemented in different modules
 // here we combine them and register a single extension

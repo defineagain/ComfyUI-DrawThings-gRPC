@@ -104,7 +104,7 @@ function updateInput(input, node) {
 }
 
 /** @param node {LGraphNode} */
-function showWidget(node, widgetName, show = false, suffix = "") {
+export function showWidget(node, widgetName, show = false, suffix = "") {
     const widget = findWidgetByName(node, widgetName);
     if (!widget) return;
     if (!origProps[widget.name]) {

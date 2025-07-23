@@ -1,6 +1,7 @@
 import { DtModelTypeHandler } from "./models.js"
 import { updateProto, setCallback } from "./util.js"
 import { findPropertyJson, findPropertyPython } from "./configProperties.js"
+import { DtButtonsTypeHandler } from './lora.js'
 
 
 export const nodePackVersion = "1.5.0"
@@ -16,6 +17,7 @@ export default {
     getCustomWidgets(app) {
         return {
             DT_MODEL: DtModelTypeHandler,
+            "DT_BUTTONS": DtButtonsTypeHandler
         }
     },
 
