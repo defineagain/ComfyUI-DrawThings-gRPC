@@ -1,34 +1,59 @@
 import { Page } from "@playwright/test";
+import { centerOnPoint } from './util';
 
 export async function getNodeRef(
     page: Page,
-    node: number | string | ((node) => boolean)
+    node: number | string | ((node) => boolean),
+    options?: {
+        doNotThrow?: boolean;
+    }
 ) {
     const nodeId = await page.evaluate((node) => {
         if (typeof node === "number") {
-            return window.app.graph._nodes[node].id;
+            return window.app.graph._nodes[node]?.id;
         } else if (typeof node === "string") {
-            return window.app.graph._nodes.find((n) => n.type === node).id;
+            return window.app.graph._nodes.find((n) => n.type === node)?.id;
         } else if (typeof node === "function") {
-            return window.app.graph._nodes.find(node).id;
+            return window.app.graph._nodes.find(node)?.id;
         }
         return null;
     }, node);
 
-    if (nodeId === null) {
+    if (nodeId === null || nodeId === undefined) {
+        if (options?.doNotThrow) return undefined;
         throw new Error(`Node not found: ${node}`);
     }
 
     return new NodeRef(nodeId, page);
 }
 
+export async function addNode(page: Page, path: string[],x: number, y: number) {
+    await centerOnPoint(page, x, y);
+    await page.waitForTimeout(200)
+    const canvasSize = await page.locator("#graph-canvas").boundingBox()
+    await page.locator("#graph-canvas").click({
+        position: {
+            x: canvasSize!.width / 2,
+            y: canvasSize!.height / 2,
+        },
+        button: "right",
+    })
+
+    await page.getByRole("menuitem", { name: "Add node" }).first().click();
+
+    for (const p of path) {
+        const menu = await page.locator(".litecontextmenu").last()
+        await menu.getByText(p, { exact: true }).click();
+    }
+}
+
 export class NodeRef {
-    readonly id: number;
+    readonly id: number | string;
     readonly page: Page;
 
     delay: number = 100;
 
-    constructor(id: number, page: Page) {
+    constructor(id: number | string, page: Page) {
         this.page = page;
         this.id = id;
     }
@@ -172,4 +197,19 @@ export class NodeRef {
     async getWidgetOptions(widget: string) {
         throw new Error("not yet implemented")
     }
+
+    async centerNode() {
+        await this.page.evaluate(
+            async ([nodeId]) => {
+                const node = app.graph.getNodeById(nodeId);
+                app.canvas.selectNode(node)
+                await new Promise((resolve) => setTimeout(resolve, 200));
+            }, [this.id])
+
+        await this.page.locator("#graph-canvas").press('.')
+    }
+}
+
+async function wait(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

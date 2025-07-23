@@ -8,8 +8,7 @@ import { join } from "node:path";
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-export const workflowFolder = "/Users/kcjer/Desktop/comfy_test_img/";
-const outputFolder = "/Users/kcjer/sd/ComfyUI/output/";
+export const workflowFolder = "./e2e/workflows";
 
 test("widget change when settings mode changes", async ({ page }) => {
     await openWorkflow(join(workflowFolder, "node.json"), page);
