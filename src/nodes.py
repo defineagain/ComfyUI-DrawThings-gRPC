@@ -396,16 +396,25 @@ class DrawThingsLoRA:
     @classmethod
     def INPUT_TYPES(s):
         # fmt: off
-        return {
+        first_model_widget =  ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used." })
+        model_widget = ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "hidden": True, "default": None })
+        first_weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."})
+        weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative.", "hidden": True})
+        types = {
             "required": {
-                "lora_name": ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used." }),
-                "lora_weight": ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."}),
+                "buttons": ("DT_BUTTONS", { "default": None }),
+                "model": first_model_widget,
+                "weight": first_weight_widget,
             },
             "optional": {
                 # "lora": ("DT_LORA",),
             },
         }
+        for i in range(2, 9):
+                types["required"]["lora_" + str(i)] = model_widget
+                types["required"]["weight_" + str(i)] = weight_widget
         # fmt: on
+        return types
 
     RETURN_TYPES = ("DT_LORA",)
     RETURN_NAMES = ("LORA",)
@@ -413,7 +422,9 @@ class DrawThingsLoRA:
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, lora_name, lora_weight, **kwargs) -> LoraStack:
+    def add_to_pipeline(self, **kwargs) -> LoraStack:
+        print(kwargs)
+        return ([],)
         prev_lora: LoraStack = kwargs.get("lora", None)
         control_image = kwargs.get("control_image", None)
 

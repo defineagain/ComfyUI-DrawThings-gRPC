@@ -58,8 +58,8 @@ const dtModelNodeProto = {
     onConfigure(serialised) {
         this._lastSelectedModel = serialised._lastSelectedModel || {}
     },
-    getModelWidget() {
-        return this.widgets.find((w) => w.options?.modelType)
+    getModelWidgets() {
+        return this.widgets.filter((w) => w.options?.modelType)
     },
     onAdded() {
         modelService.updateNodes()
@@ -96,29 +96,31 @@ const dtServerNodeProto = {
      * @param {string} version
      */
     updateModels(models, version) {
-        const widget = this.getModelWidget()
-        if (!widget) return
-        if (models === null) {
-            widget.options.values = ["Not connected", "Click to retry"]
-            widget.value = "Not connected"
-            return
-        }
-
-        widget.options.values = ["(None selected)", ...models.models.map(m => getMenuItem(m)).sort((a, b) => a.content.localeCompare(b.content))]
-
-        if (widget.value === "Click to retry" || widget.value === "Not connected") {
-            if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
-            else widget.value = "(None selected)"
-        }
-
-        if (widget.value?.toString() === "[object Object]") {
-            const value = {
-                ...widget.value,
-                toString() {
-                    return this.value.name
-                },
+        const widgets = this.getModelWidgets()
+        for (const widget of widgets) {
+            if (!widget) return
+            if (models === null) {
+                widget.options.values = ["Not connected", "Click to retry"]
+                widget.value = "Not connected"
+                return
             }
-            widget.value = value
+
+            widget.options.values = ["(None selected)", ...models.models.map(m => getMenuItem(m)).sort((a, b) => a.content.localeCompare(b.content))]
+
+            if (widget.value === "Click to retry" || widget.value === "Not connected") {
+                if (this._lastSelectedModel?.model) widget.value = this._lastSelectedModel.model
+                else widget.value = "(None selected)"
+            }
+
+            if (widget.value?.toString() === "[object Object]") {
+                const value = {
+                    ...widget.value,
+                    toString() {
+                        return this.value.name
+                    },
+                }
+                widget.value = value
+            }
         }
     }
 }
@@ -136,40 +138,42 @@ const dtModelStandardNodeProto = {
      */
     updateModels(models, version) {
         /** @type {import('@comfyorg/litegraph').IWidget} */
-        const widget = this.getModelWidget()
-        if (!widget) return
+        const widgets = this.getModelWidgets()
+        for (const widget of widgets) {
+            if (!widget) return
 
-        const type = widget?.options?.modelType
+            const type = widget?.options?.modelType
 
-        if (models === null) {
-            widget.options.values = ["Not connected", "Click to retry"]
-            widget.value = "Not connected"
-            return
-        }
-
-        if (!(type in models)) return
-
-        widget.options.values = ["(None selected)", ...models[type]
-            .map((m) => getMenuItem(m, version && m.version && m.version !== version))
-            .sort((a, b) => {
-                if (a.disabled && !b.disabled) return 1
-                if (!a.disabled && b.disabled) return -1
-                return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
-            })]
-
-        if (widget.value === "Click to retry" || widget.value === "Not connected") {
-            if (this._lastSelectedModel?.[widget.name]) widget.value = this._lastSelectedModel[widget.name]
-            else widget.value = "(None selected)"
-        }
-
-        if (widget.value?.toString() === "[object Object]") {
-            const value = {
-                ...widget.value,
-                toString() {
-                    return this.value.name
-                },
+            if (models === null) {
+                widget.options.values = ["Not connected", "Click to retry"]
+                widget.value = "Not connected"
+                return
             }
-            widget.value = value
+
+            if (!(type in models)) return
+
+            widget.options.values = ["(None selected)", ...models[type]
+                .map((m) => getMenuItem(m, version && m.version && m.version !== version))
+                .sort((a, b) => {
+                    if (a.disabled && !b.disabled) return 1
+                    if (!a.disabled && b.disabled) return -1
+                    return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
+                })]
+
+            if (widget.value === "Click to retry" || widget.value === "Not connected") {
+                if (this._lastSelectedModel?.[widget.name]) widget.value = this._lastSelectedModel[widget.name]
+                else widget.value = "(None selected)"
+            }
+
+            if (widget.value?.toString() === "[object Object]") {
+                const value = {
+                    ...widget.value,
+                    toString() {
+                        return this.value.name
+                    },
+                }
+                widget.value = value
+            }
         }
     }
 }
@@ -187,35 +191,37 @@ const dtModelPromptNodeProto = {
 
     updateOptions() {
         /** @type {import('@comfyorg/litegraph').IWidget} */
-        const widget = this.getModelWidget()
-        if (!widget) return
+        const widgets = this.getModelWidgets()
+        for (const widget of widgets) {
+            if (!widget) return
 
-        if (this._models === null) {
-            widget.options.values = ["Not connected", "Click to retry"]
-            widget.value = "Not connected"
-            return
-        }
+            if (this._models === null) {
+                widget.options.values = ["Not connected", "Click to retry"]
+                widget.value = "Not connected"
+                return
+            }
 
-        /** @type {string} */
-        const promptText = this.widgets.find((w) => w.name === "prompt")?.value
-        const matches = [...promptText.matchAll(/<(.*?)>/gm)]
-        const tags = matches.map(m => m[1])
-        widget.options.values = ["...", ...this._models
-            .map((m) => getMenuItem(m, this._version && m.version && m.version !== this._version && !tags.includes(m.keyword)))
-            .map(m => {
-                Object.defineProperty(m, 'content', {
-                    get() {
-                        return `${tags.includes(m.value.keyword) ? "✓ " : ""}${m.value.name} (${m.value.version})`
-                    }
+            /** @type {string} */
+            const promptText = this.widgets.find((w) => w.name === "prompt")?.value
+            const matches = [...promptText.matchAll(/<(.*?)>/gm)]
+            const tags = matches.map(m => m[1])
+            widget.options.values = ["...", ...this._models
+                .map((m) => getMenuItem(m, this._version && m.version && m.version !== this._version && !tags.includes(m.keyword)))
+                .map(m => {
+                    Object.defineProperty(m, 'content', {
+                        get() {
+                            return `${tags.includes(m.value.keyword) ? "✓ " : ""}${m.value.name} (${m.value.version})`
+                        }
+                    })
+                    return m
                 })
-                return m
-            })
-            .sort((a, b) => {
-                if (a.disabled && !b.disabled) return 1
-                if (!a.disabled && b.disabled) return -1
-                return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
-            })]
+                .sort((a, b) => {
+                    if (a.disabled && !b.disabled) return 1
+                    if (!a.disabled && b.disabled) return -1
+                    return a.content.toUpperCase().localeCompare(b.content.toUpperCase())
+                })]
 
-        widget.value = "..."
+            widget.value = "..."
+        }
     },
 }
