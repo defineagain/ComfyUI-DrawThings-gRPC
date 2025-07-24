@@ -26,6 +26,8 @@ class SamplerType(object):
     DPMPPSDEAYS = 14
     DPMPP2MTrailing = 15
     DDIMTrailing = 16
+    UniPCTrailing = 17
+    UniPCAYS = 18
 
 
 class SeedMode(object):
@@ -989,8 +991,22 @@ class GenerationConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
         return 0
 
+    # GenerationConfiguration
+    def CfgZeroStar(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(168))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
+    # GenerationConfiguration
+    def CfgZeroInitSteps(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(170))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int32Flags, o + self._tab.Pos)
+        return 0
+
 def GenerationConfigurationStart(builder: flatbuffers.Builder):
-    builder.StartObject(82)
+    builder.StartObject(84)
 
 def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int):
     builder.PrependInt64Slot(0, id, 0)
@@ -1238,6 +1254,12 @@ def GenerationConfigurationAddCausalInference(builder: flatbuffers.Builder, caus
 def GenerationConfigurationAddCausalInferencePad(builder: flatbuffers.Builder, causalInferencePad: int):
     builder.PrependInt32Slot(81, causalInferencePad, 0)
 
+def GenerationConfigurationAddCfgZeroStar(builder: flatbuffers.Builder, cfgZeroStar: bool):
+    builder.PrependBoolSlot(82, cfgZeroStar, 0)
+
+def GenerationConfigurationAddCfgZeroInitSteps(builder: flatbuffers.Builder, cfgZeroInitSteps: int):
+    builder.PrependInt32Slot(83, cfgZeroInitSteps, 0)
+
 def GenerationConfigurationEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
 
@@ -1331,6 +1353,8 @@ class GenerationConfigurationT(object):
         self.causalInferenceEnabled = False  # type: bool
         self.causalInference = 3  # type: int
         self.causalInferencePad = 0  # type: int
+        self.cfgZeroStar = False  # type: bool
+        self.cfgZeroInitSteps = 0  # type: int
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -1447,6 +1471,8 @@ class GenerationConfigurationT(object):
         self.causalInferenceEnabled = generationConfiguration.CausalInferenceEnabled()
         self.causalInference = generationConfiguration.CausalInference()
         self.causalInferencePad = generationConfiguration.CausalInferencePad()
+        self.cfgZeroStar = generationConfiguration.CfgZeroStar()
+        self.cfgZeroInitSteps = generationConfiguration.CfgZeroInitSteps()
 
     # GenerationConfigurationT
     def Pack(self, builder):
@@ -1573,6 +1599,8 @@ class GenerationConfigurationT(object):
         GenerationConfigurationAddCausalInferenceEnabled(builder, self.causalInferenceEnabled)
         GenerationConfigurationAddCausalInference(builder, self.causalInference)
         GenerationConfigurationAddCausalInferencePad(builder, self.causalInferencePad)
+        GenerationConfigurationAddCfgZeroStar(builder, self.cfgZeroStar)
+        GenerationConfigurationAddCfgZeroInitSteps(builder, self.cfgZeroInitSteps)
         generationConfiguration = GenerationConfigurationEnd(builder)
         return generationConfiguration
 

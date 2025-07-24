@@ -177,6 +177,14 @@ function updateSamplerWidgets(node) {
         // num_frames (wan, hunyuan, svd)
         const isVideo = ["hunyuan_video", "wan_v2.1_1.3b", "wan_v2.1_14b", "svd_i2v"].includes(version);
         showWidget(node, "num_frames", isVideo);
+
+        // zero cfg (flux, hidream, wan, sd3, hunyuan)
+        const zeroCfgAvailable = ["flux1", "hidream_i1", "wan_v2.1_1.3b", "wan_v2.1_14b", "sd3", "hunyuan_video"].includes(
+            version
+        )
+        const zeroCfgEnabled = zeroCfgAvailable && findWidgetByName(node, "cfg_zero_star")?.value;
+        showWidget(node, "cfg_zero_star", zeroCfgAvailable);
+        showWidget(node, "cfg_zero_star_init_steps", zeroCfgEnabled);
     }
 
     if (isAdvanced) {

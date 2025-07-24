@@ -39,6 +39,8 @@ class DrawThingsSampler:
                 "steps": ("INT", { "default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process." },),
                 "num_frames": ("INT", { "default": 14, "min": 1, "max": 201, "step": 1}),
                 "cfg": ("FLOAT", { "default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality." },),
+                "cfg_zero_star": ("BOOLEAN", { "default": False }),
+                "cfg_zero_star_init_steps": ("INT", { "default": 0, "min": 0, "max": 50, "step": 1}),
                 "speed_up": ("BOOLEAN", { "default": True}),
                 "guidance_embed": ("FLOAT", { "default": 4.5, "min": 0, "max": 50, "step": 0.1},),
                 "sampler_name": (DrawThingsLists.sampler_list, { "default": "DPM++ 2M AYS", "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output." },),
@@ -124,7 +126,7 @@ class DrawThingsSampler:
     FUNCTION = "sample"
     CATEGORY = "DrawThings"
 
-    def sample(self, **kwargs):
+    async def sample(self, **kwargs):
         DrawThingsSampler.last_gen_canceled = False
         model_input = kwargs.get("model")
         if type(model_input) is not dict:
@@ -137,7 +139,7 @@ class DrawThingsSampler:
         kwargs["version"] = model.get("version")
 
         try:
-            return asyncio.run(dt_sampler(kwargs))
+            return await dt_sampler(kwargs)
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 raise Exception(

@@ -30,7 +30,7 @@ TextualInversionInfo = TypedDict(
         "keyword": str,
         "name": str,
         "version": str,
-    }
+    },
 )
 ModelsInfo = TypedDict(
     "ModelsInfo",
@@ -62,6 +62,7 @@ _ControlStackItem = TypedDict(
     },
 )
 ControlStack = list[_ControlStackItem]
+
 
 # this should match kwargs in the sampler node method
 class Config(TypedDict, total=False):
@@ -188,6 +189,8 @@ class DrawThingsLists:
         "DPM++ SDE AYS",
         "DPM++ 2M Trailing",
         "DDIM Trailing",
+        "UniPC Trailing",
+        "UniPC AYS",
     ]
 
     seed_mode = [
