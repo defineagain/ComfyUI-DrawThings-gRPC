@@ -8,8 +8,7 @@ import { join } from "node:path";
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
-export const workflowFolder = "/Users/kcjer/Desktop/comfy_test_img/";
-const outputFolder = "/Users/kcjer/sd/ComfyUI/output/";
+export const workflowFolder = "./e2e/workflows";
 
 test("widget change when settings mode changes", async ({ page }) => {
     await openWorkflow(join(workflowFolder, "node.json"), page);
@@ -119,25 +118,27 @@ test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
 test("flux settings widgets", async ({ page }) => {
     await openWorkflow(join(workflowFolder, "node.json"), page);
 
-    const nodeRef = await getNodeRef(page, "DrawThingsSampler");
+    const node = await getNodeRef(page, "DrawThingsSampler");
+    if (!node) throw new Error("Node ref not found");
 
     // go to basic
-    await nodeRef.clickWidget("settings");
+    await node.clickWidget("settings");
     await page.getByRole("menuitem", { name: "Basic" }).click();
 
     // select an sd model
-    await nodeRef.clickWidget("model");
+    await node.clickWidget("model");
     await page
         .getByRole("menuitem", { name: /\(SD\)/ })
         .first()
         .click();
 
     // make sure flux widgets are not visible
-    expect(await nodeRef.isWidgetVisible("res_dpt_shift")).toBeFalsy();
+    expect(await node.isWidgetVisible("res_dpt_shift")).toBeFalsy();
+    expect(await node.isWidgetVisible("cfg_zero_star")).toBeFalsy();
 
-    await nodeRef.selectWidgetOption("settings", "Advanced");
+    await node.selectWidgetOption("settings", "Advanced");
     expect(
-        await nodeRef.isWidgetVisible([
+        await node.isWidgetVisible([
             "tea_cache",
             "speed_up",
             "separate_clip_l",
@@ -145,11 +146,11 @@ test("flux settings widgets", async ({ page }) => {
     ).toMatchObject([false, false, false]);
 
     // select flux model
-    await nodeRef.selectWidgetOption("model", /\(F1\)/);
+    await node.selectWidgetOption("model", /\(F1\)/);
 
-    await nodeRef.selectWidgetOption("settings", "Advanced");
+    await node.selectWidgetOption("settings", "Advanced");
     expect(
-        await nodeRef.isWidgetVisible([
+        await node.isWidgetVisible([
             "tea_cache",
             "speed_up",
             "separate_clip_l",
@@ -157,7 +158,7 @@ test("flux settings widgets", async ({ page }) => {
     ).toMatchObject([true, true, true]);
 
     // test tea_cache
-    await testDependentOptions(nodeRef, "tea_cache", [
+    await testDependentOptions(node, "tea_cache", [
         "tea_cache_start",
         "tea_cache_end",
         "tea_cache_threshold",
@@ -166,42 +167,47 @@ test("flux settings widgets", async ({ page }) => {
 
     // test speed_up
     await testDependentOptions(
-        nodeRef,
+        node,
         "speed_up",
         ["guidance_embed"],
         "invert"
     );
 
     // test separate_clip_l
-    await testDependentOptions(nodeRef, "separate_clip_l", ["clip_l_text"]);
+    await testDependentOptions(node, "separate_clip_l", ["clip_l_text"]);
 
-    await nodeRef.selectWidgetOption("settings", "Basic");
+    await node.selectWidgetOption("settings", "Basic");
 
-    await testDependentOptions(nodeRef, "res_dpt_shift", ["shift"], "disable");
+    await testDependentOptions(node, "res_dpt_shift", ["shift"], "disable");
+
+    await testDependentOptions(node, "cfg_zero_star", ["cfg_zero_star_init_steps"]);
 });
 
-test("svd options", async ({ page }) => {});
+test("svd options", async ({ page }) => { });
 
 test("wan options", async ({ page }) => {
     await openWorkflow(join(workflowFolder, "node.json"), page);
 
-    const nodeRef = await getNodeRef(page, "DrawThingsSampler");
+    const node = await getNodeRef(page, "DrawThingsSampler");
+    if (!node) throw new Error("Node ref not found");
 
     // go to basic
-    await nodeRef.clickWidget("settings");
+    await node.clickWidget("settings");
     await page.getByRole("menuitem", { name: "Basic" }).click();
 
     // select an sd model
-    await nodeRef.clickWidget("model");
+    await node.clickWidget("model");
     await page
         .getByRole("menuitem", { name: /\(SD\)/ })
         .first()
         .click();
 
     // make sure wan widgets are not visible
-    await nodeRef.selectWidgetOption("settings", "Advanced");
+    expect(await node.isWidgetVisible("cfg_zero_star")).toBeFalsy();
+
+    await node.selectWidgetOption("settings", "Advanced");
     expect(
-        await nodeRef.isWidgetVisible([
+        await node.isWidgetVisible([
             "causal_inference",
             "causal_inference_pad",
             "tea_cache",
@@ -209,11 +215,11 @@ test("wan options", async ({ page }) => {
     ).toMatchObject([false, false, false]);
 
     // select wan model
-    await nodeRef.selectWidgetOption("model", /Wan 2.1/);
+    await node.selectWidgetOption("model", /Wan 2.1/);
 
     // assert widgets appear
     expect(
-        await nodeRef.isWidgetVisible([
+        await node.isWidgetVisible([
             "causal_inference",
             "causal_inference_pad",
             "tea_cache",
@@ -221,12 +227,15 @@ test("wan options", async ({ page }) => {
     ).toMatchObject([true, true, true]);
 
     // test tea_cache
-    await testDependentOptions(nodeRef, "tea_cache", [
+    await testDependentOptions(node, "tea_cache", [
         "tea_cache_start",
         "tea_cache_end",
         "tea_cache_threshold",
         "tea_cache_max_skip_steps",
     ]);
+
+    await node.selectWidgetOption("settings", "Basic")
+    await testDependentOptions(node, "cfg_zero_star", ["cfg_zero_star_init_steps"]);
 });
 
 async function testDependentOptions(
@@ -241,9 +250,9 @@ async function testDependentOptions(
     const check =
         mode === "disable"
             ? (...args: Parameters<NodeRef["isWidgetDisabled"]>) =>
-                  node.isWidgetDisabled(...args)
+                node.isWidgetDisabled(...args)
             : (...args: Parameters<NodeRef["isWidgetVisible"]>) =>
-                  node.isWidgetVisible(...args);
+                node.isWidgetVisible(...args);
 
     expect(await node.isWidgetVisible(primary)).toBeTruthy();
 

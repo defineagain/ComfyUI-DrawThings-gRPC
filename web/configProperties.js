@@ -18,6 +18,8 @@ export const samplers = [
     "DPM++ SDE AYS",
     "DPM++ 2M Trailing",
     "DDIM Trailing",
+    "UniPC Trailing",
+    "UniPC AYS",
 ];
 
 export const seedModes = ["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"];
@@ -141,6 +143,9 @@ export const propertyData = [
     // in refiner node
     ['refiner_model', 'refiner_model', 'DrawThingsRefiner', 'refinerModel'],
     ['refiner_start', 'refiner_start', 'DrawThingsRefiner', 'refinerStart'],
+
+    ["cfg_zero_star", "cfg_zero_star", "DrawThingsSampler", "cfgZeroStar", "bool", false],
+    ["cfg_zero_star_init_steps", "cfg_zero_star_init_steps", "DrawThingsSampler", "cfgZeroInitSteps", "int", 0, 0, "ref=steps", 1, "ifTrue=cfgZeroStar"],
 ]
 // prettier-ignore-end
 

@@ -47,6 +47,14 @@ test("test output: sd1_b", async ({ page }) => {
     );
 });
 
+test("test output: unipc", async ({ page }) => {
+    await compareOutput(
+        page,
+        "unipc",
+        "xtinMYLwpH2QdOYdIHSyOSw1uDnMNb15GA2yeVjFsnmAZbg5ZKcRE+CTj1dy2d0GkGmcTsRkvOF0JLJk5CS3bPQBJ1jWky+4ZLgftOS8TzhMM+NMh2/xZJM986CEPdP5gj+TgQIflhnPj4aJzIz2DMGHDUIz3c0KeNlMKOJ3bMc="
+    );
+});
+
 test("test output: sdxl_a", async ({ page }) => {
     await compareOutput(
         page,
