@@ -65,6 +65,12 @@ class ControlInputType(object):
     Gray = 18
 
 
+class LoRAMode(object):
+    All = 0
+    Base = 1
+    Refiner = 2
+
+
 class Control(object):
     __slots__ = ['_tab']
 
@@ -322,14 +328,24 @@ class LoRA(object):
             return self._tab.Get(flatbuffers.number_types.Float32Flags, o + self._tab.Pos)
         return 0.6
 
+    # LoRA
+    def Mode(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int8Flags, o + self._tab.Pos)
+        return 0
+
 def LoRAStart(builder: flatbuffers.Builder):
-    builder.StartObject(2)
+    builder.StartObject(3)
 
 def LoRAAddFile(builder: flatbuffers.Builder, file: int):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(file), 0)
 
 def LoRAAddWeight(builder: flatbuffers.Builder, weight: float):
     builder.PrependFloat32Slot(1, weight, 0.6)
+
+def LoRAAddMode(builder: flatbuffers.Builder, mode: int):
+    builder.PrependInt8Slot(2, mode, 0)
 
 def LoRAEnd(builder: flatbuffers.Builder) -> int:
     return builder.EndObject()
@@ -342,6 +358,7 @@ class LoRAT(object):
     def __init__(self):
         self.file = None  # type: str
         self.weight = 0.6  # type: float
+        self.mode = 0  # type: int
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -366,6 +383,7 @@ class LoRAT(object):
             return
         self.file = loRa.File()
         self.weight = loRa.Weight()
+        self.mode = loRa.Mode()
 
     # LoRAT
     def Pack(self, builder):
@@ -375,6 +393,7 @@ class LoRAT(object):
         if self.file is not None:
             LoRAAddFile(builder, file)
         LoRAAddWeight(builder, self.weight)
+        LoRAAddMode(builder, self.mode)
         loRa = LoRAEnd(builder)
         return loRa
 
