@@ -182,6 +182,13 @@ export class NodeRef {
         await this.page.getByRole("menuitem", { name: option }).first().click();
     }
 
+    async setWidgetValue(widget: string, value: number) {
+        await this.clickWidget(widget);
+
+        await this.page.getByRole('textbox').fill(String(value))
+        await this.page.getByRole('textbox').press('Enter')
+    }
+
     async getNodeColor() {
         throw new Error("not yet implemented")
     }
@@ -207,6 +214,8 @@ export class NodeRef {
             }, [this.id])
 
         await this.page.locator("#graph-canvas").press('.')
+
+        await wait(400)
     }
 }
 
