@@ -1,6 +1,8 @@
 import "dotenv/config"
 import { Locator, Page, test as base, expect } from '@playwright/test'
 import { NodeRef } from './nodeRef'
+import fse from "fs-extra"
+import { join } from 'path'
 
 
 class ComfyPage {
@@ -131,6 +133,20 @@ class ComfyPage {
                 return { id, type, pos, size, title }
             })
         })
+    }
+
+    async saveWorkflow() {
+            await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
+            await this.page.getByRole('menuitem', { name: 'Export' }).first().locator('a').click();
+            await this.page.getByRole('textbox').click();
+            await this.page.getByRole('textbox').press('ControlOrMeta+a');
+            await this.page.getByRole('textbox').fill('workflow');
+            const downloadPromise = this.page.waitForEvent('download');
+            await this.page.getByRole('button', { name: 'Confirm' }).click();
+            const download = await downloadPromise;
+
+            const tempDir = await fse.mkdtemp('comfyui-dt-grpc-')
+            await download.saveAs(join(tempDir, 'workflow.json'))
     }
 }
 
