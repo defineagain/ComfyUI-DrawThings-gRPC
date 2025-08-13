@@ -148,6 +148,7 @@ def apply_lora(config: Config, configT: GenerationConfigurationT):
         loraT = LoRAT()
         loraT.file = lora["model"]["file"]
         loraT.weight = lora["weight"]
+        loraT.mode = DrawThingsLists.lora_mode.index(lora["mode"])
 
         configT.loras.append(loraT)
 

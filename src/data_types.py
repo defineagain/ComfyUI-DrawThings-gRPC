@@ -14,7 +14,7 @@ ControlNetInfo = TypedDict(
     {"file": str, "name": str, "version": str, "modifier": str, "type": str},
 )
 LoRAInfo = TypedDict(
-    "LoRAInfo", {"file": str, "name": str, "version": str, "prefix": str}
+    "LoRAInfo", {"file": str, "name": str, "version": str, "prefix": str, "mode": str}
 )
 UpscalerInfo = TypedDict(
     "UpscalerInfo",
@@ -43,11 +43,11 @@ ModelsInfo = TypedDict(
     },
 )
 
-_LoraStackItem = TypedDict(
-    "_LoraStackItem",
-    {"model": LoRAInfo, "weight": float, "control_image": NotRequired[Tensor]},
+LoraStackItem = TypedDict(
+    "LoraStackItem",
+    {"model": LoRAInfo, "weight": float, "mode": str},
 )
-LoraStack = list[_LoraStackItem]
+LoraStack = list[LoraStackItem]
 
 _ControlStackItem = TypedDict(
     "_ControlStackItem",
@@ -226,4 +226,10 @@ class DrawThingsLists:
         "Blur",
         "Lowquality",
         "Gray",
+    ]
+
+    lora_mode = [
+        "All",
+        "Base",
+        "Refiner",
     ]

@@ -138,6 +138,7 @@ class DrawThingsSampler:
         kwargs["model"] = model.get("file")
         kwargs["version"] = model.get("version")
 
+
         try:
             return await dt_sampler(kwargs)
         except grpc.aio.AioRpcError as e:
@@ -180,7 +181,7 @@ class DrawThingsRefiner:
             "required": {
                 "refiner_model": ("DT_MODEL", {"model_type": "models"}),
                 "refiner_start": ("FLOAT", { "default": 0.85, "min": 0.00, "max": 1.00, "step": 0.01, "round": 0.01 }),
-            }
+            },
         }
         # fmt: on
 
@@ -400,19 +401,25 @@ class DrawThingsLoRA:
         model_widget = ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "hidden": True, "default": None })
         first_weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative."})
         weight_widget = ("FLOAT", { "default": 1.00, "min": -5.00, "max": 5.00, "step": 0.01, "tooltip": "How strongly to modify the diffusion model. This value can be negative.", "hidden": True})
+        first_mode_widget = (DrawThingsLists.lora_mode, { "default": "All", "tooltip": "When using a refiner, LoRA can be applied to either the base model, refiner, or both. If not using a refiner, this setting will be ignored."})
+        mode_widget = (DrawThingsLists.lora_mode, { "default": "All", "tooltip": "When using a refiner, LoRA can be applied to either the base model, refiner, or both. If not using a refiner, this setting will be ignored.", "hidden": True})
+
+
         types = {
             "required": {
                 "buttons": ("DT_BUTTONS", { "default": None }),
-                "model": first_model_widget,
+                "lora": first_model_widget,
                 "weight": first_weight_widget,
+                "mode": first_mode_widget
             },
             "optional": {
-                # "lora": ("DT_LORA",),
+                "lora_stack": ("DT_LORA",),
             },
         }
         for i in range(2, 9):
                 types["required"]["lora_" + str(i)] = model_widget
                 types["required"]["weight_" + str(i)] = weight_widget
+                types["required"]["mode_" + str(i)] = mode_widget
         # fmt: on
         return types
 
@@ -422,24 +429,35 @@ class DrawThingsLoRA:
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(self, **kwargs) -> LoraStack:
+    def add_to_pipeline(self, **kwargs) -> tuple[LoraStack,]:
         print(kwargs)
-        return ([],)
-        prev_lora: LoraStack = kwargs.get("lora", None)
-        control_image = kwargs.get("control_image", None)
+        # return ([],)
+        prev_lora: LoraStack | None = kwargs.get("lora_stack", None)
 
         lora_list: LoraStack = list()
         if prev_lora is not None:
             lora_list.extend(prev_lora)
 
-        lora_info = LoRAInfo(lora_name["value"]) if "value" in lora_name else None
+        suffixes = ["", "_1", "_2", "_3", "_4", "_5", "_6", "_7", "_8"]
 
-        if lora_info is not None and "file" in lora_info:
-            lora_item = {"model": lora_info, "weight": lora_weight}
-            if control_image is not None:
-                lora_item["control_image"] = control_image
+        for suffix in suffixes:
+            lora_model = kwargs.get("lora" + suffix, None)
+            lora_info = (
+                LoRAInfo(lora_model["value"])
+                if lora_model is not None and "value" in lora_model
+                else None
+            )
+            if lora_info is None or 'file' not in lora_info:
+                continue
+            print('add lora', lora_info["file"])
+            lora_item = LoraStackItem({
+                "model": lora_info,
+                "weight": kwargs.get("weight" + suffix, 1.0),
+                "mode": kwargs.get("mode" + suffix, "All"),
+            })
+
             lora_list.append(lora_item)
-
+        print(lora_list)
         return (lora_list,)
 
     @classmethod

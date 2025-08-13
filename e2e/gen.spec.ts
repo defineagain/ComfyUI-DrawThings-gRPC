@@ -28,6 +28,9 @@ test.beforeEach(async () => {
 // Foooocus Inpaint SDXL v2.6
 // FoxAI Pony Fantastic (for refiner test) (https://civitai.com/models/856827)
 // Xi v2 (for refiner test) (https://civitai.com/models/259563)
+// DMD2 (for refiner lora test)
+// Hyper SDXL 8-step (for refiner lora test)
+// Weight slider (for refiner lora test)
 // Flux dev (8bit)
 // FLUX.1 Turbo Alpha
 
@@ -101,6 +104,22 @@ test("test output: inpaint_sdxl", async ({ page }) => {
         page,
         "inpaint_sdxl",
         "eMhwU2fDdyY+06gUcOmQBbQ9mU3NTTAJ2DZksZx2TLHFjxsz5+wYM9z2ZChsmIxYZ81MTGvBSWJpwUm3ZQFTO2UDhjkhAw5MAYY4TA+WuTcfmh0TP5iZE7sYXEvfGIYD3TDRA13D2BKdjmwDn5Zmx7/Gc2R74WFo33Dg1P4O4NI="
+    );
+});
+
+test("test output: refiner_lora_a", async ({ page }) => {
+    await compareOutput(
+        page,
+        "refiner_lora_a",
+        "AMDs/wDA6P8AkPP/AJD3/wBA0/8AiNf/AID3/wCYy/8ARDP/AOPj/oD4w/1AdPP7QHDi+wBw8v0AcHj9AHI8/SBmv/cgDz/7IIM++yBTPv+QEzf+kJM39pCTN/eQ0zb3kFM39pB5X/aQ8Sf2kKcz9pAuC/aAdxn2kAcH84A3KfM="
+    );
+});
+
+test("test output: refiner_lora_b", async ({ page }) => {
+    await compareOutput(
+        page,
+        "refiner_lora_b",
+        "AMju/wBg+P8AkPP/AIDz/wBo+/8AAOP/AJD3/wCYyf8AZDn/AOPj/oD4wf1A9LH7ANDm/wDA/P8A4Xz/AOI8/SBmvPUgB5/3IIMe/yDDPveAwzb+kKMW7pCjMvaQozvukGN77pDjWe6Q8X3+kMEd9pANC/aQ9hD+kJcV+4CXKPs="
     );
 });
 

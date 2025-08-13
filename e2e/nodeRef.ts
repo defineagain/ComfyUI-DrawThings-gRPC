@@ -27,7 +27,7 @@ export async function getNodeRef(
     return new NodeRef(nodeId, page);
 }
 
-export async function addNode(page: Page, path: string[],x: number, y: number) {
+export async function addNode(page: Page, path: string[], x: number, y: number) {
     await centerOnPoint(page, x, y);
     await page.waitForTimeout(200)
     const canvasSize = await page.locator("#graph-canvas").boundingBox()
@@ -135,6 +135,20 @@ export class NodeRef {
         return widgets.every((v) => v === true);
     }
 
+    async getVisibleWidgets(): Promise<string[]> {
+        const widgets = await this.page.evaluate(
+            async ([nodeId, delay]) => {
+                await new Promise((resolve) => setTimeout(resolve, delay));
+                const node = app.graph.getNodeById(nodeId);
+                const widgetNames = node.widgets.filter(w => !w.hidden).map(w => w.name)
+                return widgetNames
+            },
+            [this.id, this.delay]
+        );
+
+        return widgets
+    }
+
     async isWidgetDisabled(name: string);
     async isWidgetDisabled(names: string[]);
     async isWidgetDisabled(arg: string | string[]) {
@@ -216,6 +230,64 @@ export class NodeRef {
         await this.page.locator("#graph-canvas").press('.')
 
         await wait(400)
+    }
+
+    async addOutputNode(outputName: string, nodePath: string[]) {
+        const { view, pos, outputBox, size } = await this.page.evaluate(
+            ([nodeId, outputName]) => {
+                const view: [number, number, number, number] =
+                    window.app.canvas.visible_area;
+                const node = app.graph.getNodeById(nodeId);
+                const pos: [number, number, number, number] = node._posSize;
+                const output = node.outputs.find((o) => o.name === outputName);
+                if (!output) {
+                    throw new Error(`Output not found: ${outputName}`);
+                }
+                const outputBox: number = output.boundingRect;
+
+                const canvas = window.app.canvas.canvas.getBoundingClientRect();
+                const size = {
+                    width: canvas.width,
+                    height: canvas.height,
+                };
+
+                return { view, pos, outputBox, size };
+            },
+            [this.id, outputName]
+        );
+
+        const getPos = ([x, y]: [number, number]) => {
+            // view: [viewX, viewY, viewWidth, viewHeight]
+            // size: { width, height }
+            const [viewX, viewY, viewWidth, viewHeight] = view;
+            const { width: canvasWidth, height: canvasHeight } = size;
+
+            const canvasX = ((x - viewX) / viewWidth) * canvasWidth;
+            const canvasY = ((y - viewY) / viewHeight) * canvasHeight;
+
+            return [canvasX, canvasY];
+        };
+
+        // try and click the output
+        const outputX = outputBox[0] + outputBox[2] / 2
+        const outputY = outputBox[1] + outputBox[3] / 2
+        const [clickX, clickY] = getPos([outputX, outputY]);
+
+        await this.page
+            .locator("#graph-canvas")
+            .hover({ position: { x: clickX, y: clickY } });
+        await this.page.mouse.down()
+        await this.page
+            .locator("#graph-canvas")
+            .hover({ position: { x: clickX + 50, y: clickY } });
+        await this.page.mouse.up()
+
+        await this.page.getByRole("menuitem", { name: "Add node" }).first().click();
+
+        for (const p of nodePath) {
+            const menu = await this.page.locator(".litecontextmenu").last()
+            await menu.getByText(p, { exact: true }).click();
+        }
     }
 }
 
