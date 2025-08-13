@@ -1,0 +1,108 @@
+{
+  "id": "101ed669-2d4a-4c85-9e62-16aa1f6bc99e",
+  "revision": 0,
+  "last_node_id": 17,
+  "last_link_id": 31,
+  "nodes": [
+    {
+      "id": 16,
+      "type": "DrawThingsLoRA",
+      "pos": [
+        1400,
+        760
+      ],
+      "size": [
+        270,
+        266
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "lora_stack",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LORA",
+          "type": "DT_LORA",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "3663115d699768a923ebd9cff7e2fb9f7b461033",
+        "Node name for S&R": "DrawThingsLoRA"
+      },
+      "widgets_values": [
+        "",
+        "(None selected)",
+        1.0000000000000002,
+        "All",
+        "(None selected)",
+        1,
+        "All",
+        "(None selected)",
+        1,
+        "All",
+        "(None selected)",
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All"
+      ],
+      "_lastSelectedModel": {
+        "lora_name": {
+          "value": {
+            "is_lo_ha": false,
+            "weight": {
+              "lower_bound": -1.5,
+              "value": 1,
+              "upper_bound": 2.5
+            },
+            "name": "FLUX.1 Turbo Alpha",
+            "file": "flux.1_turbo_alpha_lora_f16.ckpt",
+            "prefix": "",
+            "version": "flux1"
+          },
+          "content": "FLUX.1 Turbo Alpha (flux1)",
+          "disabled": false
+        }
+      },
+      "loraCount": 4,
+      "showMode": false
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.0626855532120585,
+      "offset": [
+        -1091.2490682255022,
+        -531.960405534329
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

@@ -1,6 +1,6 @@
-import { DtModelTypeHandler } from './models.js'
 import { updateProto } from "./util.js"
 import { showWidget } from './widgets.js'
+import { nodePackVersion } from './ComfyUI-DrawThings-gRPC.js'
 
 /**
  * so I don't really see an official way to remove widgets other than .splice
@@ -15,8 +15,10 @@ import { showWidget } from './widgets.js'
  * .loraCount prop will 'add' and 'remove' (hide/show) widgets when changed
  * serialize and deserialize it with the node
  *
- * and we'll need a callback on each of the lora models so we can add control
+ * (outdated) and we'll need a callback on each of the lora models so we can add control
  * image inputs if necessary
+ * (current) actually I think I'm going to have a separate node for hint images. It's less
+ * "comfy" but aligns better with the draw things API and the app
  *
  * the buttons widget is a custom widget type, so it's defined in the python
  * code, event listeners attached by the type handler
@@ -29,15 +31,23 @@ import { showWidget } from './widgets.js'
  */
 export function DtButtonsTypeHandler(node, inputName, inputData, app) {
     const { container, buttons } = createButtons([{
+        label: "Show Mode",
+        callback: () => {
+            node.showMode = !node.showMode
+        },
+        dataTestId: "dtgrpc-lora-show-mode"
+    }, {
         label: "Less",
         callback: () => {
             node.loraCount -= 1
         },
+        dataTestId: "dtgrpc-lora-less"
     }, {
         label: "More",
         callback: () => {
             node.loraCount += 1
         },
+        dataTestId: "dtgrpc-lora-more"
     }])
     const options = {
         hideOnZoom: false,
@@ -48,8 +58,9 @@ export function DtButtonsTypeHandler(node, inputName, inputData, app) {
         getHeight: () => 36,
         margin: 4
     }
-    const widget = node.addDOMWidget("something", 'DT_BUTTONS', container, options)
+    const widget = node.addDOMWidget("buttons", 'DT_BUTTONS', container, options)
     widget._buttonElements = buttons
+    widget.value = null
     return { widget }
 }
 
@@ -57,16 +68,45 @@ export function DtButtonsTypeHandler(node, inputName, inputData, app) {
 const loraProto = {
     onNodeCreated(graph) {
         this.loraCount = 1
+        this.showMode = false
     },
 
     onConfigure(serialised) {
         if ("loraCount" in serialised)
             this.loraCount = serialised.loraCount
-        console.log(serialised)
+
+        if ("showMode" in serialised)
+            this.showMode = serialised.showMode
+
+        if (serialised.widget_values_keyed) {
+            for (const [name, value] of Object.entries(serialised.widget_values_keyed)) {
+                const widget = this.widgets.find((w) => w.name === name)
+                if (widget) widget.value = value
+            }
+        }
+        else if (serialised.widgets_values && serialised.widgets_values.length === 2) {
+            // if keyed values are missing, then values from a previous version
+            // have been incorrectly loaded
+            // widget_values for all previous version are [ loraModel, weight ]
+
+            // buttons widget, value should be null (None)
+            this.widgets[0].value = null
+
+            // model
+            const modelWidget = this.widgets.find(w => w.name === "lora")
+            modelWidget.value = serialised.widgets_values[0]
+
+            // weight
+            const weightWidget = this.widgets.find(w => w.name === "weight")
+            weightWidget.value = serialised.widgets_values[1]
+        }
     },
 
     onSerialize(serialised) {
         serialised.loraCount = this._loraCount
+        serialised.showMode = this._showMode
+        serialised.nodePackVersion = nodePackVersion
+        serialised.widget_values_keyed = Object.fromEntries(this.widgets.map(w => ([w.name, w.value])))
     },
 
     loraCount: {
@@ -79,28 +119,44 @@ const loraProto = {
             this.updateWidgets()
 
             const buttons = this.widgets[0]._buttonElements
-            buttons[0].disabled = this._loraCount <= 1
-            buttons[1].disabled = this._loraCount >= 8
+            buttons[1].disabled = this._loraCount <= 1
+            buttons[2].disabled = this._loraCount >= 8
+        },
+        enumerable: true
+    },
+
+    showMode: {
+        get() {
+            return this._showMode
+        },
+        set(value) {
+            if (this._showMode === value) return
+            this._showMode = value
+            this.updateWidgets()
+
+            /** @type {HTMLButtonElement[]} */
+            const buttons = this.widgets[0]._buttonElements
+            buttons[0].textContent = value ? "Hide Mode" : "Show Mode"
         },
         enumerable: true
     },
 
     updateWidgets() {
-        console.log("updating lora widgets")
         for (let i = 0; i < 8; i++) {
-            const modelIndex = i * 2 + 1
-            const weightIndex = i * 2 + 2
+            const modelIndex = i * 3 + 1
+            const weightIndex = i * 3 + 2
+            const modeIndex = i * 3 + 3
             if (i < this.loraCount) {
-                console.log("show", this.widgets[modelIndex].name)
                 showWidget(this, this.widgets[modelIndex].name, true)
                 showWidget(this, this.widgets[weightIndex].name, true)
+                showWidget(this, this.widgets[modeIndex].name, this.showMode)
                 if (!this.widgets[modelIndex].value) {
                     this.widgets[modelIndex].value = "(None selected)"
                 }
             } else {
-                console.log("hide", this.widgets[modelIndex].name)
                 showWidget(this, this.widgets[modelIndex].name, false)
                 showWidget(this, this.widgets[weightIndex].name, false)
+                showWidget(this, this.widgets[modeIndex].name, false)
 
                 this.widgets[modelIndex].value = null
             }
@@ -126,6 +182,7 @@ export default {
  * @property {node => void} callback
  * @property {string?} style
  * @property {string[]?} classList
+ * @property {string?} dataTestId
  */
 
 /** @param {ButtonDef[]} buttonsDefs */
@@ -148,6 +205,9 @@ function createButtons(buttonsDefs) {
         }
         if (buttonDef.classList) {
             button.classList.add(...buttonDef.classList)
+        }
+        if (buttonDef.dataTestId) {
+            button.setAttribute("data-testid", buttonDef.dataTestId)
         }
         container.appendChild(button)
     }

@@ -76,7 +76,6 @@ export const modelService = new ModelService()
  * @param inputData {["DT_MODEL", {model_type: string}]}
  */
 export function DtModelTypeHandler(node, inputName, inputData, app) {
-    console.log("add dt model widget")
     const widget = node.addWidget(
         "combo",
         inputName,

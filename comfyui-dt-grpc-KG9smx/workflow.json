@@ -1,0 +1,223 @@
+{
+  "id": "509e90ac-d3dc-4d5b-89c7-38e0bf1a2839",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "DrawThingsSampler",
+      "pos": [
+        -150,
+        -80
+      ],
+      "size": [
+        318.740234375,
+        582
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "positive",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "negative",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "lora",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": null
+        },
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": null
+        },
+        {
+          "name": "upscaler",
+          "shape": 7,
+          "type": "DT_UPSCALER",
+          "link": null
+        },
+        {
+          "name": "refiner",
+          "shape": 7,
+          "type": "DT_REFINER",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "a475f6c9e7fb68a1b223d19d7716c836002a09ae",
+        "Node name for S&R": "DrawThingsSampler"
+      },
+      "widgets_values": [
+        "Basic",
+        "localhost",
+        "7859",
+        true,
+        "(None selected)",
+        1,
+        0,
+        "randomize",
+        "ScaleAlike",
+        1024,
+        768,
+        20,
+        14,
+        4.5,
+        false,
+        0,
+        true,
+        4.5,
+        "TCD",
+        0.5000000000000001,
+        true,
+        1,
+        1,
+        5,
+        127,
+        0.02,
+        1,
+        0,
+        0,
+        1,
+        0.6,
+        1.5,
+        0,
+        true,
+        false,
+        448,
+        448,
+        0.7,
+        false,
+        640,
+        640,
+        128,
+        false,
+        512,
+        512,
+        64,
+        false,
+        5,
+        2,
+        0.2,
+        3,
+        false,
+        "",
+        false,
+        ""
+      ],
+      "nodePackVersion": "1.5.0",
+      "widget_values_keyed": {
+        "settings": "Basic",
+        "server": "localhost",
+        "port": "7859",
+        "use_tls": true,
+        "model": "(None selected)",
+        "strength": 1,
+        "seed": 0,
+        "control_after_generate": "randomize",
+        "seed_mode": "ScaleAlike",
+        "width": 1024,
+        "height": 768,
+        "steps": 20,
+        "num_frames": 14,
+        "cfg": 4.5,
+        "cfg_zero_star": false,
+        "cfg_zero_star_init_steps": 0,
+        "speed_up": true,
+        "guidance_embed": 4.5,
+        "sampler_name": "TCD",
+        "stochastic_sampling_gamma": 0.5000000000000001,
+        "res_dpt_shift": true,
+        "shift": 1,
+        "batch_size": 1,
+        "fps": 5,
+        "motion_scale": 127,
+        "guiding_frame_noise": 0.02,
+        "start_frame_guidance": 1,
+        "causal_inference": 0,
+        "causal_inference_pad": 0,
+        "clip_skip": 1,
+        "sharpness": 0.6,
+        "mask_blur": 1.5,
+        "mask_blur_outset": 0,
+        "preserve_original": true,
+        "high_res_fix": false,
+        "high_res_fix_start_width": 448,
+        "high_res_fix_start_height": 448,
+        "high_res_fix_strength": 0.7,
+        "tiled_decoding": false,
+        "decoding_tile_width": 640,
+        "decoding_tile_height": 640,
+        "decoding_tile_overlap": 128,
+        "tiled_diffusion": false,
+        "diffusion_tile_width": 512,
+        "diffusion_tile_height": 512,
+        "diffusion_tile_overlap": 64,
+        "tea_cache": false,
+        "tea_cache_start": 5,
+        "tea_cache_end": 2,
+        "tea_cache_threshold": 0.2,
+        "tea_cache_max_skip_steps": 3,
+        "separate_clip_l": false,
+        "clip_l_text": "",
+        "separate_open_clip_g": false,
+        "open_clip_g_text": ""
+      },
+      "_lastSelectedModel": {}
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.819078947368421,
+      "offset": [
+        747.5776739771586,
+        221.33333333333337
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
