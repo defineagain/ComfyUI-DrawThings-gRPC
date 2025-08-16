@@ -116,4 +116,4 @@ notes.md
 /blob-report/
 /playwright/.cache/
 .env
-/comfyui-dt-grpc-test-data/
+/comfyui-dt-grpc-test-data-*/

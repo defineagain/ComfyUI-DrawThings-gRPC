@@ -5,43 +5,6 @@
     "last_link_id": 24,
     "nodes": [
         {
-            "id": 10,
-            "type": "Seed (rgthree)",
-            "pos": [
-                1290,
-                880
-            ],
-            "size": [
-                315,
-                130
-            ],
-            "flags": {},
-            "order": 0,
-            "mode": 0,
-            "inputs": [],
-            "outputs": [
-                {
-                    "dir": 4,
-                    "name": "SEED",
-                    "shape": 3,
-                    "type": "INT",
-                    "links": [
-                        21
-                    ]
-                }
-            ],
-            "properties": {
-                "cnr_id": "rgthree-comfy",
-                "ver": "569f90a7a519b579adabe028cd28844c93c942e7"
-            },
-            "widgets_values": [
-                785016812599704,
-                "",
-                "",
-                ""
-            ]
-        },
-        {
             "id": 2,
             "type": "SaveImage",
             "pos": [
@@ -218,7 +181,7 @@
                     "widget": {
                         "name": "seed"
                     },
-                    "link": 21
+                    "link": null
                 },
                 {
                     "localized_name": "seed_mode",
@@ -811,14 +774,6 @@
             2,
             0,
             "IMAGE"
-        ],
-        [
-            21,
-            10,
-            0,
-            9,
-            14,
-            "INT"
         ],
         [
             22,

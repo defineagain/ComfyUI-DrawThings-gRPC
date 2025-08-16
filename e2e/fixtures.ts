@@ -168,7 +168,7 @@ class ComfyPage {
         await this.page.getByRole('button', { name: 'Confirm' }).click();
         const download = await downloadPromise;
 
-        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-test-data')
+        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-test-data-')
         await download.saveAs(join(tempDir, 'workflow.json'))
 
         const workflow = await fse.readJSON(join(tempDir, 'workflow.json'))
