@@ -290,8 +290,6 @@ class DTProperty {
         if (type === "string") {
             this.spec = rest[0];
         }
-
-        // console.log(this.fbs, this.defaultValue)
     }
 
     customImport = undefined;

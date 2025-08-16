@@ -253,6 +253,7 @@ test("inputs are fixed when loading old workflow", async ({ page, comfy }) => {
                 if (lora.inputs[i].link === null) continue
 
                 const inputNode = lora.getInputNode(i)
+                // if (!inputNode) debugger
 
                 // if anything but a lora node is connect, throw
                 if (inputNode.type !== "DrawThingsLoRA")

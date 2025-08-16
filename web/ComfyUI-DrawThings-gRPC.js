@@ -89,7 +89,7 @@ const samplerProto = {
 
     onMouseDown(e, pos, canvas) {
         // this exists for easier debugging in devtools
-        console.debug("Click!", this, dtSamplerNodeData)
+        console.debug("Click!", this)
     },
 
     onSerialize(serialised) {
