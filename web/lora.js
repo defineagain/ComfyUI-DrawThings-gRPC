@@ -111,11 +111,13 @@ const loraProto = {
             // move lora nodes to correct input slot, disconnect all others
             for (const { node, input, slot } of inputNodes) {
                 if (node.type === "DrawThingsLoRA") {
-                    this.disconnectInput(slot)
+                    // this.disconnectInput(slot)
+                    this.graph.removeLink(input.link)
                     node.connect(0, this, 0)
                 }
                 else {
-                    this.disconnectInput(slot)
+                    // this.disconnectInput(slot)
+                    this.graph.removeLink(input.link)
                 }
             }
 
