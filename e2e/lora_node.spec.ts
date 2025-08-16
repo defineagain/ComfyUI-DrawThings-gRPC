@@ -236,3 +236,40 @@ test('"Less" button', async ({ page, comfy }) => {
     expect(visibleWidgets.filter(w => w.startsWith("weight")).length).toBe(1)
     expect(visibleWidgets.filter(w => w.startsWith("mode")).length).toBe(0)
 });
+
+test("inputs are fixed when loading old workflow", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "lora_inputs.json"));
+
+    const result = await page.evaluate(() => {
+        const loraNodes = app.graph.nodes.filter(n => n.type === "DrawThingsLoRA")
+        let loraStackConnected = false
+        for (const lora of loraNodes) {
+            // find connected inputs
+            for (let i = 0; i < lora.inputs.length; i++) {
+                // make sure the image input slot has been removed
+                if (lora.inputs[i].name === "control_image")
+                    throw new Error("image input slot was not removed")
+
+                if (lora.inputs[i].link === null) continue
+
+                const inputNode = lora.getInputNode(i)
+
+                // if anything but a lora node is connect, throw
+                if (inputNode.type !== "DrawThingsLoRA")
+                    throw new Error("non lora node was not disconnected")
+
+                // the connect node must be lora, make sure it's on the correct slot
+                if (lora.inputs[i].name !== "lora_stack")
+                    throw new Error("lora_stack was not disconnected from wrong slot")
+
+                loraStackConnected = true
+            }
+        }
+        if (!loraStackConnected)
+            throw new Error("lora_stack was not connected")
+
+        return true
+    })
+
+    expect(result).toBeTruthy()
+})

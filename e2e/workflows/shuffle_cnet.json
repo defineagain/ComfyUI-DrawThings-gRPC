@@ -1,0 +1,595 @@
+{
+  "id": "101ed669-2d4a-4c85-9e62-16aa1f6bc99e",
+  "revision": 0,
+  "last_node_id": 21,
+  "last_link_id": 38,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "SaveImage",
+      "pos": [
+        2160,
+        490
+      ],
+      "size": [
+        450,
+        440
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 28
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.38",
+        "Node name for S&R": "SaveImage"
+      },
+      "widgets_values": [
+        "ComfyUI"
+      ]
+    },
+    {
+      "id": 17,
+      "type": "LoadImage",
+      "pos": [
+        1150,
+        740
+      ],
+      "size": [
+        274.080078125,
+        314.0000305175781
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            38
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.41",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "style.jpg",
+        "image"
+      ]
+    },
+    {
+      "id": 21,
+      "type": "DrawThingsHints",
+      "pos": [
+        1460,
+        740
+      ],
+      "size": [
+        270,
+        306
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "hints",
+          "shape": 7,
+          "type": "DT_HINTS",
+          "link": null
+        },
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 38
+        },
+        {
+          "name": "image_2",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "image_3",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "image_4",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "DT_HINTS",
+          "type": "DT_HINTS",
+          "links": [
+            37
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "9c244d0ad4d9e2838f142e7452b0aa77e84e8c6c",
+        "Node name for S&R": "DrawThingsHints"
+      },
+      "widgets_values": [
+        "Shuffle (Moodboard)",
+        1,
+        "(None selected)",
+        1,
+        "(None selected)",
+        1,
+        "(None selected)",
+        1
+      ]
+    },
+    {
+      "id": 11,
+      "type": "DrawThingsPrompt",
+      "pos": [
+        1290,
+        490
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "PROMPT",
+          "type": "STRING",
+          "links": [
+            26
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "23beb75773a8b4f880f7f470ad28ef2d7bccd257",
+        "Node name for S&R": "DrawThingsPrompt"
+      },
+      "widgets_values": [
+        "...",
+        "two men stand facing each other in a futuristic city"
+      ],
+      "color": "#232",
+      "bgcolor": "#353",
+      "_lastSelectedModel": {}
+    },
+    {
+      "id": 15,
+      "type": "DrawThingsSampler",
+      "pos": [
+        1770,
+        490
+      ],
+      "size": [
+        312.08984375,
+        994
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "positive",
+          "shape": 7,
+          "type": "STRING",
+          "link": 26
+        },
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "negative",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "lora",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": null
+        },
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": 33
+        },
+        {
+          "name": "upscaler",
+          "shape": 7,
+          "type": "DT_UPSCALER",
+          "link": null
+        },
+        {
+          "name": "refiner",
+          "shape": 7,
+          "type": "DT_REFINER",
+          "link": null
+        },
+        {
+          "name": "hints",
+          "shape": 7,
+          "type": "DT_HINTS",
+          "link": 37
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            28
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "3663115d699768a923ebd9cff7e2fb9f7b461033",
+        "Node name for S&R": "DrawThingsSampler"
+      },
+      "widgets_values": [
+        "All",
+        "localhost",
+        "7859",
+        true,
+        {
+          "value": {
+            "version": "v1",
+            "prefix": "",
+            "name": "Juggernaut Reborn (8-bit)",
+            "default_scale": 12,
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "upcast_attention": false,
+            "modifier": "none"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        },
+        1,
+        8727849,
+        "fixed",
+        "ScaleAlike",
+        768,
+        512,
+        20,
+        14,
+        5,
+        true,
+        4.5,
+        true,
+        4.5,
+        "Euler A",
+        1,
+        false,
+        1,
+        1,
+        5,
+        127,
+        0.02,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        true,
+        false,
+        512,
+        384,
+        0.7,
+        false,
+        640,
+        640,
+        128,
+        false,
+        512,
+        512,
+        64,
+        false,
+        5,
+        2,
+        0.2,
+        3,
+        false,
+        "",
+        false,
+        ""
+      ],
+      "nodePackVersion": "1.5.0",
+      "widget_values_keyed": {
+        "settings": "All",
+        "server": "localhost",
+        "port": "7859",
+        "use_tls": true,
+        "model": {
+          "value": {
+            "version": "v1",
+            "prefix": "",
+            "name": "Juggernaut Reborn (8-bit)",
+            "default_scale": 12,
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "upcast_attention": false,
+            "modifier": "none"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        },
+        "strength": 1,
+        "seed": 8727849,
+        "control_after_generate": "fixed",
+        "seed_mode": "ScaleAlike",
+        "width": 768,
+        "height": 512,
+        "steps": 20,
+        "num_frames": 14,
+        "cfg": 5,
+        "cfg_zero_star": true,
+        "cfg_zero_star_init_steps": 4.5,
+        "speed_up": true,
+        "guidance_embed": 4.5,
+        "sampler_name": "Euler A",
+        "stochastic_sampling_gamma": 1,
+        "res_dpt_shift": false,
+        "shift": 1,
+        "batch_size": 1,
+        "fps": 5,
+        "motion_scale": 127,
+        "guiding_frame_noise": 0.02,
+        "start_frame_guidance": 1,
+        "causal_inference": 0,
+        "causal_inference_pad": 0,
+        "clip_skip": 1,
+        "sharpness": 0,
+        "mask_blur": 0,
+        "mask_blur_outset": 0,
+        "preserve_original": true,
+        "high_res_fix": false,
+        "high_res_fix_start_width": 512,
+        "high_res_fix_start_height": 384,
+        "high_res_fix_strength": 0.7,
+        "tiled_decoding": false,
+        "decoding_tile_width": 640,
+        "decoding_tile_height": 640,
+        "decoding_tile_overlap": 128,
+        "tiled_diffusion": false,
+        "diffusion_tile_width": 512,
+        "diffusion_tile_height": 512,
+        "diffusion_tile_overlap": 64,
+        "tea_cache": false,
+        "tea_cache_start": 5,
+        "tea_cache_end": 2,
+        "tea_cache_threshold": 0.2,
+        "tea_cache_max_skip_steps": 3,
+        "separate_clip_l": false,
+        "clip_l_text": "",
+        "separate_open_clip_g": false,
+        "open_clip_g_text": "",
+        "$$canvas-image-preview": ""
+      },
+      "_lastSelectedModel": {
+        "model": {
+          "value": {
+            "version": "v1",
+            "prefix": "",
+            "name": "Juggernaut Reborn (8-bit)",
+            "default_scale": 12,
+            "text_encoder": "juggernaut_reborn_clip_vit_l14_f16.ckpt",
+            "file": "juggernaut_reborn_q6p_q8p.ckpt",
+            "upcast_attention": false,
+            "modifier": "none"
+          },
+          "content": "Juggernaut Reborn (8-bit) (SD)"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "DrawThingsControlNet",
+      "pos": [
+        1390,
+        1120
+      ],
+      "size": [
+        291.44140625,
+        222
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": null
+        },
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "DT_CNET",
+          "links": [
+            33
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "23beb75773a8b4f880f7f470ad28ef2d7bccd257",
+        "Node name for S&R": "DrawThingsControlNet"
+      },
+      "widgets_values": [
+        {
+          "value": {
+            "type": "controlnet",
+            "global_average_pooling": true,
+            "version": "v1",
+            "name": "Shuffle (SD v1.x, ControlNet 1.1)",
+            "file": "controlnet_shuffle_1.x_v1.1_f16.ckpt",
+            "modifier": "shuffle"
+          },
+          "content": "Shuffle (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        },
+        "Shuffle",
+        "Balanced",
+        1.0000000000000002,
+        0,
+        1,
+        false,
+        false,
+        "Style and Layout",
+        false
+      ],
+      "_lastSelectedModel": {
+        "control_name": {
+          "value": {
+            "type": "controlnet",
+            "global_average_pooling": true,
+            "version": "v1",
+            "name": "Shuffle (SD v1.x, ControlNet 1.1)",
+            "file": "controlnet_shuffle_1.x_v1.1_f16.ckpt",
+            "modifier": "shuffle"
+          },
+          "content": "Shuffle (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        }
+      },
+      "nodePackVersion": "1.5.0",
+      "widget_values_keyed": {
+        "control_name": {
+          "value": {
+            "type": "controlnet",
+            "global_average_pooling": true,
+            "version": "v1",
+            "name": "Shuffle (SD v1.x, ControlNet 1.1)",
+            "file": "controlnet_shuffle_1.x_v1.1_f16.ckpt",
+            "modifier": "shuffle"
+          },
+          "content": "Shuffle (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        },
+        "control_input_type": "Shuffle",
+        "control_mode": "Balanced",
+        "control_weight": 1.0000000000000002,
+        "control_start": 0,
+        "control_end": 1,
+        "global_average_pooling": false,
+        "down_sampling_rate": false,
+        "target_blocks": "Style and Layout",
+        "invert_image": false
+      }
+    }
+  ],
+  "links": [
+    [
+      26,
+      11,
+      0,
+      15,
+      2,
+      "STRING"
+    ],
+    [
+      28,
+      15,
+      0,
+      2,
+      0,
+      "IMAGE"
+    ],
+    [
+      33,
+      19,
+      0,
+      15,
+      5,
+      "DT_CNET"
+    ],
+    [
+      37,
+      21,
+      0,
+      15,
+      8,
+      "DT_HINTS"
+    ],
+    [
+      38,
+      17,
+      0,
+      21,
+      1,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8340782295829778,
+      "offset": [
+        -1093.5705613820687,
+        -430.41581631472616
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

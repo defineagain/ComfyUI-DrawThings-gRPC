@@ -8,6 +8,7 @@ import { join } from 'path'
 class ComfyPage {
     readonly canvas: Locator
     readonly url: string
+    private gotoCalled = false
 
     constructor(public readonly page: Page) {
         this.canvas = page.locator("#graph-canvas")
@@ -20,9 +21,14 @@ class ComfyPage {
 
     async goto() {
         await this.page.goto(this.url)
+        this.gotoCalled = true
     }
 
     async openWorkflow(workflowPath: string) {
+        if (!this.gotoCalled) {
+            await this.goto()
+        }
+
         // Expect a title "to contain" a substring.
         await expect(this.page).toHaveTitle(/ComfyUI/);
 
@@ -115,6 +121,9 @@ class ComfyPage {
     }
 
     async createNewWorkflow() {
+        if (!this.gotoCalled)
+            await this.goto()
+
         await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
         await this.page.getByRole('menuitem', { name: 'New' }).locator('a').click();
 
@@ -159,7 +168,7 @@ class ComfyPage {
         await this.page.getByRole('button', { name: 'Confirm' }).click();
         const download = await downloadPromise;
 
-        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-')
+        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-test-data')
         await download.saveAs(join(tempDir, 'workflow.json'))
 
         const workflow = await fse.readJSON(join(tempDir, 'workflow.json'))
