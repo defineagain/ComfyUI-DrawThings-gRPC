@@ -1,10 +1,11 @@
-import { DtModelTypeHandler } from "./models.js"
-import { updateProto, setCallback } from "./util.js"
-import { findPropertyJson, findPropertyPython } from "./configProperties.js"
+import { findPropertyPython } from "./configProperties.js"
 import { DtButtonsTypeHandler } from './lora.js'
+import { DtModelTypeHandler } from "./models.js"
+import { checkVersion } from './upgrade.js'
+import { setCallback, updateProto } from "./util.js"
 
 
-export const nodePackVersion = "1.5.0"
+export const nodePackVersion = "1.6.0"
 let previewMethod = undefined
 
 // this holds the node definition from python
@@ -82,6 +83,8 @@ const samplerProto = {
         app.canvas.default_connection_color_byType["DT_LORA"] = app.canvas.default_connection_color_byType["MODEL"]
         app.canvas.default_connection_color_byType["DT_CNET"] =
             app.canvas.default_connection_color_byType["CONTROL_NET"]
+
+        setTimeout(() => checkVersion(nodePackVersion), 2000)
     },
 
     onMouseDown(e, pos, canvas) {
@@ -131,6 +134,8 @@ const samplerProto = {
                 life: 8000
             })
         }
+
+        delete this.widget_values_keyed
 
         this.updateDynamicWidgets?.()
     },

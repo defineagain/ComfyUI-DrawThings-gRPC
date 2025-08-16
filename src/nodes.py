@@ -116,6 +116,7 @@ class DrawThingsSampler:
                 "control_net": ("DT_CNET",),
                 "upscaler": ("DT_UPSCALER",),
                 "refiner": ("DT_REFINER",),
+                "hints": ("DT_HINTS", { "tooltip": "Hint images, or control inputs, are used with ControlNets and certain other models, like Kontext, to help guide the generation." },),
             },
         }
         # fmt: on
@@ -137,7 +138,6 @@ class DrawThingsSampler:
 
         kwargs["model"] = model.get("file")
         kwargs["version"] = model.get("version")
-
 
         try:
             return await dt_sampler(kwargs)
@@ -331,7 +331,9 @@ class DrawThingsControlNet:
                 "control_start": ("FLOAT", { "default": 0.00, "min": 0.00, "max": 1.00, "step": 0.01 }),
                 "control_end": ("FLOAT", { "default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01 }),
                 "global_average_pooling": ("BOOLEAN", { "default": False }),
-                "invert_image": ("BOOLEAN", { "default": False, "tooltip": "Some Control Nets might need their image to be inverted." }),
+                "down_sampling_rate": ("FLOAT", { "default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01 }),
+                "target_blocks": (DrawThingsLists.target_blocks, { "default": "All" }),
+                "invert_image": ("BOOLEAN", { "default": False, "tooltip": "Some Control Nets might need their image to be inverted." })
             },
             "optional": {
                 "control_net": ("DT_CNET",),
@@ -345,44 +347,48 @@ class DrawThingsControlNet:
     CATEGORY = "DrawThings"
     FUNCTION = "add_to_pipeline"
 
-    def add_to_pipeline(
-        self,
-        control_name,
-        control_input_type,
-        control_mode,
-        control_weight,
-        control_start,
-        control_end,
-        global_average_pooling,
-        control_net=None,
-        image=None,
-        invert_image=False,
-    ) -> ControlNetInfo:
-        if invert_image == True:
-            image = 1.0 - image
+    def add_to_pipeline(self, **kwargs) -> tuple[ControlStack,]:
+        prev_cnet: ControlStackItem | None = kwargs.get("control_net", None)
 
         cnet_list: ControlStack = list()
+        if prev_cnet is not None:
+            cnet_list.append(prev_cnet)
 
-        if control_net is not None:
-            cnet_list.extend(control_net)
+        image: Tensor | None = None
+        if "image" in kwargs:
+            image = 1.0 - kwargs["image"] if kwargs["invert_image"] else kwargs["image"]
+        hint_type = (
+            DrawThingsLists.control_input_type_mapping.get(
+                kwargs["control_input_type"], None
+            )
+            if image is not None
+            else None
+        )
 
         cnet_info = (
-            ControlNetInfo(control_name["value"]) if "value" in control_name else None
+            ControlNetInfo(kwargs["control_name"]["value"])
+            if "value" in kwargs["control_name"]
+            else None
         )
 
         if cnet_info is not None and "file" in cnet_info:
-            cnet_item = {
-                "model": cnet_info,
-                "input_type": control_input_type,
-                "mode": control_mode,
-                "weight": control_weight,
-                "start": control_start,
-                "end": control_end,
-                "image": image,
-                "global_average_pooling": global_average_pooling,
-            }
+            cnet_item = ControlStackItem(
+                {
+                    "model": cnet_info,
+                    "input_type": kwargs["control_input_type"].lower(),
+                    "mode": kwargs["control_mode"],
+                    "weight": kwargs["control_weight"],
+                    "start": kwargs["control_start"],
+                    "end": kwargs["control_end"],
+                    "image": image,
+                    "hint_type": hint_type,
+                    "global_average_pooling": kwargs["global_average_pooling"],
+                    "down_sampling_rate": kwargs["down_sampling_rate"],
+                    "target_blocks": kwargs["target_blocks"],
+                }
+            )
             cnet_list.append(cnet_item)
-
+        print(cnet_list)
         return (cnet_list,)
 
     @classmethod
@@ -395,7 +401,7 @@ class DrawThingsLoRA:
         pass
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         # fmt: off
         first_model_widget =  ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used." })
         model_widget = ("DT_MODEL", { "model_type": "loras", "tooltip": "The model used.", "hidden": True, "default": None })
@@ -424,14 +430,12 @@ class DrawThingsLoRA:
         return types
 
     RETURN_TYPES = ("DT_LORA",)
-    RETURN_NAMES = ("LORA",)
+    RETURN_NAMES = ("lora_stack",)
     CATEGORY = "DrawThings"
     DESCRIPTION = "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
     FUNCTION = "add_to_pipeline"
 
     def add_to_pipeline(self, **kwargs) -> tuple[LoraStack,]:
-        print(kwargs)
-        # return ([],)
         prev_lora: LoraStack | None = kwargs.get("lora_stack", None)
 
         lora_list: LoraStack = list()
@@ -447,22 +451,85 @@ class DrawThingsLoRA:
                 if lora_model is not None and "value" in lora_model
                 else None
             )
-            if lora_info is None or 'file' not in lora_info:
+            if lora_info is None or "file" not in lora_info:
                 continue
-            print('add lora', lora_info["file"])
-            lora_item = LoraStackItem({
-                "model": lora_info,
-                "weight": kwargs.get("weight" + suffix, 1.0),
-                "mode": kwargs.get("mode" + suffix, "All"),
-            })
+            lora_item = LoraStackItem(
+                {
+                    "model": lora_info,
+                    "weight": kwargs.get("weight" + suffix, 1.0),
+                    "mode": kwargs.get("mode" + suffix, "All"),
+                }
+            )
 
             lora_list.append(lora_item)
-        print(lora_list)
+
         return (lora_list,)
 
     @classmethod
     def VALIDATE_INPUTS(s, **kwargs):
         return True
+
+
+class DrawThingsHints:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        # fmt: off
+        type_widget = ( DrawThingsLists.hint_types, { "default": "(None selected)" })
+        weight_widget = ("FLOAT", { "default": 1, "min": 0, "max": 1, "step": 0.01 })
+        image_input = ("IMAGE", )
+
+        suffixes = ["", "_2", "_3", "_4"]
+
+        types = {"required": {}, "optional": {"hints": ("DT_HINTS",)}}
+
+        for suffix in suffixes:
+            types["required"]["type" + suffix] = type_widget
+            types["required"]["weight" + suffix] = weight_widget
+            types["optional"]["image" + suffix] = image_input
+
+        return types
+        # fmt: on
+
+    RETURN_TYPES = ("DT_HINTS",)
+    RETURN_NAMES = ("DT_HINTS",)
+    CATEGORY = "DrawThings"
+    DESCRIPTION = "Hint images, or control inputs, are used with ControlNets and certain other models, like Kontext, to help guide the generation."
+    FUNCTION = "add_hints"
+
+    def add_hints(self, **kwargs):
+        prev_hints: HintStack | None = kwargs.get("hints", None)
+
+        hint_list: HintStack = []
+        if prev_hints is not None:
+            hint_list.extend(prev_hints)
+
+        suffixes = ["", "_2", "_3", "_4"]
+
+        for suffix in suffixes:
+            hint_image = kwargs.get("image" + suffix, None)
+            hint_type_value = kwargs.get("type" + suffix, None)
+            hint_type = DrawThingsLists.hint_types_mapping.get(hint_type_value, None)
+
+            if (
+                hint_image is None
+                or hint_type is None
+                or hint_type == "(None selected)"
+            ):
+                continue
+
+            hint_item = HintStackItem(
+                {
+                    "type": hint_type.lower(),
+                    "image": hint_image,
+                    "weight": kwargs.get("weight" + suffix, 1.0),
+                }
+            )
+            hint_list.append(hint_item)
+
+        return (hint_list,)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -474,6 +541,7 @@ NODE_CLASS_MAPPINGS = {
     "DrawThingsRefiner": DrawThingsRefiner,
     "DrawThingsUpscaler": DrawThingsUpscaler,
     "DrawThingsPrompt": DrawThingsPrompt,
+    "DrawThingsHints": DrawThingsHints,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -485,4 +553,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DrawThingsRefiner": "Draw Things Refiner",
     "DrawThingsUpscaler": "Draw Things Upscaler",
     "DrawThingsPrompt": "Draw Things Prompt",
+    "DrawThingsHints": "Draw Things Hints",
 }

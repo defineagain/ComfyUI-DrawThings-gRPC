@@ -1,8 +1,7 @@
 import numpy as np
 
 from .generated.config_generated import ControlT, LoRAT, GenerationConfigurationT
-from .data_types import Config
-from .data_types import DrawThingsLists
+from .data_types import Config, ControlNetInfo, DrawThingsLists
 
 
 def round_by_64(x):
@@ -79,6 +78,49 @@ class ModelVersion:
         ]
 
 
+class CNetType:
+    sdxlTargetBlocks = {
+        "All": [],
+        "Style": ["up_blocks.0.attentions.1"],
+        "Style and Layout": ["down_blocks.2.attentions.1", "up_blocks.0.attentions.1"],
+    }
+    v1TargetBlocks = {
+        "All": [],
+        "Style": ["up_blocks.1"],
+        "Style and Layout": ["down_blocks.2", "mid_block", "up_blocks.1"],
+    }
+
+    def __init__(self, cnet: ControlNetInfo, modifier: str):
+        self.cnet = cnet
+        self.modifier = modifier.lower()
+
+    @property
+    def global_average_pooling(self):
+        return self.cnet.get("global_average_pooling")
+
+    @property
+    def target_blocks(self):
+        return self.cnet.get("modifier") == "shuffle" and self.cnet.get("version") in [
+            "v1",
+            "sdxl_base_v0.9",
+        ]
+
+    def get_target_blocks(self, value: str) -> list[str]:
+        if self.cnet.get('version') == 'sdxl_base_v0.9':
+            return self.sdxlTargetBlocks[value]
+        elif self.cnet.get('version') == 'v1':
+            return self.v1TargetBlocks[value]
+        return []
+
+    @property
+    def down_sampling_rate(self):
+        return self.cnet.get("modifier") in [
+            "tile",
+            "blur",
+            "lowquality",
+        ] or self.modifier in ["tile", "blur", "lowquality"]
+
+
 def build_config(config: Config):
     configT = GenerationConfigurationT()
 
@@ -95,7 +137,10 @@ def apply_extra(config: Config, configT: GenerationConfigurationT):
     if "upscaler" in config and config["upscaler"] is not None:
         upscaler = config["upscaler"]
         if "upscaler_model" in upscaler:
-            if "value" in upscaler["upscaler_model"] and "file" in upscaler["upscaler_model"]["value"]:
+            if (
+                "value" in upscaler["upscaler_model"]
+                and "file" in upscaler["upscaler_model"]["value"]
+            ):
                 configT.upscaler = upscaler["upscaler_model"]["value"]["file"]
             elif type(upscaler["upscaler_model"]) == str:
                 configT.upscaler = upscaler["upscaler_model"]
@@ -103,7 +148,11 @@ def apply_extra(config: Config, configT: GenerationConfigurationT):
 
     if "refiner" in config and config["refiner"] is not None:
         refiner = config["refiner"]
-        if "refiner_model" in refiner and "value" in refiner["refiner_model"] and "file" in refiner["refiner_model"]["value"]:
+        if (
+            "refiner_model" in refiner
+            and "value" in refiner["refiner_model"]
+            and "file" in refiner["refiner_model"]["value"]
+        ):
             configT.refinerModel = refiner["refiner_model"]["value"]["file"]
             configT.refinerStart = refiner.get("refiner_start") or 0.7
 
@@ -111,7 +160,11 @@ def apply_extra(config: Config, configT: GenerationConfigurationT):
 def apply_control(config: Config, configT: GenerationConfigurationT):
     configT.controls = []
 
-    if "control_net" not in config or config["control_net"] is None or len(config["control_net"]) == 0:
+    if (
+        "control_net" not in config
+        or config["control_net"] is None
+        or len(config["control_net"]) == 0
+    ):
         return
 
     for control in config["control_net"]:
@@ -120,10 +173,14 @@ def apply_control(config: Config, configT: GenerationConfigurationT):
         controlT = ControlT()
         controlT.file = control["model"]["file"]
 
+        cnet = CNetType(control['model'], control.get('input_type'))
+
         if "weight" in control:
             controlT.weight = control["weight"]
         if "input_type" in control:
-            controlT.inputOverride = DrawThingsLists.control_input_type.index(control["input_type"])
+            controlT.inputOverride = DrawThingsLists.control_input_type.index(
+                control["input_type"].capitalize()
+            )
         if "mode" in control:
             controlT.controlMode = DrawThingsLists.control_mode.index(control["mode"])
         if "weight" in control:
@@ -132,6 +189,14 @@ def apply_control(config: Config, configT: GenerationConfigurationT):
             controlT.guidanceStart = control["start"]
         if "end" in control:
             controlT.guidanceEnd = control["end"]
+
+        if cnet.down_sampling_rate and "down_sampling_rate" in control:
+            controlT.downSamplingRate = control["down_sampling_rate"]
+
+        if cnet.global_average_pooling and "global_average_pooling" in control:
+            controlT.globalAveragePooling = control["global_average_pooling"]
+        if cnet.target_blocks and "target_blocks" in control:
+            controlT.targetBlocks = cnet.get_target_blocks(control["target_blocks"])
 
         configT.controls.append(controlT)
 

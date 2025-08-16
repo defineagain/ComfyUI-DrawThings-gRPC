@@ -11,7 +11,14 @@ ModelInfo = TypedDict(
 )
 ControlNetInfo = TypedDict(
     "ControlNetInfo",
-    {"file": str, "name": str, "version": str, "modifier": str, "type": str},
+    {
+        "file": str,
+        "name": str,
+        "version": str,
+        "modifier": str,
+        "type": str,
+        "global_average_pooling": bool,
+    },
 )
 LoRAInfo = TypedDict(
     "LoRAInfo", {"file": str, "name": str, "version": str, "prefix": str, "mode": str}
@@ -49,8 +56,8 @@ LoraStackItem = TypedDict(
 )
 LoraStack = list[LoraStackItem]
 
-_ControlStackItem = TypedDict(
-    "_ControlStackItem",
+ControlStackItem = TypedDict(
+    "ControlStackItem",
     {
         "model": ControlNetInfo,
         "input_type": str,
@@ -58,11 +65,24 @@ _ControlStackItem = TypedDict(
         "weight": float,
         "start": float,
         "end": float,
-        "image": NotRequired[Tensor],
+        "image": Tensor | None,
+        "global_average_pooling": bool,
+        "down_sampling_rate": float,
+        "target_blocks": str,
+        "hint_type": str | None
     },
 )
-ControlStack = list[_ControlStackItem]
+ControlStack = list[ControlStackItem]
 
+HintStackItem = TypedDict(
+    "HintStackItem",
+    {
+        "type": str,
+        "image": Tensor,
+        "weight": float
+    }
+)
+HintStack = list[HintStackItem]
 
 # this should match kwargs in the sampler node method
 class Config(TypedDict, total=False):
@@ -208,13 +228,13 @@ class DrawThingsLists:
 
     control_input_type = [
         "Unspecified",
-        "Custom",  # -> Slot
-        "Depth",  # -> Slot
+        "Custom",
+        "Depth",
         "Canny",
-        "Scribble",  # -> Slot
-        "Pose",  # -> Slot
+        "Scribble",
+        "Pose",
         "Normalbae",
-        "Color",  # -> Slot
+        "Color",
         "Lineart",
         "Softedge",
         "Seg",
@@ -222,14 +242,60 @@ class DrawThingsLists:
         "Ip2p",
         "Shuffle",
         "Mlsd",
-        "Tile",
-        "Blur",
-        "Lowquality",
+        "Tile",  # down_sampling_rate
+        "Blur",  # down_sampling_rate
+        "Lowquality",  # down_sampling_rate
         "Gray",
     ]
+
+    control_input_type_mapping = {
+        None: None,
+        "Unspecified": None,
+        "Custom": "custom",
+        "Depth": "depth",
+        "Canny": "custom",
+        "Scribble": "scribble",
+        "Pose": "pose",
+        "Normalbae": "custom",
+        "Color": "color",
+        "Lineart": "custom",
+        "Softedge": "custom",
+        "Seg": "custom",
+        "Inpaint": "custom",
+        "Ip2p": None,
+        "Shuffle": "shuffle",
+        "Mlsd": "custom",
+        "Tile": "custom",  # down_sampling_rate
+        "Blur": "custom",  # down_sampling_rate
+        "Lowquality": "custom",  # down_sampling_rate
+        "Gray": "custom",
+    }
 
     lora_mode = [
         "All",
         "Base",
         "Refiner",
     ]
+
+    target_blocks = ["All", "Style", "Style and Layout"]
+
+    hint_types = [
+        "(None selected)",
+        "Depth",
+        "Pose",
+        "Scribble",
+        "Color",
+        "Shuffle (Moodboard)",
+        "Custom",
+    ]
+
+    hint_types_mapping = {
+        None: None,
+        "(None selected)": None,
+        "Depth": "depth",
+        "Pose": "pose",
+        "Scribble": "scribble",
+        "Color": "color",
+        "Shuffle (Moodboard)": "shuffle",
+        "Custom": "custom",
+    }
