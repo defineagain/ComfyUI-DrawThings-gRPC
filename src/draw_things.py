@@ -81,11 +81,11 @@ async def dt_sampler(inputs: dict):
     builder.Finish(config.Pack(builder))
     config_fbs = bytes(builder.Output())
 
-    try:
-        print(json.dumps(inputs, indent=4))
-        print(json.dumps(config, indent=4))
-    except Exception as e:
-        pass
+    # try:
+    #     print(json.dumps(inputs, indent=4))
+    #     print(json.dumps(config, indent=4))
+    # except Exception as e:
+    #     pass
 
     contents = []
     img2img = None
@@ -114,7 +114,6 @@ async def dt_sampler(inputs: dict):
                     }
                 )
 
-    print(hints)
     req_hints = []
     # add all hints to request
     for hint_type in DrawThingsLists.hint_types_mapping.values():
@@ -141,7 +140,6 @@ async def dt_sampler(inputs: dict):
                 taw.weight = 1
                 taw.tensor = hint_tensor
                 taws.append(taw)
-                print('added hint of type', hint_type, 'weight', hint_weight)
 
         hp = imageService_pb2.HintProto()
         hp.hintType = hint_type

@@ -36,10 +36,8 @@ async function setLastUsedVersion(version) {
 async function getUserData() {
     try {
         const response = await app.api.getUserData(dataPath)
-        console.log('response', response)
         if (response.status === 200) {
             const data = await response.json()
-            console.log(data)
             return data
         }
     }

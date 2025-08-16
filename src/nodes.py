@@ -388,7 +388,6 @@ class DrawThingsControlNet:
                 }
             )
             cnet_list.append(cnet_item)
-        print(cnet_list)
         return (cnet_list,)
 
     @classmethod
