@@ -193,7 +193,9 @@ export class NodeRef {
 
     async selectWidgetOption(widget: string, option: string | RegExp) {
         await this.clickWidget(widget);
-        await this.page.getByRole("menuitem", { name: option }).first().click();
+        const item = await this.page.getByRole("menuitem", { name: option }).first()
+        await item.scrollIntoViewIfNeeded()
+        await item.click({position: { x: 2, y: 2 } });
     }
 
     async setWidgetValue(widget: string, value: number) {

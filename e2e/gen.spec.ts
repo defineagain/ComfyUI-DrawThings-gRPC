@@ -23,15 +23,21 @@ test.beforeEach(async () => {
 // (they could also break for a variety of other reasons)
 // requires DT running at localhost:7859 with the following models
 // Stable Diffusion 1.5
-// st_monsters embedding (https://civitai.com/models/332132)
-// inpainting cnet sd1.5
+// Juggernaut Rebord (8-bit)
 // Foooocus Inpaint SDXL v2.6
 // FoxAI Pony Fantastic (for refiner test) (https://civitai.com/models/856827)
 // Xi v2 (for refiner test) (https://civitai.com/models/259563)
+// Flux dev (8bit)
+
+// st_monsters embedding (https://civitai.com/models/332132)
+
+// inpainting cnet sd1.5
+// depth map sd1
+// shuffle sd1
+
 // DMD2 (for refiner lora test)
 // Hyper SDXL 8-step (for refiner lora test)
 // Weight slider (for refiner lora test)
-// Flux dev (8bit)
 // FLUX.1 Turbo Alpha
 
 test("test output: sd1_a", async ({ page }) => {
@@ -120,6 +126,22 @@ test("test output: refiner_lora_b", async ({ page }) => {
         page,
         "refiner_lora_b",
         "AMju/wBg+P8AkPP/AIDz/wBo+/8AAOP/AJD3/wCYyf8AZDn/AOPj/oD4wf1A9LH7ANDm/wDA/P8A4Xz/AOI8/SBmvPUgB5/3IIMe/yDDPveAwzb+kKMW7pCjMvaQozvukGN77pDjWe6Q8X3+kMEd9pANC/aQ9hD+kJcV+4CXKPs="
+    );
+});
+
+test("test output: depth cnet with image input", async ({ page }) => {
+    await compareOutput(
+        page,
+        "depth_cnet",
+        "AP1D8wB3htJCug/DfZgPg50BD4H1BB/E7DEnxtl5BvPZ5Ai7+eCTeVnCh3kymB34JZkt8GeBb3BuA88gQyOHE88jBwM8h2sAaY/hAWhP4ADwDPCBcJp3A2YY1QDUsp0g0LmPAdi8jkHoug9C9JtP6PgZn2h4Mxzh/DEY4Py1eMA="
+    );
+});
+
+test("test output: shuffle cnet with hints input", async ({ page }) => {
+    await compareOutput(
+        page,
+        "shuffle_cnet",
+        "gQAg+MUDkLshBOqzETBx8B2weYMP0umLFzh5Gyd5aZtN8GzbTcJmO2ngw2FpwezAbfBMy0XWjBEH2IwRLdrABdme48GQneQREtvotBDX7JwSxu2eVsTvnjTk/ro9pDA6Oew4PjjgOD4wKDk+ECw4PBhMODlSSDycskjYnKKY3Mg="
     );
 });
 
