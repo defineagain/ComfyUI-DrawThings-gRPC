@@ -1,6 +1,6 @@
 /** @import { INodeInputSlot, LGraphNode } from '@comfyorg/litegraph' */
-import { updateProto } from "./util.js";
-import { calcShift } from "./configProperties.js";
+import { calcShift } from "./configProperties.js"
+import { findWidgetByName, updateProto } from "./util.js"
 
 /** @type {import("@comfyorg/comfyui-frontend-types").ComfyApp} */
 const app = window.comfyAPI.app.app
@@ -65,14 +65,6 @@ const advancedWidgets = [
 ];
 
 let origProps = {};
-
-function findWidgetByName(node, name) {
-    return node.widgets.find((w) => w.name === name);
-}
-
-function doesInputWithNameExist(node, name) {
-    return node.inputs ? node.inputs.some((input) => input.name === name) : false;
-}
 
 /**
  * this replace the .pos property on input slots with a getter that returns its
@@ -284,9 +276,6 @@ export default {
         if (nodeType.comfyClass === "DrawThingsSampler") {
             updateProto(nodeType, samplerWidgetsProto);
         }
-        if (nodeType.comfyClass === "DrawThingsControlNet") {
-            updateProto(nodeType, controlWidgetsProto);
-        }
     },
 };
 
@@ -320,26 +309,3 @@ const samplerWidgetsProto = {
     },
 };
 
-function updateControlWidgets(node) {
-    const widget = findWidgetByName(node, "control_name");
-    const modifier = widget.value.value.modifier;
-    const typeWidget = findWidgetByName(node, "control_input_type");
-    const options = typeWidget.options.values;
-    const option = options.find((option) => option.toLowerCase() == modifier);
-    if (option != null) {
-        typeWidget.value = option;
-    }
-}
-
-/** @type {import("@comfyorg/litegraph").LGraphNode} */
-const controlWidgetsProto = {
-    onNodeCreated() {
-        updateControlWidgets(this);
-    },
-    onConfigure(data) {
-        updateControlWidgets(this);
-    },
-    onWidgetChanged(name, value, old_Value, widget) {
-        updateControlWidgets(this, widget);
-    },
-};

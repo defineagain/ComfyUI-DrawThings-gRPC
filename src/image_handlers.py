@@ -477,11 +477,12 @@ def convert_image_for_request(
     )
 
     match control_type:
-        case "depth":  # what else?
+        case "depth" | "scribble" | "canny":  # what else?
             transform = torchvision.transforms.Grayscale(num_output_channels=1)
             pil_image = transform(pil_image)
-            # print(f"Converted request image is {pil_image.size}, {pil_image.mode}")
             channels = 1
+        case "pose":
+            channels = 3
 
     image_bytes = bytearray(68 + width * height * channels * 2)
     struct.pack_into(

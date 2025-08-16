@@ -10,7 +10,7 @@ from .config import build_config
 import numpy as np
 from PIL import Image
 from .credentials import credentials
-from .data_types import ModelsInfo, UpscalerInfo
+from .data_types import DrawThingsLists, HintStack, ModelsInfo, UpscalerInfo
 from .generated import imageService_pb2, imageService_pb2_grpc
 
 from .image_handlers import (
@@ -95,53 +95,58 @@ async def dt_sampler(inputs: dict):
     if mask is not None:
         maskimg = convert_mask_for_request(mask, width=width, height=height)
 
-    hints = []
+    # hints can be with sampler, cnet, or lora
+    # get hints from sampler
+    hints: HintStack = inputs.get("hints", [])
+
+    # add hints from cnets
     cnets = inputs.get("control_net")
     if cnets is not None:
         for cnet in cnets:
-            if cnet.get("image") is not None and cnet.get("input_type") is not None:
-                taws = []
-                for i in range(cnet["image"].size(dim=0)):
-                    hint_tensor = convert_image_for_request(
-                        cnet["image"],
-                        cnet["input_type"].lower(),
-                        batch_index=i,
-                        width=width,
-                        height=height,
-                    )
-                    taw = imageService_pb2.TensorAndWeight()
-                    taw.weight = 1
-                    taw.tensor = hint_tensor
-                    taws.append(taw)
+            cnet_image = cnet.get("image")
+            cnet_hint_type = cnet.get("hint_type")
+            if cnet_image is not None and cnet_hint_type is not None:
+                hints.append(
+                    {
+                        "image": cnet_image,
+                        "type": cnet_hint_type,
+                        "weight": 1,
+                    }
+                )
 
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = cnet["input_type"].lower()
-                hnt.tensors.extend(taws)
-                hints.append(hnt)
+    print(hints)
+    req_hints = []
+    # add all hints to request
+    for hint_type in DrawThingsLists.hint_types_mapping.values():
+        if hint_type is None:
+            continue
+        hints_of_type = filter(lambda hint: hint.get("type") == hint_type, hints)
+        taws = []
+        for hint in hints_of_type:
+            hint_images = hint.get("image")
+            hint_weight = hint.get("weight", 1.0)
+            if hint_images is None:
+                continue
 
-    lora = inputs.get("lora")
-    if lora is not None:
-        for lora_cfg in lora:
-            if "control_image" in lora_cfg:
-                modifier = lora_cfg["model"]["modifier"]
-
-                taw = imageService_pb2.TensorAndWeight()
-                taw.tensor = convert_image_for_request(
-                    lora_cfg["control_image"],
-                    control_type=modifier,
+            # hint images might be batched, so check for multiple images and add each
+            for i in range(hint_images.size(dim=0)):
+                hint_tensor = convert_image_for_request(
+                    hint_images,
+                    hint_type,
+                    batch_index=i,
                     width=width,
                     height=height,
                 )
-                taw.weight = 1  # lora_cfg["weight"] if "weight" in lora_cfg else 1
+                taw = imageService_pb2.TensorAndWeight()
+                taw.weight = 1
+                taw.tensor = hint_tensor
+                taws.append(taw)
+                print('added hint of type', hint_type, 'weight', hint_weight)
 
-                hnt = imageService_pb2.HintProto()
-                hnt.hintType = (
-                    modifier
-                    if modifier in ["custom", "depth", "scribble", "pose", "color"]
-                    else "custom"
-                )
-                hnt.tensors.append(taw)
-                hints.append(hnt)
+        hp = imageService_pb2.HintProto()
+        hp.hintType = hint_type
+        hp.tensors.extend(taws)
+        req_hints.append(hp)
 
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
@@ -150,7 +155,7 @@ async def dt_sampler(inputs: dict):
                 image=img2img,
                 scaleFactor=1,
                 mask=maskimg,
-                hints=hints,
+                hints=req_hints,
                 prompt=positive,
                 negativePrompt=negative,
                 configuration=config_fbs,

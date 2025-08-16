@@ -71,3 +71,8 @@ export function getDTPropertyName(widgetName) {
 
     return widgetName.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
 }
+
+
+export function findWidgetByName(node, name) {
+    return node.widgets.find((w) => w.name === name)
+}
