@@ -9,6 +9,7 @@ class ComfyPage {
     readonly canvas: Locator
     readonly url: string
     private gotoCalled = false
+    private readonly teardownTasks: (() => Promise<void>)[] = []
 
     constructor(public readonly page: Page) {
         this.canvas = page.locator("#graph-canvas")
@@ -168,20 +169,44 @@ class ComfyPage {
         await this.page.getByRole('button', { name: 'Confirm' }).click();
         const download = await downloadPromise;
 
-        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-test-data-')
+        const tempDir = await this.getTempDir()
         await download.saveAs(join(tempDir, 'workflow.json'))
 
         const workflow = await fse.readJSON(join(tempDir, 'workflow.json'))
         return workflow
     }
+
+    async getTempDir() {
+        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-test-data-')
+        this.teardownTasks.push(() => fse.remove(tempDir))
+        return tempDir
+    }
+
+    async teardown() {
+        for (const task of this.teardownTasks) {
+            try {
+                await task()
+            } catch (e) {
+                console.warn(e)
+            }
+        }
+    }
 }
 
 type ComfyFixtures = {
     comfy: ComfyPage
+    forEachTest: void
 }
 
 export const test = base.extend<ComfyFixtures>({
     comfy: async ({ page }, use) => {
         await use(new ComfyPage(page))
     },
+    forEachTest: [
+        async ({ comfy }, use) => {
+            await use()
+            await comfy.teardown()
+        },
+        { auto: true }
+    ]
 })
