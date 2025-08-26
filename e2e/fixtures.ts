@@ -5,7 +5,7 @@ import fse from "fs-extra"
 import { join } from 'path'
 
 
-class ComfyPage {
+export class ComfyPage {
     readonly canvas: Locator
     readonly url: string
     private gotoCalled = false
@@ -35,11 +35,15 @@ class ComfyPage {
 
         const fileChooserPromise = this.page.waitForEvent("filechooser");
 
-        await this.page
-            .locator("a")
-            .filter({ hasText: /^Workflow$/ })
-            .click();
-        await this.page.getByText("OpenCtrl + o").click();
+        await this.page.getByRole('img', { name: 'ComfyUI Logo' }).click();
+
+        // some times this works with hover, and sometimes it takes a click
+        await this.page.getByRole('menuitem', { name: 'File' }).locator('a').hover();
+        // await this.page.locator('a').filter({ hasText: 'File' }).click();
+        if (!(await this.page.getByText('OpenCtrl + o').isVisible()))
+            await this.page.getByRole('menuitem', { name: 'File' }).locator('a').click();
+
+        await this.page.getByText('OpenCtrl + o').click();
 
         const fileChooser = await fileChooserPromise;
         await fileChooser.setFiles(workflowPath);
@@ -60,6 +64,7 @@ class ComfyPage {
         node: number | string | ((node) => boolean),
         options?: {
             doNotThrow?: boolean;
+            tag?: string
         }
     ) {
         const nodeId = await this.page.evaluate((node) => {
@@ -78,7 +83,7 @@ class ComfyPage {
             throw new Error(`Node not found: ${node}`);
         }
 
-        return new NodeRef(nodeId, this.page);
+        return new NodeRef(nodeId, this.page, options?.tag);
     }
 
     async addNode(path: string[], x: number, y: number) {
@@ -125,7 +130,14 @@ class ComfyPage {
         if (!this.gotoCalled)
             await this.goto()
 
-        await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
+        await this.page.getByRole('img', { name: 'ComfyUI Logo' }).click();
+
+        // some times this works with hover, and sometimes it takes a click
+        await this.page.getByRole('menuitem', { name: 'File' }).locator('a').hover();
+        if (!(await this.page.getByText('OpenCtrl + o').isVisible()))
+            await this.page.getByRole('menuitem', { name: 'File' }).locator('a').click();
+
+        // await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
         await this.page.getByRole('menuitem', { name: 'New' }).locator('a').click();
 
         await this.page.evaluate(() => {
@@ -145,22 +157,11 @@ class ComfyPage {
         })
     }
 
-    async saveWorkflow() {
-        await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
-        await this.page.getByRole('menuitem', { name: 'Export' }).first().locator('a').click();
-        await this.page.getByRole('textbox').click();
-        await this.page.getByRole('textbox').press('ControlOrMeta+a');
-        await this.page.getByRole('textbox').fill('workflow');
-        const downloadPromise = this.page.waitForEvent('download');
-        await this.page.getByRole('button', { name: 'Confirm' }).click();
-        const download = await downloadPromise;
-
-        const tempDir = await fse.mkdtemp('comfyui-dt-grpc-')
-        await download.saveAs(join(tempDir, 'workflow.json'))
-    }
-
     async exportWorkflow() {
-        await this.page.locator('a').filter({ hasText: /^Workflow$/ }).click();
+        await this.page.getByRole('img', { name: 'ComfyUI Logo' }).click();
+        await this.page.getByRole('menuitem', { name: 'File' }).locator('a').hover();
+        if (!(await this.page.getByText('OpenCtrl + o').isVisible()))
+            await this.page.getByRole('menuitem', { name: 'File' }).locator('a').click();
         await this.page.getByRole('menuitem', { name: 'Export' }).first().locator('a').click();
         await this.page.getByRole('textbox').click();
         await this.page.getByRole('textbox').press('ControlOrMeta+a');
