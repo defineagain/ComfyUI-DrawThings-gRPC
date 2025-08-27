@@ -18,7 +18,7 @@
 **Manual Installation**
 - Clone this repository into your `ComfyUI/custom_nodes` directory:
   ```sh
-  git clone https://github.com/yourusername/ComfyUI-DrawThings-gRPC.git
+  git clone https://github.com/yourusername/ComfyUI-DrawThings-gRPC.git ComfyUI/custom_nodes/ComfyUI-DrawThings-gRPC
   ```
 
 **Restart ComfyUI**
