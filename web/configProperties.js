@@ -36,7 +36,7 @@ export function calcShift(h, w) {
 
 /** @typedef {"v1" | "v2" | "kandinsky2.1" | "sdxl_base_v0.9" | "sdxl_refiner_v0.9" | "ssd_1b" | "svd_i2v"} _Models_A */
 /** @typedef {"wurstchen_v3.0_stage_c" | "wurstchen_v3.0_stage_b" | "sd3" | "pixart" | "auraflow" | "flux1" } _Models_B */
-/** @typedef {"sd3_large" | "hunyuan_video" | "wan_v2.1_1.3b" | "wan_v2.1_14b" | "hidream_i1"} _Models_C */
+/** @typedef {"sd3_large" | "hunyuan_video" | "wan_v2.1_1.3b" | "wan_v2.1_14b" | "hidream_i1" | "qwen_image" } _Models_C */
 
 /** @typedef {_Models_A | _Models_B | _Models_C | "Other"} ModelVersion */
 

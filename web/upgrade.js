@@ -11,6 +11,7 @@ export async function checkVersion(currentVersion) {
         await setLastUsedVersion(currentVersion)
 
         for (const announcement of announcements) {
+            if (compareVersions(currentVersion, announcement.version) < 0) continue
             app.extensionManager.toast.add({
                 summary: announcement.title,
                 detail: announcement.detail,
@@ -68,3 +69,23 @@ const announcements = [
             `moodboard images should work as expected.`].join(' ')
     }
 ]
+
+/**
+ * @param {string} versionA
+ * @param {string} versionB
+ */
+function compareVersions(versionA, versionB) {
+    const a = versionA.split('.')
+    const b = versionB.split('.')
+
+    if (a.length !== b.length || a.length !== 3)
+        return 0
+
+    for (let i = 0; i < a.length; i++) {
+        if (Number.parseInt(a[i]) > Number.parseInt(b[i]))
+            return 1
+        else if (a[i] < b[i])
+            return -1
+    }
+    return 0
+}

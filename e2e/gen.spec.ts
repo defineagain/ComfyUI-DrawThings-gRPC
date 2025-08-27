@@ -1,9 +1,11 @@
 import "dotenv/config";
-import { test, expect, Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 import sharp from "sharp";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
+import { ComfyPage } from './fixtures';
+import { test } from './fixtures';
 
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
@@ -40,127 +42,126 @@ test.beforeEach(async () => {
 // Weight slider (for refiner lora test)
 // FLUX.1 Turbo Alpha
 
-test("test output: sd1_a", async ({ page }) => {
+test("test output: sd1_a", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "sd1_a",
         "BPifOIFwZHkANGVDADTycgCwsmmELRxvECRbbnik22D4dfFpwPt4bQD4eHsAeHh2BHg5XgT4OGsEtOBgBDyzZAQ4OXIEsjlnBYxkfwbMRn5GQsZ8gGTPYABtzxQEbLM1QCxz54hpc5KdwOMI9CQzAeHDA2wxzWAKIJnMCGJQzM0="
     );
 });
 
-test("test output: sd1_b", async ({ page }) => {
+test("test output: sd1_b", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "sd1_b",
         "APy/EwD+/yUA/v+rAP7/XQD8/7uA8P9vQPT/zyDg/ecg4PzxQOT99EH0ef6GeVH/Bv7w/wP+9P8C/vTfAP712wDusZsE/BA8cOIixZZ4OX8ATA0eAc8d1gDYmf8A8pz/BPO8/wDt8P+A6ZH/gPmZ/wAcG/8A8gb/APCM/wB4Ov4="
     );
 });
 
-test("test output: unipc", async ({ page }) => {
+test("test output: unipc", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "unipc",
         "xtinMYLwpH2QdOYdIHSyOSw1uDnMNb15GA2yeVjFsnmAZbg5ZKcRE+CTj1dy2d0GkGmcTsRkvOF0JLJk5CS3bPQBJ1jWky+4ZLgftOS8TzhMM+NMh2/xZJM986CEPdP5gj+TgQIflhnPj4aJzIz2DMGHDUIz3c0KeNlMKOJ3bMc="
     );
 });
 
-test("test output: sdxl_a", async ({ page }) => {
+test("test output: sdxl_a", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "sdxl_a",
         "AAD+9wCA/PcMwPD3AGDg/wBg5v8AcM7/ADDG/wDg9P8AYPL/AODQ/4xm+P9Mx8z/OJMM/yGTPP+as377mDM++8hjPu/EYz73pOMc9sLRFO3CkR2thOE+2QEzNtlFHx/YR0s+2ssNH9zMH4PMjEvG2ZjJxNi46yXYmIcqqZANF+c="
     );
 });
 
-test("test output: sdxl_b", async ({ page }) => {
+test("test output: sdxl_b", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "sdxl_b",
         "AAkToqBmDkQQcRiggBk4QIBceAFAXugQQD/AhEA6wJBALtCSADsJSaBJTFGQTSxRgDkySQRjGYSAZk0pAFZFogA+QZIQXCNSBxoDCRgaE+ZefGCEj9bEDqbczA4WvoCLiZ6AH+O8YCwJj4BrCY+ETwaOBE8ApwMuikEbbqagEzA="
     );
 });
 
-test("test output: flux_a", async ({ page }) => {
+test("test output: flux_a", async ({ page, comfy }) => {
     test.setTimeout(300000);
     await compareOutput(
         page,
+        comfy,
         "flux_a",
         "AAD8vwAA7P4AgO/7AED68wAw+bcAmOG3ApDh+yBwmf0g4OH9AOjp7wBgTLYA8Gy0AJw83ACybTwA2fiwAJx62QAPT9kAD0/LoJ0/cgCTd3JAkz/ywBo58oiaPfIIGD7iBFg+4GCYPeCAqDigkFh45ACYfaQQKXzkyGx85MBseKQ="
     );
 });
 
-test("test output: img2img_crop_ti", async ({ page }) => {
+test("test output: img2img_crop_ti", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "img2img_crop_ti",
         "aIi4Oeig3zlYxi452AyOOdgmjjy4Np48q7LenJw5p5xQO5OcIhbHnA8T84yPifnMncD+zB7G+MwuzL5cZ1yzTNP42c3seJTHbtzO5x9xz+O1MefTY4P753GH/0V8jj8OfA4fH/Eujj/5w4Q/PwDgHzsC+R97ossPObHvD/FUPgc="
     );
 });
 
-test("test output: inpaint_cnet", async ({ page }) => {
+test("test output: inpaint_cnet", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "inpaint_cnet",
         "D5MPRT4sXEbw2dhInMGYQfjEIGXB9khhKRpIK2FfULRhbSQkv5/NJP/LkKbzsTQLudkkC57DpQ2uwbMUrgPLBo5jDovuZwyDfqfYxP5n2IT+8vwK/jHygG5DacBuZryAboa2ke7GsYje5zAK/GswDPE3MF7gH+Be4EcMlvYjx5g="
     );
 });
 
-test("test output: inpaint_sdxl", async ({ page }) => {
+test("test output: inpaint_sdxl", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "inpaint_sdxl",
         "eMhwU2fDdyY+06gUcOmQBbQ9mU3NTTAJ2DZksZx2TLHFjxsz5+wYM9z2ZChsmIxYZ81MTGvBSWJpwUm3ZQFTO2UDhjkhAw5MAYY4TA+WuTcfmh0TP5iZE7sYXEvfGIYD3TDRA13D2BKdjmwDn5Zmx7/Gc2R74WFo33Dg1P4O4NI="
     );
 });
 
-test("test output: refiner_lora_a", async ({ page }) => {
+test("test output: refiner_lora_a", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "refiner_lora_a",
         "AMDs/wDA6P8AkPP/AJD3/wBA0/8AiNf/AID3/wCYy/8ARDP/AOPj/oD4w/1AdPP7QHDi+wBw8v0AcHj9AHI8/SBmv/cgDz/7IIM++yBTPv+QEzf+kJM39pCTN/eQ0zb3kFM39pB5X/aQ8Sf2kKcz9pAuC/aAdxn2kAcH84A3KfM="
     );
 });
 
-test("test output: refiner_lora_b", async ({ page }) => {
+test("test output: refiner_lora_b", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "refiner_lora_b",
         "AMju/wBg+P8AkPP/AIDz/wBo+/8AAOP/AJD3/wCYyf8AZDn/AOPj/oD4wf1A9LH7ANDm/wDA/P8A4Xz/AOI8/SBmvPUgB5/3IIMe/yDDPveAwzb+kKMW7pCjMvaQozvukGN77pDjWe6Q8X3+kMEd9pANC/aQ9hD+kJcV+4CXKPs="
     );
 });
 
-test("test output: depth cnet with image input", async ({ page }) => {
+test("test output: depth cnet with image input", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "depth_cnet",
         "AP1D8wB3htJCug/DfZgPg50BD4H1BB/E7DEnxtl5BvPZ5Ai7+eCTeVnCh3kymB34JZkt8GeBb3BuA88gQyOHE88jBwM8h2sAaY/hAWhP4ADwDPCBcJp3A2YY1QDUsp0g0LmPAdi8jkHoug9C9JtP6PgZn2h4Mxzh/DEY4Py1eMA="
     );
 });
 
-test("test output: shuffle cnet with hints input", async ({ page }) => {
+test("test output: shuffle cnet with hints input", async ({ page, comfy }) => {
     await compareOutput(
         page,
+        comfy,
         "shuffle_cnet",
         "gQAg+MUDkLshBOqzETBx8B2weYMP0umLFzh5Gyd5aZtN8GzbTcJmO2ngw2FpwezAbfBMy0XWjBEH2IwRLdrABdme48GQneQREtvotBDX7JwSxu2eVsTvnjTk/ro9pDA6Oew4PjjgOD4wKDk+ECw4PBhMODlSSDycskjYnKKY3Mg="
     );
 });
 
-async function compareOutput(page: Page, workflow: string, hash?: string) {
-    await page.goto(comfyUrl);
-
-    // Expect a title "to contain" a substring.
-    await expect(page).toHaveTitle(/ComfyUI/);
-
-    const fileChooserPromise = page.waitForEvent("filechooser");
-
-    await page
-        .locator("a")
-        .filter({ hasText: /^Workflow$/ })
-        .click();
-    await page.getByText("OpenCtrl + o").click();
-
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(join(workflowFolder, workflow + ".json"));
+async function compareOutput(page: Page, comfy: ComfyPage, workflow: string, hash?: string) {
+    await comfy.openWorkflow(join(workflowFolder, `${workflow}.json`));
 
     await page.waitForTimeout(1000);
 

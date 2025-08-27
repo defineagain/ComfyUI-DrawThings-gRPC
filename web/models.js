@@ -23,37 +23,59 @@ class ModelService {
 
     async #updateNodes() {
         const dtModelNodes = app.graph.nodes.filter(n => n.isDtServerNode !== undefined)
-        const serverNodes = dtModelNodes.filter(n => n.isDtServerNode)
+        const graphServerNodes = dtModelNodes.filter(n => n.isDtServerNode)
 
-        if (!serverNodes.length) return
+        if (!graphServerNodes.length) return
 
         const nodesUpdated = new Map(dtModelNodes.map(n => ([n, false])))
+        /** @type {Map<string, ModelInfo | undefined>} */
         const serverModels = new Map()
 
-        for (const sn of serverNodes) {
-            nodesUpdated.set(sn, true)
+        // original version iterated over server nodes, and then recursively traversed its
+        // input nodes and updated any dtModelNodes with matching nodes.
+        // Problem: dtModelNodes can get confused about which version they should filter, if
+        // they their graph touches multiple sampler nodes
+        // So instead of trying to be too smart with this, we'll just...
+        // - iterate over server nodes, and fetch/update their models
+        // - iterate over non-server nodes
+        // - - determine their models list and version by traversing their outputs
+        // - - change version from string to string[]
+        // - - update widgets with the union of their connected samplers
+        // - - - ...maybe the intersection for the models list and union for version
+        for (const sn of graphServerNodes) {
+            // get fresh models list for the server
             const { server, port, useTls } = sn.getServer()
-
             if (!server || !port || useTls === undefined) continue
             const key = modelInfoStoreKey(server, port, useTls)
             if (!serverModels.has(key)) {
                 serverModels.set(key, await getModels(server, port, useTls))
             }
 
+            // update server node's models
             const models = serverModels.get(key)
+            sn.updateModels?.(models)
+            nodesUpdated.set(sn, true)
+        }
 
-            /** @param {import("@comfyorg/litegraph").LGraphNode} node */
-            function updateInputs(node, version) {
-                nodesUpdated.set(node, true)
-                node.updateModels?.(models, version)
+        for (const node of dtModelNodes) {
+            if (nodesUpdated.get(node)) continue
 
-                const inputNodes = getInputNodes(node)
-                for (const input of inputNodes) {
-                    if (nodesUpdated.get(input) === false) updateInputs(input, version)
-                }
+            // determine the server(s) and version(s) this node is connected to
+            /** @type {import('@comfyorg/litegraph').LGraphNode[]?} */
+            const serverNodes = node?.findServerNodes()
+            if (!serverNodes || !serverNodes.length) continue
+
+            let mergedModels = {}
+            for (const sn of serverNodes) {
+                const { server, port, useTls } = sn.getServer()
+                if (!server || !port || useTls === undefined) continue
+                const models = serverModels.get(modelInfoStoreKey(server, port, useTls))
+                mergedModels = mergeModels(mergedModels, models)
             }
+            const versions = serverNodes.map(sn => sn?.getModelVersion()).filter(v => v)
 
-            updateInputs(sn, sn.getModelVersion())
+            node.updateModels?.(mergedModels, versions)
+            nodesUpdated.set(node, true)
         }
 
         // these nodes are not connected to a sampler node
@@ -126,6 +148,10 @@ export async function getFiles(server, port, useTls) {
 /**
  * @typedef {Object} ModelInfo
  * @property {Model[]} models
+ * @property {Model[]} controlNets
+ * @property {Model[]} loras
+ * @property {Model[]} textualInversions
+ * @property {Model[]} upscalers
  */
 
 /** @type Map<string, ModelInfo> */
@@ -214,6 +240,25 @@ export function getMenuItem(model, disabled) {
     }
 }
 
+/**
+ *
+ * @param {ModelInfo?} modelInfoA
+ * @param {ModelInfo?} modelInfoB
+ */
+function mergeModels(modelInfoA, modelInfoB) {
+    /** @type {ModelInfo} */
+    const merged = {}
+    /** @type {Set<keyof ModelInfo>} */
+    const types = new Set(Object.keys(modelInfoA ?? {}).concat(Object.keys(modelInfoB ?? {})))
+    for (const type of types.values()) {
+        merged[type] = modelInfoA[type] ?? []
+        const modelFiles = merged[type].map(m => m.file)
+        const extras = (modelInfoB[type] ?? []).filter(m => !modelFiles.includes(m.file))
+        merged[type] = merged[type].concat(extras)
+    }
+    return merged
+}
+
 
 const versionNames = {
     v1: 'SD',
@@ -234,6 +279,7 @@ const versionNames = {
     'wan_v2.1_1.3b': 'Wan',
     'wan_v2.1_14b': 'Wan',
     hidream_i1: 'HiD',
+    qwen_image: 'Qwen'
 }
 
 

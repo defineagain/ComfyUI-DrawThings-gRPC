@@ -24,7 +24,7 @@ test("Values are loaded correctly from previous version worklow", async ({ comfy
     expect(loraNodeJson).toHaveProperty('widgets_values')
 
     // load workflow, check that node has correct values
-    await openWorkflow(join(workflowFolder, "flux_a.json"), page);
+    await comfy.openWorkflow(join(workflowFolder, "flux_a.json"));
     const node = await comfy.getNodeRef("DrawThingsLoRA")
     expect(node).toBeDefined()
 
@@ -39,7 +39,6 @@ test("Values are loaded correctly from previous version worklow", async ({ comfy
 
 test('Widget values serialization', async ({ page, comfy }) => {
     // create a new workflow, add a lora node
-    await comfy.goto()
     await comfy.createNewWorkflow()
     const node = await comfy.addNode(["DrawThings", "Draw Things LoRA"], 0, 0)
     await node.centerNode();
@@ -79,7 +78,7 @@ test('Widget values serialization', async ({ page, comfy }) => {
             },
             "content": "DMD2 SDXL 4-Step (SDXL)"
         },
-        "weight": 0.25000000000000006,
+        "weight": 0.25,
         "mode": "All",
         "lora_2": {
             "value": {
@@ -87,7 +86,7 @@ test('Widget values serialization', async ({ page, comfy }) => {
             },
             "content": "Hyper SDXL 4-Step (SDXL)"
         },
-        "weight_2": 0.5000000000000001,
+        "weight_2": 0.5,
         "mode_2": "Refiner",
         "lora_3": "(None selected)",
         "weight_3": 1,
@@ -112,7 +111,7 @@ test('Widget values serialization', async ({ page, comfy }) => {
 
 // - UI tests
 test('"Show mode" toggles visibility of "mode" widgets', async ({ page, comfy }) => {
-    await openWorkflow(join(workflowFolder, "lora_node.json"), page);
+    await comfy.openWorkflow(join(workflowFolder, "lora_node.json"));
 
     // find the lora node and assert mode widgets are not visible
     const node = await comfy.getNodeRef("DrawThingsLoRA")
@@ -140,7 +139,7 @@ test('"Show mode" toggles visibility of "mode" widgets', async ({ page, comfy })
 });
 
 test('"More" button', async ({ page, comfy }) => {
-    await openWorkflow(join(workflowFolder, "lora_node.json"), page);
+    await comfy.openWorkflow(join(workflowFolder, "lora_node.json"));
 
     // find the lora node and assert mode widgets are not visible
     const node = await comfy.getNodeRef("DrawThingsLoRA")
@@ -189,7 +188,7 @@ test('"More" button', async ({ page, comfy }) => {
 });
 
 test('"Less" button', async ({ page, comfy }) => {
-    await openWorkflow(join(workflowFolder, "lora_node.json"), page);
+    await comfy.openWorkflow(join(workflowFolder, "lora_node.json"));
 
     // find the lora node and assert mode widgets are not visible
     const node = await comfy.getNodeRef("DrawThingsLoRA")
@@ -253,7 +252,6 @@ test("inputs are fixed when loading old workflow", async ({ page, comfy }) => {
                 if (lora.inputs[i].link === null) continue
 
                 const inputNode = lora.getInputNode(i)
-                // if (!inputNode) debugger
 
                 // if anything but a lora node is connect, throw
                 if (inputNode.type !== "DrawThingsLoRA")
