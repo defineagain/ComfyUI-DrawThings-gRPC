@@ -57,7 +57,7 @@ export class ComfyPage {
 
         await this.page.waitForTimeout(200);
         await this.page.locator("#graph-canvas").press(".");
-        await this.page.waitForTimeout(200);
+        await this.page.waitForTimeout(500);
     }
 
     async getNodeRef(

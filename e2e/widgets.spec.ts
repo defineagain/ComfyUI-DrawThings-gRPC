@@ -94,8 +94,7 @@ test("hires, tiled diffusion, tiled decoding widgets", async ({ page, comfy }) =
     const nodeRef = await getNodeRef(page, "DrawThingsSampler");
 
     // go to advanced
-    await nodeRef.clickWidget("settings");
-    await page.getByRole("menuitem", { name: "Advanced" }).click();
+    await nodeRef?.selectWidgetOption("settings", "Advanced");
 
     await testDependentOptions(nodeRef, "high_res_fix", [
         "high_res_fix_start_width",
