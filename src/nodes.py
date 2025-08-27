@@ -47,7 +47,7 @@ class DrawThingsSampler:
                 "stochastic_sampling_gamma": ("FLOAT", { "default": 0.3, "min": 0, "max": 1, "step": 0.01},),
                 # stochastic_sampling_gamma
                 "res_dpt_shift": ("BOOLEAN", { "default": True}),
-                "shift": ("FLOAT", { "default": 1.00, "min": 0.10, "max": 8.00, "step": 0.01, "round": 0.01 },),
+                "shift": ("FLOAT", { "default": 1.00, "min": 0.10, "max": 16.00, "step": 0.01, "round": 0.01 },),
                 "batch_size": ("INT", { "default": 1, "min": 1, "max": 4, "step": 1}),
                 # refiner
                 "fps": ("INT", { "default": 5, "min": 1, "max": 30, "step": 1}),

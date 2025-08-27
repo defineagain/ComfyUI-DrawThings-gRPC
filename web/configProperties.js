@@ -101,7 +101,7 @@ export const propertyData = [
 
     ['mask_blur_outset', 'mask_blur_outset', 'DrawThingsSampler', 'maskBlurOutset', 'float', 0, -100, 100, 0.1],
     ['sharpness', 'sharpness', 'DrawThingsSampler', 'sharpness', 'float', 0, 0, 30, 0.1],
-    ['shift', 'shift', 'DrawThingsSampler', 'shift', 'float', 1, 0, 8, 0.01],
+    ['shift', 'shift', 'DrawThingsSampler', 'shift', 'float', 1, 0, 16, 0.01],
     ['stage_2_steps', null, null, 'stage2Steps'],
     ['stage_2_cfg', null, null, 'stage2Guidance'],
     ['stage_2_shift', null, null, 'stage2Shift'],
