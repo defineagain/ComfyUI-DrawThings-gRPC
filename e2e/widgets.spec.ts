@@ -1,17 +1,18 @@
 import "dotenv/config";
-import { test, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
 // import { expect } from "./fixtures";
 import { getNodeRef, NodeRef } from "./nodeRef";
 import { openWorkflow } from "./util";
 import { join } from "node:path";
+import { test } from "./fixtures";
 
 const comfyUrl = process.env.PLAYWRIGHT_TEST_URL || "";
 if (!comfyUrl) throw new Error("PLAYWRIGHT_TEST_URL is not set");
 
 export const workflowFolder = "./e2e/workflows";
 
-test("widget change when settings mode changes", async ({ page }) => {
-    await openWorkflow(join(workflowFolder, "node.json"), page);
+test("widget change when settings mode changes", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
     const nodeRef = await getNodeRef(page, "DrawThingsSampler");
 
@@ -59,8 +60,8 @@ test("widget change when settings mode changes", async ({ page }) => {
     ).toMatchObject([true, true, true, true]);
 });
 
-test("tcd sampler", async ({ page }) => {
-    await openWorkflow(join(workflowFolder, "node.json"), page);
+test("tcd sampler", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
     const node = await getNodeRef(page, "DrawThingsSampler");
     await node.selectWidgetOption("settings", "Basic");
@@ -87,8 +88,8 @@ test("tcd sampler", async ({ page }) => {
     expect(await node.isWidgetVisible("stochastic_sampling_gamma")).toBeFalsy();
 });
 
-test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
-    await openWorkflow(join(workflowFolder, "node.json"), page);
+test("hires, tiled diffusion, tiled decoding widgets", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
     const nodeRef = await getNodeRef(page, "DrawThingsSampler");
 
@@ -115,8 +116,8 @@ test("hires, tiled diffusion, tiled decoding widgets", async ({ page }) => {
     ]);
 });
 
-test("flux settings widgets", async ({ page }) => {
-    await openWorkflow(join(workflowFolder, "node.json"), page);
+test("flux settings widgets", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
     const node = await getNodeRef(page, "DrawThingsSampler");
     if (!node) throw new Error("Node ref not found");
@@ -183,10 +184,10 @@ test("flux settings widgets", async ({ page }) => {
     await testDependentOptions(node, "cfg_zero_star", ["cfg_zero_star_init_steps"]);
 });
 
-test("svd options", async ({ page }) => { });
+test("svd options", async ({ page, comfy }) => { });
 
-test("wan options", async ({ page }) => {
-    await openWorkflow(join(workflowFolder, "node.json"), page);
+test("wan options", async ({ page, comfy }) => {
+    await comfy.openWorkflow(join(workflowFolder, "node.json"));
 
     const node = await getNodeRef(page, "DrawThingsSampler");
     if (!node) throw new Error("Node ref not found");

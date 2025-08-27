@@ -50,12 +50,14 @@ export async function addNode(page: Page, path: string[], x: number, y: number) 
 export class NodeRef {
     readonly id: number | string;
     readonly page: Page;
+    tag?: string
 
     delay: number = 100;
 
-    constructor(id: number | string, page: Page) {
+    constructor(id: number | string, page: Page, tag?: string) {
         this.page = page;
         this.id = id;
+        this.tag = tag
     }
 
     async clickWidget(name: string) {
@@ -200,9 +202,10 @@ export class NodeRef {
 
     async setWidgetValue(widget: string, value: number) {
         await this.clickWidget(widget);
-
-        await this.page.getByRole('textbox').fill(String(value))
-        await this.page.getByRole('textbox').press('Enter')
+        await this.page.locator('*:focus').fill(String(value))
+        await this.page.locator('*:focus').press('Enter')
+        // await this.page.locator('.graphdialog>textbox').fill(String(value))
+        // await this.page.locator('.graphdialog>textbox').press('Enter')
     }
 
     async getNodeColor() {
@@ -217,8 +220,16 @@ export class NodeRef {
         throw new Error("not yet implemented")
     }
 
-    async getWidgetOptions(widget: string) {
-        throw new Error("not yet implemented")
+    async getWidgetOptions(widget: string): Promise<{content: string, value: unknown, disabled?: boolean}[]> {
+        return await this.page.evaluate(
+            ([nodeId, name]) => {
+                const node = app.graph.getNodeById(nodeId);
+                const widget = node.widgets.find((w) => w.name === name);
+                if (!widget) throw new Error(`Widget not found: ${name}`);
+                return widget.options.values;
+            },
+            [this.id, widget]
+        );
     }
 
     async centerNode() {

@@ -76,7 +76,6 @@ const loraProto = {
     },
 
     onConfigure(serialised) {
-        // debugger;
         if ("loraCount" in serialised) this.loraCount = serialised.loraCount;
 
         if ("showMode" in serialised) this.showMode = serialised.showMode;

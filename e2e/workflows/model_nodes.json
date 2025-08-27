@@ -1,0 +1,713 @@
+{
+  "id": "baa3023d-71f8-42d7-9bc5-69dcced8c4b5",
+  "revision": 0,
+  "last_node_id": 24,
+  "last_link_id": 47,
+  "nodes": [
+    {
+      "id": 17,
+      "type": "DrawThingsSampler",
+      "pos": [
+        1750,
+        530
+      ],
+      "size": [
+        312.08984375,
+        578
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "mask",
+          "shape": 7,
+          "type": "MASK",
+          "link": null
+        },
+        {
+          "color_off": "#FFA931",
+          "color_on": "#FFA931",
+          "name": "positive",
+          "shape": 7,
+          "type": "STRING",
+          "link": 39
+        },
+        {
+          "color_off": "#FFA931",
+          "color_on": "#FFA931",
+          "name": "negative",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "lora",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": 42
+        },
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": 47
+        },
+        {
+          "name": "upscaler",
+          "shape": 7,
+          "type": "DT_UPSCALER",
+          "link": 44
+        },
+        {
+          "name": "refiner",
+          "shape": 7,
+          "type": "DT_REFINER",
+          "link": 45
+        },
+        {
+          "name": "hints",
+          "shape": 7,
+          "type": "DT_HINTS",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "40f4205bee94471af99f0eb38a992885173146fe",
+        "Node name for S&R": "DrawThingsSampler"
+      },
+      "widgets_values": [
+        "Basic",
+        "localhost",
+        "7859",
+        true,
+        {
+          "value": {
+            "version": "v1",
+            "objective": {
+              "epsilon": {}
+            },
+            "text_encoder": "animyo_clip_vit_l14_f16.ckpt",
+            "modifier": "none",
+            "name": "animyo",
+            "upcast_attention": false,
+            "default_scale": 8,
+            "file": "animyo_f16.ckpt",
+            "note": "",
+            "prefix": ""
+          },
+          "content": "animyo (SD)"
+        },
+        1,
+        -1,
+        "randomize",
+        "ScaleAlike",
+        1024,
+        1024,
+        20,
+        14,
+        4.5,
+        true,
+        4.5,
+        true,
+        4.5,
+        "Euler A",
+        1,
+        true,
+        1,
+        1,
+        5,
+        127,
+        0.02,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        true,
+        false,
+        448,
+        448,
+        0.7,
+        false,
+        640,
+        640,
+        128,
+        false,
+        512,
+        512,
+        64,
+        false,
+        5,
+        2,
+        0.2,
+        3,
+        false,
+        "",
+        false,
+        ""
+      ],
+      "nodePackVersion": "1.6.0",
+      "widget_values_keyed": {
+        "settings": "Basic",
+        "server": "localhost",
+        "port": "7859",
+        "use_tls": true,
+        "model": {
+          "value": {
+            "version": "v1",
+            "objective": {
+              "epsilon": {}
+            },
+            "text_encoder": "animyo_clip_vit_l14_f16.ckpt",
+            "modifier": "none",
+            "name": "animyo",
+            "upcast_attention": false,
+            "default_scale": 8,
+            "file": "animyo_f16.ckpt",
+            "note": "",
+            "prefix": ""
+          },
+          "content": "animyo (SD)"
+        },
+        "strength": 1,
+        "seed": -1,
+        "control_after_generate": "randomize",
+        "seed_mode": "ScaleAlike",
+        "width": 1024,
+        "height": 1024,
+        "steps": 20,
+        "num_frames": 14,
+        "cfg": 4.5,
+        "cfg_zero_star": true,
+        "cfg_zero_star_init_steps": 4.5,
+        "speed_up": true,
+        "guidance_embed": 4.5,
+        "sampler_name": "Euler A",
+        "stochastic_sampling_gamma": 1,
+        "res_dpt_shift": true,
+        "shift": 1,
+        "batch_size": 1,
+        "fps": 5,
+        "motion_scale": 127,
+        "guiding_frame_noise": 0.02,
+        "start_frame_guidance": 1,
+        "causal_inference": 0,
+        "causal_inference_pad": 0,
+        "clip_skip": 1,
+        "sharpness": 0,
+        "mask_blur": 0,
+        "mask_blur_outset": 0,
+        "preserve_original": true,
+        "high_res_fix": false,
+        "high_res_fix_start_width": 448,
+        "high_res_fix_start_height": 448,
+        "high_res_fix_strength": 0.7,
+        "tiled_decoding": false,
+        "decoding_tile_width": 640,
+        "decoding_tile_height": 640,
+        "decoding_tile_overlap": 128,
+        "tiled_diffusion": false,
+        "diffusion_tile_width": 512,
+        "diffusion_tile_height": 512,
+        "diffusion_tile_overlap": 64,
+        "tea_cache": false,
+        "tea_cache_start": 5,
+        "tea_cache_end": 2,
+        "tea_cache_threshold": 0.2,
+        "tea_cache_max_skip_steps": 3,
+        "separate_clip_l": false,
+        "clip_l_text": "",
+        "separate_open_clip_g": false,
+        "open_clip_g_text": ""
+      },
+      "_lastSelectedModel": {
+        "model": {
+          "value": {
+            "version": "v1",
+            "objective": {
+              "epsilon": {}
+            },
+            "text_encoder": "animyo_clip_vit_l14_f16.ckpt",
+            "modifier": "none",
+            "name": "animyo",
+            "upcast_attention": false,
+            "default_scale": 8,
+            "file": "animyo_f16.ckpt",
+            "note": "",
+            "prefix": ""
+          },
+          "content": "animyo (SD)"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "DrawThingsLoRA",
+      "pos": [
+        1470,
+        530
+      ],
+      "size": [
+        270,
+        122
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "lora_stack",
+          "shape": 7,
+          "type": "DT_LORA",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "lora_stack",
+          "type": "DT_LORA",
+          "links": [
+            42
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "40f4205bee94471af99f0eb38a992885173146fe",
+        "Node name for S&R": "DrawThingsLoRA"
+      },
+      "widgets_values": [
+        "",
+        {
+          "value": {
+            "prefix": "",
+            "file": "lcm_sd_v1.5_lora_f16.ckpt",
+            "version": "v1",
+            "name": "LCM Stable Diffusion v1.5",
+            "is_consistency_model": true
+          },
+          "content": "LCM Stable Diffusion v1.5 (SD)",
+          "disabled": false
+        },
+        0.25000000000000006,
+        "All",
+        null,
+        0.5000000000000001,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All",
+        null,
+        1,
+        "All"
+      ],
+      "_lastSelectedModel": {
+        "lora": {
+          "value": {
+            "prefix": "",
+            "file": "lcm_sd_v1.5_lora_f16.ckpt",
+            "version": "v1",
+            "name": "LCM Stable Diffusion v1.5",
+            "is_consistency_model": true
+          },
+          "content": "LCM Stable Diffusion v1.5 (SD)",
+          "disabled": false
+        },
+        "lora_2": "(None selected)",
+        "lora_3": null,
+        "lora_4": null,
+        "lora_5": null,
+        "lora_6": null,
+        "lora_7": null,
+        "lora_8": null
+      },
+      "loraCount": 1,
+      "showMode": false,
+      "nodePackVersion": "1.6.0",
+      "widget_values_keyed": {
+        "buttons": "",
+        "lora": {
+          "value": {
+            "prefix": "",
+            "file": "lcm_sd_v1.5_lora_f16.ckpt",
+            "version": "v1",
+            "name": "LCM Stable Diffusion v1.5",
+            "is_consistency_model": true
+          },
+          "content": "LCM Stable Diffusion v1.5 (SD)",
+          "disabled": false
+        },
+        "weight": 0.25000000000000006,
+        "mode": "All",
+        "lora_2": null,
+        "weight_2": 0.5000000000000001,
+        "mode_2": "All",
+        "lora_3": null,
+        "weight_3": 1,
+        "mode_3": "All",
+        "lora_4": null,
+        "weight_4": 1,
+        "mode_4": "All",
+        "lora_5": null,
+        "weight_5": 1,
+        "mode_5": "All",
+        "lora_6": null,
+        "weight_6": 1,
+        "mode_6": "All",
+        "lora_7": null,
+        "weight_7": 1,
+        "mode_7": "All",
+        "lora_8": null,
+        "weight_8": 1,
+        "mode_8": "All"
+      }
+    },
+    {
+      "id": 11,
+      "type": "DrawThingsPrompt",
+      "pos": [
+        1190,
+        530
+      ],
+      "size": [
+        270,
+        120
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "color_off": "#EF5350",
+          "color_on": "#EF5350",
+          "name": "PROMPT",
+          "type": "STRING",
+          "links": [
+            39
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "97b273b461f7d06b8823d0e4b16cb1bcdb77054e",
+        "Node name for S&R": "DrawThingsPrompt"
+      },
+      "widgets_values": [
+        "...",
+        "a photograph of an astronaut riding a horse, 4k, volumetric"
+      ],
+      "color": "#232",
+      "bgcolor": "#353",
+      "_lastSelectedModel": {}
+    },
+    {
+      "id": 24,
+      "type": "DrawThingsControlNet",
+      "pos": [
+        1190,
+        690
+      ],
+      "size": [
+        270,
+        198
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "control_net",
+          "shape": 7,
+          "type": "DT_CNET",
+          "link": null
+        },
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONTROL_NET",
+          "type": "DT_CNET",
+          "links": [
+            47
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "32767aae86d3c2d719a0ba1bac7ab7ee5a8a46d7",
+        "Node name for S&R": "DrawThingsControlNet"
+      },
+      "widgets_values": [
+        {
+          "value": {
+            "type": "controlnet",
+            "modifier": "depth",
+            "global_average_pooling": false,
+            "name": "Depth Map (SD v1.x, ControlNet 1.1)",
+            "version": "v1",
+            "file": "controlnet_depth_1.x_v1.1_f16.ckpt"
+          },
+          "content": "Depth Map (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        },
+        "Depth",
+        "Balanced",
+        1,
+        0,
+        1,
+        false,
+        1,
+        "All",
+        false
+      ],
+      "_lastSelectedModel": {
+        "control_name": {
+          "value": {
+            "type": "controlnet",
+            "modifier": "depth",
+            "global_average_pooling": false,
+            "name": "Depth Map (SD v1.x, ControlNet 1.1)",
+            "version": "v1",
+            "file": "controlnet_depth_1.x_v1.1_f16.ckpt"
+          },
+          "content": "Depth Map (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        }
+      },
+      "nodePackVersion": "1.6.0",
+      "widget_values_keyed": {
+        "control_name": {
+          "value": {
+            "type": "controlnet",
+            "modifier": "depth",
+            "global_average_pooling": false,
+            "name": "Depth Map (SD v1.x, ControlNet 1.1)",
+            "version": "v1",
+            "file": "controlnet_depth_1.x_v1.1_f16.ckpt"
+          },
+          "content": "Depth Map (SD v1.x, ControlNet 1.1) (SD)",
+          "disabled": false
+        },
+        "control_input_type": "Depth",
+        "control_mode": "Balanced",
+        "control_weight": 1,
+        "control_start": 0,
+        "control_end": 1,
+        "global_average_pooling": false,
+        "down_sampling_rate": 1,
+        "target_blocks": "All",
+        "invert_image": false
+      }
+    },
+    {
+      "id": 23,
+      "type": "DrawThingsRefiner",
+      "pos": [
+        1470,
+        690
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "REFINER",
+          "type": "DT_REFINER",
+          "links": [
+            45
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "40f4205bee94471af99f0eb38a992885173146fe",
+        "Node name for S&R": "DrawThingsRefiner"
+      },
+      "widgets_values": [
+        {
+          "value": {
+            "modifier": "none",
+            "version": "v1",
+            "default_scale": 8,
+            "file": "homoveritas_v40_f16.ckpt",
+            "name": "homoveritas_v40",
+            "prefix": "",
+            "text_encoder": "homoveritas_v40_clip_vit_l14_f16.ckpt",
+            "upcast_attention": false
+          },
+          "content": "homoveritas_v40 (SD)",
+          "disabled": false
+        },
+        0.85
+      ],
+      "_lastSelectedModel": {
+        "refiner_model": {
+          "value": {
+            "modifier": "none",
+            "version": "v1",
+            "default_scale": 8,
+            "file": "homoveritas_v40_f16.ckpt",
+            "name": "homoveritas_v40",
+            "prefix": "",
+            "text_encoder": "homoveritas_v40_clip_vit_l14_f16.ckpt",
+            "upcast_attention": false
+          },
+          "content": "homoveritas_v40 (SD)",
+          "disabled": false
+        }
+      }
+    },
+    {
+      "id": 22,
+      "type": "DrawThingsUpscaler",
+      "pos": [
+        1470,
+        810
+      ],
+      "size": [
+        270,
+        82
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "UPSCALER",
+          "type": "DT_UPSCALER",
+          "links": [
+            44
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "drawthings-grpc",
+        "ver": "40f4205bee94471af99f0eb38a992885173146fe",
+        "Node name for S&R": "DrawThingsUpscaler"
+      },
+      "widgets_values": [
+        {
+          "value": {
+            "file": "4x_ultrasharp_f16.ckpt",
+            "blocks": 23,
+            "scale_factor": 4,
+            "name": "4x UltraSharp"
+          },
+          "content": "4x UltraSharp"
+        },
+        2
+      ],
+      "_lastSelectedModel": {
+        "upscaler_model": {
+          "value": {
+            "file": "4x_ultrasharp_f16.ckpt",
+            "blocks": 23,
+            "scale_factor": 4,
+            "name": "4x UltraSharp"
+          },
+          "content": "4x UltraSharp"
+        }
+      }
+    }
+  ],
+  "links": [
+    [
+      39,
+      11,
+      0,
+      17,
+      2,
+      "STRING"
+    ],
+    [
+      42,
+      20,
+      0,
+      17,
+      4,
+      "DT_LORA"
+    ],
+    [
+      44,
+      22,
+      0,
+      17,
+      6,
+      "DT_UPSCALER"
+    ],
+    [
+      45,
+      23,
+      0,
+      17,
+      7,
+      "DT_REFINER"
+    ],
+    [
+      47,
+      24,
+      0,
+      17,
+      5,
+      "DT_CNET"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7418375246959678,
+      "offset": [
+        -829.4451345529048,
+        -235.51724906925807
+      ]
+    },
+    "frontendVersion": "1.25.10",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
