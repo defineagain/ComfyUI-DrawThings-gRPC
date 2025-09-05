@@ -13,11 +13,7 @@ from .data_types import *
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
 
-import comfy.utils
-from comfy.cli_args import args
-
 MAX_RESOLUTION = 16384
-MAX_PREVIEW_RESOLUTION = args.preview_size
 
 CCV_TENSOR_CPU_MEMORY = 0x1
 CCV_TENSOR_GPU_MEMORY = 0x2
@@ -38,19 +34,6 @@ CCV_16BF = 0x80000
 
 def clamp(value):
     return max(min(int(value if np.isfinite(value) else 0), 255), 0)
-
-
-def prepare_callback(step, total_steps, x0=None):
-    pbar = comfy.utils.ProgressBar(step)
-
-    def callback(step, total_steps, x0=None):
-
-        preview_bytes = None
-        if x0 is not None:
-            preview_bytes = ("PNG", x0, MAX_PREVIEW_RESOLUTION)
-        pbar.update_absolute(step, total_steps, preview_bytes)
-
-    return callback(step, total_steps, x0)
 
 
 def convert_response_image(response_image: bytes):

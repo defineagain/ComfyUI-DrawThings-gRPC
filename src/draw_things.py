@@ -12,13 +12,16 @@ from PIL import Image
 from .credentials import credentials
 from .data_types import DrawThingsLists, HintStack, ModelsInfo, UpscalerInfo
 from .generated import imageService_pb2, imageService_pb2_grpc
+import comfy.utils
+from comfy.cli_args import args
+
+MAX_PREVIEW_RESOLUTION = args.preview_size
 
 from .image_handlers import (
     convert_image_for_request,
     convert_mask_for_request,
     convert_response_image,
-    decode_preview,
-    prepare_callback,
+    decode_preview
 )
 
 
@@ -146,6 +149,8 @@ async def dt_sampler(inputs: dict):
         hp.tensors.extend(taws)
         req_hints.append(hp)
 
+    progress = comfy.utils.ProgressBar(config.steps, inputs["unique_id"])
+
     async with get_aio_channel(server, port, use_tls) as channel:
         stub = imageService_pb2_grpc.ImageGenerationServiceStub(channel)
         generate_stream = stub.GenerateImage(
@@ -182,10 +187,11 @@ async def dt_sampler(inputs: dict):
 
             if current_step:
                 try:
-                    x0 = None
+                    preview = None
                     if preview_image and version and settings.show_preview:
-                        x0 = decode_preview(preview_image, version)
-                    prepare_callback(current_step, config.steps, x0)
+                        decoded_preview = decode_preview(preview_image, version)
+                        preview = ("PNG", decoded_preview, MAX_PREVIEW_RESOLUTION)
+                    progress.update_absolute(current_step, total=config.steps, preview=preview)
                 except Exception as e:
                     print("DrawThings-gRPC had an error decoding the preview image:", e)
 

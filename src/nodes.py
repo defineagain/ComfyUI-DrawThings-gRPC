@@ -104,6 +104,7 @@ class DrawThingsSampler:
                 # t5_text
             },
             "hidden": {
+                "unique_id": "UNIQUE_ID",
                 "scale_factor": ("INT", { "default": 1, "min": 1, "max": 4, "step": 1}),
                 "batch_count": ("INT", { "default": 1, "min": 1, "max": 100, "step": 1}),
             },
