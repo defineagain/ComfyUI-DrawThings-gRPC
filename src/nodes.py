@@ -31,14 +31,9 @@ class DrawThingsSampler:
                 "use_tls": ("BOOLEAN", { "default": True }),
                 "model": ("DT_MODEL", { "model_type": "models", "tooltip": "The model used for denoising the input latent." },),
                 "strength": ("FLOAT", { "default": 1.00, "min": 0.00, "max": 1.00, "step": 0.01, "tooltip": "When generating from an image, a high value allows more artistic freedom from the original. 1.0 means no influence from the existing image (a.k.a. text to image)." },),
-                "seed": ("INT", { "default": 0, "min": -1, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise." },),
                 "seed_mode": (DrawThingsLists.seed_mode, { "default": "ScaleAlike" }),
-                "width": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64}),
-                "height": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64},),
                 # upscaler
-                "steps": ("INT", { "default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process." },),
                 "num_frames": ("INT", { "default": 14, "min": 1, "max": 201, "step": 1}),
-                "cfg": ("FLOAT", { "default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality." },),
                 "cfg_zero_star": ("BOOLEAN", { "default": False }),
                 "cfg_zero_star_init_steps": ("INT", { "default": 0, "min": 0, "max": 50, "step": 1}),
                 "speed_up": ("BOOLEAN", { "default": True}),
@@ -118,6 +113,11 @@ class DrawThingsSampler:
                 "upscaler": ("DT_UPSCALER",),
                 "refiner": ("DT_REFINER",),
                 "hints": ("DT_HINTS", { "tooltip": "Hint images, or control inputs, are used with ControlNets and certain other models, like Kontext, to help guide the generation." },),
+                "seed": ("INT", { "default": 0, "min": -1, "max": 4294967295, "control_after_generate": True, "tooltip": "The random seed used for creating the noise." },),
+                "width": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64}),
+                "height": ("INT", { "default": 512, "min": 128, "max": 8192, "step": 64},),
+                "steps": ("INT", { "default": 20, "min": 1, "max": 150, "tooltip": "The number of steps used in the denoising process." },),
+                "cfg": ("FLOAT", { "default": 4.5, "min": 0.0, "max": 50.0, "step": 0.1, "round": 0.01, "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality." },),
             },
         }
         # fmt: on
