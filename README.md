@@ -1,3 +1,5 @@
+This is a form to allow more input nodes on the Draw Things Wrapper node, by makign the imputs optional, to help with integration with Krita Diffusion workflows
+
 ## ComfyUI-DrawThings-gRPC
 
 **ComfyUI-DrawThings-gRPC** is a bridge between [ComfyUI](https://www.comfy.org/) and [Draw Things](https://drawthings.ai/) via gRPC. It allows ComfyUI to build and send image generation requests to Draw Things - giving you more control over inputs and settings than Draw Things alone offers, and bringing the Draw Things sampler into your ComfyUI workflows.
